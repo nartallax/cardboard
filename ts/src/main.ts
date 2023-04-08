@@ -1,1 +1,1 @@
-export {box, viewBox, WBox, RBox} from "./box"
+export {box, viewBox, WBox, RBox, isRBox, isWBox, unbox} from "./box"

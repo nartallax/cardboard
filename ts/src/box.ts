@@ -48,11 +48,6 @@ type WBoxCallSignature<T> = RBoxCallSignature<T> & ((newValue: T) => T)
 /** Writeable box. Box that you can put value in, as well as look at value inside it and subscribe to it. */
 export type WBox<T> = WBoxCallSignature<T> & WBoxFields<T>
 
-
-export type RBoxOrValue<T> = T | RBox<T>
-export type MaybeRBoxed<T> = [T] extends [RBox<unknown>] ? T : T | RBox<T>
-export type WBoxOrValue<T> = T | WBox<T>
-
 /** Make a simple writeable box */
 export const box: <T>(value: T) => WBox<T> = makeValueBox
 /** Make a viewBox, a box that recalculates its value each time any of dependencies changed
@@ -153,22 +148,25 @@ abstract class BoxBase<T> {
 	private revision = 1
 
 	/** Internal subscribers are subscribers that make up a graph of boxes */
-	private internalSubscribers = new Set<InternalSubscriber<T>>()
+	private internalSubscribers: Set<InternalSubscriber<T>> | null = null
 	/** External subscribers are subscribers that receive data outside of boxes graph */
-	private externalSubscribers = new Set<ExternalSubscriber<T>>()
+	private externalSubscribers: Set<ExternalSubscriber<T>> | null = null
 
 	constructor(public value: T | NoValue) {}
 
 	haveSubscribers(): boolean {
-		return this.internalSubscribers.size > 0 || this.externalSubscribers.size > 0
+		return this.internalSubscribers !== null || this.externalSubscribers !== null
 	}
 
 	/** After box is disposed, it should not be used anymore
 	 * This is reserved for very special cases and cannot really be used on any kind of box */
 	dispose(): void {
 		this.value = noValue
-		for(const sub of this.internalSubscribers){
-			sub.box.dispose()
+		if(this.internalSubscribers){
+			for(const sub of this.internalSubscribers){
+				sub.box.dispose()
+			}
+			this.internalSubscribers = null
 		}
 	}
 
@@ -184,9 +182,17 @@ abstract class BoxBase<T> {
 				lastKnownRevision: this.revision,
 				lastKnownValue: value as T
 			}
+			if(this.externalSubscribers === null){
+				this.externalSubscribers = new Set()
+			}
 			this.externalSubscribers.add(sub)
 			return () => {
-				this.externalSubscribers.delete(sub)
+				if(this.externalSubscribers){
+					this.externalSubscribers.delete(sub)
+					if(this.externalSubscribers.size === 0){
+						this.externalSubscribers = null
+					}
+				}
 			}
 		} else {
 			if(!box){
@@ -197,8 +203,18 @@ abstract class BoxBase<T> {
 				lastKnownRevision: this.revision,
 				lastKnownValue: value as T
 			}
+			if(this.internalSubscribers === null){
+				this.internalSubscribers = new Set()
+			}
 			this.internalSubscribers.add(sub)
-			return () => this.internalSubscribers.delete(sub)
+			return () => {
+				if(this.internalSubscribers){
+					this.internalSubscribers.delete(sub)
+					if(this.internalSubscribers.size === 0){
+						this.internalSubscribers = null
+					}
+				}
+			}
 		}
 	}
 
@@ -223,13 +239,15 @@ abstract class BoxBase<T> {
 	notify<B>(value: T, box: RBoxBase<B> | undefined): void {
 		const valueRevision = this.revision
 
-		for(const sub of this.internalSubscribers){
+		if(this.internalSubscribers){
+			for(const sub of this.internalSubscribers){
 			// if the notification came from the same box - we should not notify it again
-			if(sub.box === box){
-				continue
-			}
+				if(sub.box === box){
+					continue
+				}
 
-			this.maybeCallSubscriber(sub, value, valueRevision)
+				this.maybeCallSubscriber(sub, value, valueRevision)
+			}
 		}
 
 		if(valueRevision < this.revision){
@@ -239,8 +257,10 @@ abstract class BoxBase<T> {
 			return
 		}
 
-		for(const sub of this.externalSubscribers){
-			this.maybeCallSubscriber(sub, value, valueRevision)
+		if(this.externalSubscribers){
+			for(const sub of this.externalSubscribers){
+				this.maybeCallSubscriber(sub, value, valueRevision)
+			}
 		}
 
 	}

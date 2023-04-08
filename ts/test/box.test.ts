@@ -12,6 +12,9 @@ describe("box", () => {
 
 	test("wbox simple test", () => {
 		const b = box(0)
+
+		expect(b()).to.be.equal(0)
+
 		b(5)
 
 		expect(b()).to.be.equal(5)
