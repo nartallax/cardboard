@@ -277,7 +277,11 @@ abstract class BoxBase<T> {
 	}
 
 	wrapElements<E, K>(this: ViewBox<E[]> | ValueBox<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
-		return makeViewBoxByClassInstance<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(new ArrayValueWrapViewBox(this, getKey))
+		const instance = new ArrayValueWrapViewBox<E, K>()
+		instance.getKey = getKey
+		instance.upstream = this
+		instance.explicitDependencyList = [this]
+		return makeViewBoxByClassInstance<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(instance)
 	}
 
 }
@@ -299,7 +303,10 @@ class ValueBox<T> extends (BoxBase as {
 		if(Array.isArray(this.value)){
 			throw new Error("You should not use prop() to get values of elements of the array. Use wrapElements() instead.")
 		}
-		return makeUpstreamBox(new FixedPropValueBox(this, propKey))
+		const instance = new FixedPropValueBox<T, K>()
+		instance.upstream = this
+		instance.propKey = propKey
+		return makeUpstreamBox(instance)
 	}
 
 }
@@ -309,9 +316,7 @@ class ValueBox<T> extends (BoxBase as {
 abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = ValueBox<U>> extends ValueBox<T> {
 
 	private upstreamUnsub: UnsubscribeFn | null = null
-	constructor(readonly upstream: B) {
-		super()
-	}
+	upstream = null as unknown as B
 
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
 	protected abstract buildUpstreamValue(value: T): U
@@ -417,9 +422,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = Valu
 
 class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U> {
 
-	constructor(upstream: ValueBox<U>, protected readonly propKey: K) {
-		super(upstream)
-	}
+	propKey: K = null as unknown as K
 
 	protected override extractValueFromUpstream(upstreamObject: U): U[K] {
 		return upstreamObject[this.propKey]
@@ -506,9 +509,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 	private boundCalcVal: (() => T) | null = null
 	protected abstract calculateValue(): T
 
-	constructor(private readonly explicitDependencyList: readonly RBox<unknown>[] | undefined) {
-		super()
-	}
+	explicitDependencyList: readonly RBox<unknown>[] | null = null
 
 	private subDispose(): void {
 		this.subDisposers.forEach(x => x())
@@ -539,7 +540,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 		let newValue: T
 		let depList: readonly AnyBoxImpl<unknown>[]
 		const calc = this.boundCalcVal ||= this.calculateValue.bind(this)
-		if(!this.explicitDependencyList){
+		if(this.explicitDependencyList === null){
 			const boxesAccessed = new Set<AnyBoxImpl<unknown>>()
 			newValue = notificationStack.withAccessNotifications(calc, boxesAccessed)
 			depList = [...boxesAccessed]
@@ -607,15 +608,14 @@ abstract class ViewBox<T> extends (BoxBase as {
 }
 
 class ComputingFnViewBox<T> extends ViewBox<T> {
-
-	constructor(protected readonly calculateValue: () => T, explicitDependencyList: readonly RBox<unknown>[] | undefined) {
-		super(explicitDependencyList)
-	}
-
+	calculateValue = null as unknown as () => T
 }
 
 function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> {
-	return makeViewBoxByClassInstance<T, ViewBox<T>>(new ComputingFnViewBox(computingFn, explicitDependencyList))
+	const instance = new ComputingFnViewBox<T>()
+	instance.calculateValue = computingFn
+	instance.explicitDependencyList = explicitDependencyList ?? null
+	return makeViewBoxByClassInstance<T, ViewBox<T>>(instance)
 }
 
 function makeViewBoxByClassInstance<T, B extends ViewBox<T>>(instance: B): B {
@@ -629,15 +629,16 @@ function makeViewBoxByClassInstance<T, B extends ViewBox<T>>(instance: B): B {
 
 class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
-	private readonly childMap = new Map<K, ArrayElementValueBox<T, K>>()
-
-	constructor(readonly upstream: ViewBox<T[]> | ValueBox<T[]>, private readonly getKey: (value: T) => K) {
-		super([upstream])
-	}
+	private childMap: Map<K, ArrayElementValueBox<T, K>> | null = null
+	getKey = null as unknown as (value: T) => K
+	upstream = null as unknown as ViewBox<T[]> | ValueBox<T[]>
 
 	protected override calculateValue(): ValueBox<T>[] {
 		if(typeof(this) !== "function"){
 			throw new Error("Assertion failed")
+		}
+		if(this.childMap === null){
+			this.childMap = new Map()
 		}
 		const outdatedKeys = new Set(this.childMap.keys())
 
@@ -647,7 +648,7 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		}
 		const result = upstreamArray.map((item, index) => {
 			const key = this.getKey(item)
-			let box = this.childMap.get(key)
+			let box = this.childMap!.get(key)
 			if(box){
 				if(!outdatedKeys.has(key)){
 					throw new Error("Constraint violated, key is not unique: " + key)
@@ -655,9 +656,13 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 				box.index = index
 				box.tryChangeValue(item, this)
 			} else {
-				box = makeUpstreamBox(new ArrayElementValueBox(key, index, this))
-				box.value = item
-				this.childMap.set(key, box)
+				const instance = new ArrayElementValueBox<T, K>()
+				instance.index = index
+				instance.value = item
+				instance.key = key
+				instance.upstream = this
+				box = makeUpstreamBox(instance)
+				this.childMap!.set(key, box)
 			}
 
 			outdatedKeys.delete(key)
@@ -682,6 +687,9 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 		if(!isWBox(this.upstream)){
 			// should be prevented by typechecker anyway
 			throw new Error("You cannot change the value of upstream array in readonly box through wrap-box")
+		}
+		if(this.childMap === null){
+			this.childMap = new Map()
 		}
 
 		const key = this.getKey(value)
@@ -736,10 +744,8 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], ArrayValueWrapViewBox<T, K>> {
 
 	private disposed = false
-
-	constructor(public key: K, public index: number, upstream: ArrayValueWrapViewBox<T, K>) {
-		super(upstream)
-	}
+	index = -1
+	key = null as unknown as K
 
 	override dispose(): void {
 		this.disposed = true
