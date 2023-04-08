@@ -1,6 +1,7 @@
+import {addPrototypeToFunction, anythingToString} from "src/common"
+
 type SubscriberHandlerFn<T = unknown> = (value: T) => void
 type UnsubscribeFn = () => void
-
 
 interface RBoxFields<T>{
 	/** Subscribe to receive new value every time it changes
@@ -118,17 +119,6 @@ class BoxNotificationStack {
 	}
 }
 
-/** Having a function and a prototype, make a function with this prototype and its properties
- * Unfortunately, this implies that constructor of the parent function cannot be called on the function
- * because since ES6 classes can't be called like regular functions and there is no known workaround
- * But any properties defined on the prototype will be copied to the function instance, so it's not too bad
- * Also the function won't receive proper `this` object. This can be done at the cost of performance; I don't need it that hard */
-function addPrototypeToFunction<R, A extends never[], F extends (this: null, ...args: A) => R, I extends object>(fn: F, obj: I): I & F {
-	Object.setPrototypeOf(fn, Object.getPrototypeOf(obj)) // set up the prototype
-	Object.assign(fn, obj) // clone the properties
-	return fn as I & F
-}
-
 
 const notificationStack = new BoxNotificationStack()
 
@@ -152,7 +142,7 @@ abstract class BoxBase<T> {
 	/** External subscribers are subscribers that receive data outside of boxes graph */
 	private externalSubscribers: Set<ExternalSubscriber<T>> | null = null
 
-	constructor(public value: T | NoValue) {}
+	public value: T | NoValue = noValue
 
 	haveSubscribers(): boolean {
 		return this.internalSubscribers !== null || this.externalSubscribers !== null
@@ -296,7 +286,7 @@ type RBoxBase<T> = BoxBase<T> & RBox<T>
 
 /** Just a box that just contains value */
 class ValueBox<T> extends (BoxBase as {
-	new<T>(value: T | NoValue): BoxBase<T> & WBoxCallSignature<T> & RBoxCallSignature<T>
+	new<T>(): BoxBase<T> & WBoxCallSignature<T> & RBoxCallSignature<T>
 })<T> implements WBoxFields<T> {
 
 	prop<K extends keyof T>(propKey: K): WBox<T[K]> {
@@ -319,8 +309,8 @@ class ValueBox<T> extends (BoxBase as {
 abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = ValueBox<U>> extends ValueBox<T> {
 
 	private upstreamUnsub: UnsubscribeFn | null = null
-	constructor(readonly upstream: B, value: T | NoValue) {
-		super(value)
+	constructor(readonly upstream: B) {
+		super()
 	}
 
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
@@ -428,7 +418,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = Valu
 class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U> {
 
 	constructor(upstream: ValueBox<U>, protected readonly propKey: K) {
-		super(upstream, noValue)
+		super(upstream)
 	}
 
 	protected override extractValueFromUpstream(upstreamObject: U): U[K] {
@@ -482,14 +472,16 @@ function makeValueBox<T>(value: T): ValueBox<T> {
 		return result.value as T
 	}
 
-	const result = addPrototypeToFunction(valueBox, new ValueBox(value))
+	const instance = new ValueBox<T>()
+	instance.value = value
+	const result = addPrototypeToFunction(valueBox, instance)
 
 	return result
 }
 
 
 abstract class ViewBox<T> extends (BoxBase as {
-	new<T>(value: T | NoValue): BoxBase<T> & RBoxCallSignature<T>
+	new<T>(): BoxBase<T> & RBoxCallSignature<T>
 })<T> implements RBoxFields<T> {
 
 	/*
@@ -515,7 +507,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 	protected abstract calculateValue(): T
 
 	constructor(private readonly explicitDependencyList: readonly RBox<unknown>[] | undefined) {
-		super(noValue)
+		super()
 	}
 
 	private subDispose(): void {
@@ -663,7 +655,8 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 				box.index = index
 				box.tryChangeValue(item, this)
 			} else {
-				box = makeUpstreamBox(new ArrayElementValueBox(key, index, item, this))
+				box = makeUpstreamBox(new ArrayElementValueBox(key, index, this))
+				box.value = item
 				this.childMap.set(key, box)
 			}
 
@@ -744,8 +737,8 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 
 	private disposed = false
 
-	constructor(public key: K, public index: number, value: T, upstream: ArrayValueWrapViewBox<T, K>) {
-		super(upstream, value)
+	constructor(public key: K, public index: number, upstream: ArrayValueWrapViewBox<T, K>) {
+		super(upstream)
 	}
 
 	override dispose(): void {
@@ -823,12 +816,4 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 		return this.disposed ? noValue : this.value
 	}
 
-}
-
-function anythingToString(x: unknown): string {
-	if(typeof(x) === "symbol"){
-		return x.toString()
-	} else {
-		return x + ""
-	}
 }
