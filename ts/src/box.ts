@@ -1,4 +1,4 @@
-import {CombinedPrototype, anythingToString, extractCombinedPrototype} from "src/common"
+import {Prototype, anythingToString, extractPrototype} from "src/common"
 
 type SubscriberHandlerFn<T = unknown> = (value: T) => void
 type UnsubscribeFn = () => void
@@ -61,7 +61,7 @@ export function isWBox<T>(x: unknown): x is WBox<T> {
 }
 
 export function isRBox<T>(x: unknown): x is RBox<T> {
-	return typeof(x) === "function" && (x as unknown as BoxBase<T>).isRBox === true
+	return typeof(x) === "function" && (x as unknown as ViewBox<T>).isRBox === true
 }
 
 export function unbox<T>(x: RBox<T> | T): T
@@ -135,16 +135,15 @@ abstract class BoxBase<T> {
 	 * For example, consider viewBox that depends on viewBox
 	 * When there is no subscribers, first viewBox will never change, regardless of its sources
 	 * And if you're only relying on revision number to check if it is changed, you'll be wrong */
-	private revision = 1
+	revision = 1
 
 	/** Internal subscribers are subscribers that make up a graph of boxes */
-	private internalSubscribers: Set<InternalSubscriber<T>> | null = null
+	internalSubscribers: Set<InternalSubscriber<T>> | null = null
 	/** External subscribers are subscribers that receive data outside of boxes graph */
-	private externalSubscribers: Set<ExternalSubscriber<T>> | null = null
+	externalSubscribers: Set<ExternalSubscriber<T>> | null = null
 
-	public value: T | NoValue = noValue
+	value: T | NoValue = noValue
 	name = "" // will be overriden by actual function name
-	isRBox = true
 
 	haveSubscribers(): boolean {
 		return this.internalSubscribers !== null || this.externalSubscribers !== null
@@ -283,6 +282,8 @@ abstract class BoxBase<T> {
 		result.getKey = getKey
 		result.upstream = this
 		result.explicitDependencyList = [this]
+		result.childMap = null
+		Object.seal(result)
 		return result
 	}
 
@@ -312,21 +313,22 @@ class ValueBox<T> extends (BoxBase as {
 			throw new Error("You should not use prop() to get values of elements of the array. Use wrapElements() instead.")
 		}
 
-		const result = makeUpstreamBox<T[K], T, FixedPropValueBox<T, K>>(fixedPropValueBoxProto)
-		result.upstream = this
+		const result = makeUpstreamBox<T[K], T, FixedPropValueBox<T, K>>(fixedPropValueBoxProto, this)
 		result.propKey = propKey
+		Object.seal(result)
 		return result
 	}
 
 }
 
-const valueBoxPrototype = extractCombinedPrototype(ValueBox)
+const valueBoxPrototype = extractPrototype(ValueBox)
+valueBoxPrototype.isWBox = true
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */
 abstract class ValueBoxWithUpstream<T, U = unknown, B extends AnyBoxImpl<U> = AnyBoxImpl<U>> extends ValueBox<T> {
 
-	private upstreamUnsub: UnsubscribeFn | null = null
+	upstreamUnsub: UnsubscribeFn | null = null
 	upstream = null as unknown as B
 
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
@@ -451,9 +453,9 @@ class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K],
 	}
 
 }
-const fixedPropValueBoxProto = extractCombinedPrototype(FixedPropValueBox)
+const fixedPropValueBoxProto = extractPrototype(FixedPropValueBox)
 
-function makeUpstreamBox<T, U, B>(prototype: CombinedPrototype<ValueBoxWithUpstream<T, U> & B>): ValueBoxWithUpstream<T, U> & B {
+function makeUpstreamBox<T, U, B>(prototype: Prototype<ValueBoxWithUpstream<T, U> & B>, upstream: AnyBoxImpl<U>): ValueBoxWithUpstream<T, U> & B {
 
 	function upstreamValueBox(...args: T[]): T {
 		if(args.length === 0){
@@ -466,6 +468,12 @@ function makeUpstreamBox<T, U, B>(prototype: CombinedPrototype<ValueBoxWithUpstr
 	}
 
 	const result: ValueBoxWithUpstream<T, U> & B = Object.setPrototypeOf(upstreamValueBox, prototype)
+	result.value = noValue
+	result.upstreamUnsub = null
+	result.upstream = upstream
+	result.internalSubscribers = null
+	result.externalSubscribers = null
+	result.revision = 1
 	return result
 }
 
@@ -488,6 +496,10 @@ function makeValueBox<T>(value: T): ValueBox<T> {
 
 	const result: ValueBox<T> = Object.setPrototypeOf(valueBox, valueBoxPrototype)
 	result.value = value
+	result.revision = 1
+	result.internalSubscribers = null
+	result.externalSubscribers = null
+	Object.seal(result)
 
 	return result
 }
@@ -497,6 +509,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 	new<T>(): BoxBase<T> & RBoxCallSignature<T>
 })<T> implements RBoxFields<T> {
 
+	isRBox = true
 	/*
 	Here it gets a little tricky.
 	Lifetime of the view is by definition lower than lifetime of values it depends on
@@ -513,10 +526,10 @@ abstract class ViewBox<T> extends (BoxBase as {
 
 	This way, you only need to remove all subscribers from view for it to be eligible to be GCed
 	*/
-	private subDisposers: UnsubscribeFn[] | null = null
-	private onDependencyListUpdated: null | (() => void) = null
+	subDisposers: UnsubscribeFn[] | null = null
+	onDependencyListUpdated: null | (() => void) = null
 
-	private boundCalcVal: (() => T) | null = null
+	boundCalcVal: (() => T) | null = null
 	protected abstract calculateValue(): T
 
 	explicitDependencyList: readonly RBox<unknown>[] | null = null
@@ -630,31 +643,45 @@ abstract class ViewBox<T> extends (BoxBase as {
 
 }
 
+// this prototype isn't even used anywhere directly, because ViewBox is abstract
+// so let's just extract it directly; the only reason we may need it is to add isRBox property
+const viewBoxPrototype: Record<string, unknown> = Object.getPrototypeOf(ViewBox)
+viewBoxPrototype.isRBox = true
+
+
 class ComputingFnViewBox<T> extends ViewBox<T> {
 	calculateValue = null as unknown as () => T
 }
 
-const computinFnViewBoxPrototype = extractCombinedPrototype(ComputingFnViewBox)
+const computinFnViewBoxPrototype = extractPrototype(ComputingFnViewBox)
 
 function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> {
 	const result = makeViewBoxByPrototype<T, ComputingFnViewBox<T>>(computinFnViewBoxPrototype)
 	result.calculateValue = computingFn
 	result.explicitDependencyList = explicitDependencyList ?? null
+	Object.seal(result)
 	return result
 }
 
-function makeViewBoxByPrototype<T, B extends ViewBox<T>>(prototype: CombinedPrototype<B>): B {
+function makeViewBoxByPrototype<T, B extends ViewBox<T>>(prototype: Prototype<B>): B {
 	function viewBox(): T {
 		return result.getValue()
 	}
 
 	const result: B = Object.setPrototypeOf(viewBox, prototype)
+	result.value = noValue
+	result.internalSubscribers = null
+	result.externalSubscribers = null
+	result.subDisposers = null
+	result.onDependencyListUpdated = null
+	result.boundCalcVal = null
+	result.revision = 1
 	return result
 }
 
 class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
-	private childMap: Map<K, ArrayElementValueBox<T, K>> | null = null
+	childMap: Map<K, ArrayElementValueBox<T, K>> | null = null
 	getKey = null as unknown as (value: T) => K
 	upstream = null as unknown as ViewBox<T[]> | ValueBox<T[]>
 
@@ -678,11 +705,15 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 				box.index = index
 				box.tryChangeValue(item, this)
 			} else {
-				box = makeUpstreamBox<T, ValueBox<T>[], ArrayElementValueBox<T, K>>(arrayElementValueBoxProto)
+				box = makeUpstreamBox<T, ValueBox<T>[], ArrayElementValueBox<T, K>>(arrayElementValueBoxProto, this)
+				box.internalSubscribers = null
+				box.externalSubscribers = null
+				box.revision = 1
 				box.index = index
 				box.value = item
 				box.key = key
-				box.upstream = this
+				box.disposed = false
+				Object.seal(box)
 				this.childMap!.set(key, box)
 			}
 
@@ -762,14 +793,14 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
 }
 
-const arrayValueWrapViewBoxPrototype = extractCombinedPrototype(ArrayValueWrapViewBox)
+const arrayValueWrapViewBoxPrototype = extractPrototype(ArrayValueWrapViewBox)
 
 /** A wrap around single element of an array.
  * This is more of a view box than a box-with-upstream;
  * Making it a box-with-upstream only makes it more performant */
 class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], ArrayValueWrapViewBox<T, K>> {
 
-	private disposed = false
+	disposed = false
 	index = -1
 	key = null as unknown as K
 
@@ -851,4 +882,4 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 	}
 
 }
-const arrayElementValueBoxProto = extractCombinedPrototype(ArrayElementValueBox)
+const arrayElementValueBoxProto = extractPrototype(ArrayElementValueBox)

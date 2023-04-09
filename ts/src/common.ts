@@ -19,7 +19,7 @@ export function anythingToString(x: unknown): string {
  * 		we cannot have non-trivial values as default values of class fields (we should not share them)
  * 		we cannot have getters/setters on our classes
  * those approaches largely shape how classes code is written. */
-export function extractCombinedPrototype<T>(cls: {new(): T}): CombinedPrototype<T> {
+export function extractCombinedPrototype<T>(cls: {new(): T}): Prototype<T> {
 	const instance = new cls()
 	const result: Record<string, unknown> = {}
 
@@ -49,8 +49,20 @@ export function extractCombinedPrototype<T>(cls: {new(): T}): CombinedPrototype<
 
 	extractFrom(instance as Record<string, unknown>)
 	result.name = cls.name
-	return result as CombinedPrototype<T>
+	return result as Prototype<T>
+}
+
+/** This function JUST extracts prototype, without performing any magic that extractCombinedPrototype does
+ *
+ * Thing is, combining prototypes into one (and adding properties into mix) is scary for two reasons
+ * 1. Overriden methods `super.method()` calls can work... how?
+ * they do work in combined prototypes, but I'm afraid that's not portable
+ * 2. There are performance benefits in creating all of the properties that object
+ * will have in its lifetime right after object is created (there's optimization in chrome)
+ * So no reason to put them in prototype */
+export function extractPrototype<T>(cls: {new(): T}): Prototype<T> {
+	return Object.getPrototypeOf(new cls())
 }
 
 /** A prototype extracted from a class. */
-export type CombinedPrototype<T> = Record<keyof T, unknown>
+export type Prototype<T> = Record<keyof T, unknown>
