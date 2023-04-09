@@ -1,14 +1,13 @@
 # Cardboard
 
 Data logistics TS library, for those who are nostalgic of Knockout's observables.  
+It allows you to organize data flow in your project. Intended to use in frontend applications, but not bound to any runtime.  
 
 ## Basic WBox usage
 
-It's a library that allows you to organize data flow in your project. Intended to use in frontend applications, but not bound to any runtime.  
-
 For example, suppose you have an input, and you need to organize bi-directional data flow; that is, you need to put initial value in input, then, as user changes value of the input, you need to notify the rest of your application that value is changed.  
 
-To achieve that, you create a `WBox`. `WBox` is a writable box; it's a container that holds a value and allows you to subscribe to changes in that value. To create a simple `WBox` that holds a value you can use a `box` function:  
+To achieve that you create a `WBox`. `WBox` is a writable box; it's a container that holds a value and allows you to subscribe to changes in that value. To create a simple `WBox` that holds a value you can use a `box` function:  
 
 ```typescript
 import {box, WBox} from "@nartallax/cardboard"
@@ -26,7 +25,7 @@ type MyInputProps = {
 let myInput = (props: MyInputProps) => {
 	// for sake of simplicity we will omit all the implementation details around DOM manipulation
 
-	// to get value of the box, we just call it without arguments
+	// to get value of the box we just call it without arguments
 	let currentValue = props.value()
 
 	setTimeout(() => {
@@ -62,7 +61,7 @@ inputValue.subscribe(newValue => {
 And that's the basic idea of that library. Real-life use-cases can be more advanced, which is covered by following sections.  
 
 Note that boxes optimize their updates by comparing their old and new value with `===` operator. That means two things:  
-	1. You cannot trigger update by `myBox(myBox())`. There's no way to artificially trigger updates.  
+	1. You cannot trigger update by `myBox(myBox())`.
 	2. If your box contains an object - box won't be updated when the object is modified inplace. If you need to trigger an update - you need to create a new object with your new values. You should keep old object's property values though, as it will help `.prop` boxes to not update too much (see below)
 
 ## Basic RBox usage
@@ -145,6 +144,8 @@ let xCoord = coords.prop("x")
 
 console.log(xCoord()) // 5
 
+// if source box is WBox, you should be able to put a new value in this property
+// this value will be propagated upstream
 xCoord(7)
 console.log(coords) // {x: 7, y: 10}
 ```
@@ -186,4 +187,4 @@ To help you notice such situations easier, orphaned boxes will throw an error wh
 
 ## Naming
 
-Boxes are usually made of cardboard. Cardboard is also nice, warm, flexible and generally pleasant material.  
+Boxes are usually made of cardboard. Cardboard is also warm, flexible and generally pleasant material.  
