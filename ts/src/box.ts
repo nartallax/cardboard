@@ -41,6 +41,10 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	 * Can behave weirdly/inconsistently if there are no subscribers to this box or children boxes. */
 	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<WBox<E>[]>
 
+	/** Make a WBox that synchronises its value with this WBox */
+	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
+	map<R>(mapper: (value: T) => R): RBox<R>
+
 	/** This really helps Typescript sometimes better infer stuff */
 	readonly thisHelpsTypings?: true
 }
@@ -319,6 +323,19 @@ class ValueBox<T> extends (BoxBase as {
 		return result
 	}
 
+	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
+	map<R>(mapper: (value: T) => R): RBox<R>
+	map<R>(mapper: (value: T) => R, reverseMapper?: (value: R) => T): RBox<R> | WBox<R> {
+		if(reverseMapper === undefined){
+			return super.map(mapper)
+		}
+		const result = makeUpstreamBox<R, T, MapperBoxWithUpstream<R, T>>(mapperBoxWithUpstreamProto, this)
+		result.mapper = mapper
+		result.reverseMapper = reverseMapper
+		Object.seal(result)
+		return result
+	}
+
 }
 
 const valueBoxPrototype = extractPrototype(ValueBox)
@@ -432,6 +449,20 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends AnyBoxImpl<U> = An
 	}
 
 }
+
+class MapperBoxWithUpstream<T, U> extends ValueBoxWithUpstream<T, U> {
+	mapper = null as unknown as (value: U) => T
+	reverseMapper = null as unknown as (value: T) => U
+
+	protected override extractValueFromUpstream(upstreamObject: U): T {
+		return this.mapper(upstreamObject)
+	}
+
+	protected override buildUpstreamValue(value: T): U {
+		return this.reverseMapper(value)
+	}
+}
+const mapperBoxWithUpstreamProto = extractPrototype(MapperBoxWithUpstream)
 
 class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K], U> {
 

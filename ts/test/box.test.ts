@@ -1731,4 +1731,151 @@ describe("box", () => {
 		expect(box2().name).to.be.equal("3")
 	})
 
+	test("wbox mapping basic", () => {
+		const b = box(1)
+		const bb = b.map(x => x * 2, x => x / 2)
+
+		expect(b()).to.be(1)
+		expect(bb()).to.be(2)
+
+		b(2)
+		expect(b()).to.be(2)
+		expect(bb()).to.be(4)
+
+		bb(12)
+		expect(b()).to.be(6)
+		expect(bb()).to.be(12)
+	})
+
+	test("wbox mapping basic sub", () => {
+		const b = box(1) as WBoxInternal<number>
+		const bb = b.map(x => x * 2, x => x / 2)
+
+		expect(b.haveSubscribers()).to.be(false)
+		let v: number | null = null
+		const unsub = bb.subscribe(x => v = x)
+
+		expect(b.haveSubscribers()).to.be(true)
+		expect(b()).to.be(1)
+		expect(bb()).to.be(2)
+		expect(v).to.be(null)
+
+		b(2)
+		expect(b()).to.be(2)
+		expect(bb()).to.be(4)
+		expect(v).to.be(4)
+
+		bb(12)
+		expect(b()).to.be(6)
+		expect(bb()).to.be(12)
+		expect(v).to.be(12)
+
+		unsub()
+		expect(b.haveSubscribers()).to.be(false)
+	})
+
+	test("wbox mapping after prop", () => {
+		const b = box({a: 5})
+		const bb = b.prop("a")
+		const bbb = bb.map(x => x + 1, x => x - 1)
+
+		expect(b().a).to.be(5)
+		expect(bb()).to.be(5)
+		expect(bbb()).to.be(6)
+
+		bbb(7)
+		expect(b().a).to.be(6)
+		expect(bb()).to.be(6)
+		expect(bbb()).to.be(7)
+
+		b({a: 10})
+		expect(b().a).to.be(10)
+		expect(bb()).to.be(10)
+		expect(bbb()).to.be(11)
+	})
+
+	test("wbox mapping after prop sub", () => {
+		const b = box({a: 5}) as WBoxInternal<{a: number}>
+		const bb = b.prop("a")
+		const bbb = bb.map(x => x + 1, x => x - 1)
+
+		expect(b.haveSubscribers()).to.be(false)
+
+		let v: number | null = null
+		const unsub = bbb.subscribe(x => v = x)
+
+		expect(b.haveSubscribers()).to.be(true)
+		expect(b().a).to.be(5)
+		expect(bb()).to.be(5)
+		expect(bbb()).to.be(6)
+		expect(v).to.be(null)
+
+		bbb(7)
+		expect(b().a).to.be(6)
+		expect(bb()).to.be(6)
+		expect(bbb()).to.be(7)
+		expect(v).to.be(7)
+
+		b({a: 10})
+		expect(b().a).to.be(10)
+		expect(bb()).to.be(10)
+		expect(bbb()).to.be(11)
+		expect(v).to.be(11)
+
+		unsub()
+		expect(b.haveSubscribers()).to.be(false)
+	})
+
+	test("wbox mapping before prop", () => {
+		const b = box(7)
+		const bb = b.map(x => ({a: x * 2}), x => x.a / 2)
+		const bbb = bb.prop("a")
+
+		expect(b()).to.be(7)
+		expect(bb().a).to.be(14)
+		expect(bbb()).to.be(14)
+
+		b(8)
+		expect(b()).to.be(8)
+		expect(bb().a).to.be(16)
+		expect(bbb()).to.be(16)
+
+		bbb(4)
+		expect(b()).to.be(2)
+		expect(bb().a).to.be(4)
+		expect(bbb()).to.be(4)
+	})
+
+	test("wbox mapping before prop sub", () => {
+		const b = box(7) as WBoxInternal<number>
+		const bb = b.map(x => ({a: x * 2}), x => x.a / 2)
+		const bbb = bb.prop("a")
+
+		expect(b.haveSubscribers()).to.be(false)
+
+		let v: number | null = null
+		const unsub = bbb.subscribe(x => v = x)
+		expect(b.haveSubscribers()).to.be(true)
+
+		expect(b()).to.be(7)
+		expect(bb().a).to.be(14)
+		expect(bbb()).to.be(14)
+		expect(v).to.be(null)
+
+		b(8)
+		expect(b()).to.be(8)
+		expect(bb().a).to.be(16)
+		expect(bbb()).to.be(16)
+		expect(v).to.be(16)
+
+		bbb(4)
+		expect(b()).to.be(2)
+		expect(bb().a).to.be(4)
+		expect(bbb()).to.be(4)
+		expect(v).to.be(4)
+
+		unsub()
+		expect(b.haveSubscribers()).to.be(false)
+	})
+
 })
