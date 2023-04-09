@@ -1,4 +1,4 @@
-import {addPrototypeToFunction, anythingToString} from "src/common"
+import {CombinedPrototype, anythingToString, extractCombinedPrototype} from "src/common"
 
 type SubscriberHandlerFn<T = unknown> = (value: T) => void
 type UnsubscribeFn = () => void
@@ -57,11 +57,11 @@ export const box: <T>(value: T) => WBox<T> = makeValueBox
 export const viewBox: <T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]) => RBox<T> = makeViewBox
 
 export function isWBox<T>(x: unknown): x is WBox<T> {
-	return x instanceof ValueBox
+	return typeof(x) === "function" && (x as ValueBox<T>).isWBox === true
 }
 
 export function isRBox<T>(x: unknown): x is RBox<T> {
-	return x instanceof BoxBase
+	return typeof(x) === "function" && (x as unknown as BoxBase<T>).isRBox === true
 }
 
 export function unbox<T>(x: RBox<T> | T): T
@@ -143,6 +143,8 @@ abstract class BoxBase<T> {
 	private externalSubscribers: Set<ExternalSubscriber<T>> | null = null
 
 	public value: T | NoValue = noValue
+	name = "" // will be overriden by actual function name
+	isRBox = true
 
 	haveSubscribers(): boolean {
 		return this.internalSubscribers !== null || this.externalSubscribers !== null
@@ -277,11 +279,15 @@ abstract class BoxBase<T> {
 	}
 
 	wrapElements<E, K>(this: ViewBox<E[]> | ValueBox<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
-		const instance = new ArrayValueWrapViewBox<E, K>()
-		instance.getKey = getKey
-		instance.upstream = this
-		instance.explicitDependencyList = [this]
-		return makeViewBoxByClassInstance<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(instance)
+		const result = makeViewBoxByPrototype<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(arrayValueWrapViewBoxPrototype)
+		result.getKey = getKey
+		result.upstream = this
+		result.explicitDependencyList = [this]
+		return result
+	}
+
+	toString(): string {
+		return this.name + "(" + anythingToString(this.value) + ")"
 	}
 
 }
@@ -293,6 +299,8 @@ class ValueBox<T> extends (BoxBase as {
 	new<T>(): BoxBase<T> & WBoxCallSignature<T> & RBoxCallSignature<T>
 })<T> implements WBoxFields<T> {
 
+	isWBox = true
+
 	prop<K extends keyof T>(propKey: K): WBox<T[K]> {
 		// by the way, I could store propbox in some sort of map in the parent valuebox
 		// and later, if someone asks for propbox for the same field, I'll give them the same propbox
@@ -303,13 +311,16 @@ class ValueBox<T> extends (BoxBase as {
 		if(Array.isArray(this.value)){
 			throw new Error("You should not use prop() to get values of elements of the array. Use wrapElements() instead.")
 		}
-		const instance = new FixedPropValueBox<T, K>()
-		instance.upstream = this
-		instance.propKey = propKey
-		return makeUpstreamBox(instance)
+
+		const result = makeUpstreamBox<T[K], T, FixedPropValueBox<T, K>>(fixedPropValueBoxProto)
+		result.upstream = this
+		result.propKey = propKey
+		return result
 	}
 
 }
+
+const valueBoxPrototype = extractCombinedPrototype(ValueBox)
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */
@@ -440,8 +451,9 @@ class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K],
 	}
 
 }
+const fixedPropValueBoxProto = extractCombinedPrototype(FixedPropValueBox)
 
-function makeUpstreamBox<T, U, B>(instance: ValueBoxWithUpstream<T, U> & B): ValueBoxWithUpstream<T, U> & B {
+function makeUpstreamBox<T, U, B>(prototype: CombinedPrototype<ValueBoxWithUpstream<T, U> & B>): ValueBoxWithUpstream<T, U> & B {
 
 	function upstreamValueBox(...args: T[]): T {
 		if(args.length === 0){
@@ -453,8 +465,7 @@ function makeUpstreamBox<T, U, B>(instance: ValueBoxWithUpstream<T, U> & B): Val
 		return result.getBoxValue()
 	}
 
-	const result = addPrototypeToFunction(upstreamValueBox, instance)
-
+	const result: ValueBoxWithUpstream<T, U> & B = Object.setPrototypeOf(upstreamValueBox, prototype)
 	return result
 }
 
@@ -475,9 +486,8 @@ function makeValueBox<T>(value: T): ValueBox<T> {
 		return result.value as T
 	}
 
-	const instance = new ValueBox<T>()
-	instance.value = value
-	const result = addPrototypeToFunction(valueBox, instance)
+	const result: ValueBox<T> = Object.setPrototypeOf(valueBox, valueBoxPrototype)
+	result.value = value
 
 	return result
 }
@@ -503,7 +513,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 
 	This way, you only need to remove all subscribers from view for it to be eligible to be GCed
 	*/
-	private subDisposers: UnsubscribeFn[] = []
+	private subDisposers: UnsubscribeFn[] | null = null
 	private onDependencyListUpdated: null | (() => void) = null
 
 	private boundCalcVal: (() => T) | null = null
@@ -512,8 +522,10 @@ abstract class ViewBox<T> extends (BoxBase as {
 	explicitDependencyList: readonly RBox<unknown>[] | null = null
 
 	private subDispose(): void {
-		this.subDisposers.forEach(x => x())
-		this.subDisposers.length = 0
+		if(this.subDisposers !== null){
+			this.subDisposers.forEach(x => x())
+			this.subDisposers = null
+		}
 	}
 
 	private shouldRecalcValue(): boolean {
@@ -521,7 +533,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 			return true // no value? let's recalculate
 		}
 
-		if(this.subDisposers.length === 0){
+		if(this.subDisposers === null){
 			// we are not subscribed to anyone
 			// that means calcFunction either is constant expression, or depends on some plain variables that can change
 			// better recalculate
@@ -535,7 +547,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 		// we preserve list of our old subscriptions to drop them only at the end of the method
 		// we do that because some box implementations can change its internal state dramatically when they have 0 subs
 		// and to prevent them going back and forth, we first create new subscribers, and only then let go old ones
-		const oldSubDisposers = [...this.subDisposers]
+		const oldSubDisposers = this.subDisposers !== null ? [...this.subDisposers] : null
 
 		let newValue: T
 		let depList: readonly AnyBoxImpl<unknown>[]
@@ -560,6 +572,9 @@ abstract class ViewBox<T> extends (BoxBase as {
 		if(forceSubscribe || this.haveSubscribers()){
 			if(depList.length > 0){
 				const doOnDependencyUpdated = this.onDependencyListUpdated ||= () => this.recalcValueAndResubscribe(false)
+				if(this.subDisposers === null){
+					this.subDisposers = []
+				}
 				for(let i = 0; i < depList.length; i++){
 					this.subDisposers.push(depList[i]!.doSubscribe(false, doOnDependencyUpdated, this))
 				}
@@ -567,11 +582,19 @@ abstract class ViewBox<T> extends (BoxBase as {
 		} else {
 			this.value = noValue
 		}
-		for(const subDisposer of oldSubDisposers){
-			subDisposer()
+		if(oldSubDisposers){
+			for(const subDisposer of oldSubDisposers){
+				subDisposer()
+			}
+			if(this.subDisposers){
+				if(this.subDisposers.length === oldSubDisposers.length){
+					this.subDisposers = null
+				} else {
+					// ew. maybe there is some more efficient structure for that...?
+					this.subDisposers = this.subDisposers.slice(oldSubDisposers.length)
+				}
+			}
 		}
-		// ew. maybe there is some more efficient structure for that...?
-		this.subDisposers = this.subDisposers.slice(oldSubDisposers.length)
 	}
 
 	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B> | undefined): UnsubscribeFn {
@@ -611,19 +634,21 @@ class ComputingFnViewBox<T> extends ViewBox<T> {
 	calculateValue = null as unknown as () => T
 }
 
+const computinFnViewBoxPrototype = extractCombinedPrototype(ComputingFnViewBox)
+
 function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> {
-	const instance = new ComputingFnViewBox<T>()
-	instance.calculateValue = computingFn
-	instance.explicitDependencyList = explicitDependencyList ?? null
-	return makeViewBoxByClassInstance<T, ViewBox<T>>(instance)
+	const result = makeViewBoxByPrototype<T, ComputingFnViewBox<T>>(computinFnViewBoxPrototype)
+	result.calculateValue = computingFn
+	result.explicitDependencyList = explicitDependencyList ?? null
+	return result
 }
 
-function makeViewBoxByClassInstance<T, B extends ViewBox<T>>(instance: B): B {
+function makeViewBoxByPrototype<T, B extends ViewBox<T>>(prototype: CombinedPrototype<B>): B {
 	function viewBox(): T {
 		return result.getValue()
 	}
 
-	const result = addPrototypeToFunction(viewBox, instance)
+	const result: B = Object.setPrototypeOf(viewBox, prototype)
 	return result
 }
 
@@ -656,12 +681,11 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 				box.index = index
 				box.tryChangeValue(item, this)
 			} else {
-				const instance = new ArrayElementValueBox<T, K>()
-				instance.index = index
-				instance.value = item
-				instance.key = key
-				instance.upstream = this
-				box = makeUpstreamBox(instance)
+				box = makeUpstreamBox<T, ValueBox<T>[], ArrayElementValueBox<T, K>>(arrayElementValueBoxProto)
+				box.index = index
+				box.value = item
+				box.key = key
+				box.upstream = this
 				this.childMap!.set(key, box)
 			}
 
@@ -740,6 +764,8 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 	}
 
 }
+
+const arrayValueWrapViewBoxPrototype = extractCombinedPrototype(ArrayValueWrapViewBox)
 
 class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], ArrayValueWrapViewBox<T, K>> {
 
@@ -823,3 +849,4 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 	}
 
 }
+const arrayElementValueBoxProto = extractCombinedPrototype(ArrayElementValueBox)
