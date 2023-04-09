@@ -681,7 +681,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 
 // this prototype isn't even used anywhere directly, because ViewBox is abstract
 // so let's just extract it directly; the only reason we may need it is to add isRBox property
-const viewBoxPrototype: Record<string, unknown> = Object.getPrototypeOf(ViewBox)
+const viewBoxPrototype = ViewBox.prototype
 viewBoxPrototype.isRBox = true
 
 

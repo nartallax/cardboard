@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
@@ -18,6 +18,7 @@ describe("box", () => {
 		expect(isWBox(b)).to.be(true)
 		expect(isRBox(b())).to.be(false)
 		expect(isWBox(b())).to.be(false)
+		expect(unbox(b)).to.be(0)
 
 		b(5)
 
@@ -41,6 +42,12 @@ describe("box", () => {
 	test("viewBox simple test", () => {
 		const a = box(0)
 		const b = viewBox(() => Math.floor(a() / 2))
+
+		expect(isRBox(b)).to.be(true)
+		expect(isWBox(b)).to.be(false)
+		expect(isRBox(b())).to.be(false)
+		expect(isWBox(b())).to.be(false)
+		expect(unbox(b)).to.be(0)
 
 		let calls = 0
 		const unsub = b.subscribe(() => calls++)
@@ -544,6 +551,12 @@ describe("box", () => {
 		const a = box(2)
 		const b = box(2)
 		const c = a.map(num => num + b())
+
+		expect(isRBox(c)).to.be(true)
+		expect(isWBox(c)).to.be(false)
+		expect(isRBox(c())).to.be(false)
+		expect(isWBox(c())).to.be(false)
+		expect(unbox(c)).to.be(4)
 
 		expect(c()).to.be.equal(4)
 		a(3)
