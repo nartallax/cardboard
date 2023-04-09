@@ -324,7 +324,7 @@ const valueBoxPrototype = extractCombinedPrototype(ValueBox)
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */
-abstract class ValueBoxWithUpstream<T, U = unknown, B extends ValueBox<U> = ValueBox<U>> extends ValueBox<T> {
+abstract class ValueBoxWithUpstream<T, U = unknown, B extends AnyBoxImpl<U> = AnyBoxImpl<U>> extends ValueBox<T> {
 
 	private upstreamUnsub: UnsubscribeFn | null = null
 	upstream = null as unknown as B
@@ -659,9 +659,6 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 	upstream = null as unknown as ViewBox<T[]> | ValueBox<T[]>
 
 	protected override calculateValue(): ValueBox<T>[] {
-		if(typeof(this) !== "function"){
-			throw new Error("Assertion failed")
-		}
 		if(this.childMap === null){
 			this.childMap = new Map()
 		}
@@ -767,6 +764,9 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
 const arrayValueWrapViewBoxPrototype = extractCombinedPrototype(ArrayValueWrapViewBox)
 
+/** A wrap around single element of an array.
+ * This is more of a view box than a box-with-upstream;
+ * Making it a box-with-upstream only makes it more performant */
 class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], ArrayValueWrapViewBox<T, K>> {
 
 	private disposed = false
@@ -787,25 +787,27 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 	}
 
 	protected override fetchValueFromUpstream(): T {
-		// this is bad, but I don't see a better solution
-		// thing is, when you're not subscribed - you have absolutely zero guarantees that upstream did not change
-		// (and you can't be always subscribed because it will create memory leak)
-		// this has two consequences:
-		// 1. you can't rely that `index` stays the same
-		// (so you cannot just grab upstream, take value on the index and expect it to be the value you're after)
-		// 2. you can't rely that your value is still in the array at all
-		// (so you may become detached at arbitrary moment, possibly with outdated value)
-		// we combat those two consequences with following countermeasures:
-		// 1. when we need to get the value, we ALWAYS receive value from wrapper box. no exceptions.
-		// alternative to that will be grabbing upstream array, iterating over each item and checking for key equality
-		// but this will be terrible for performance
-		// 2. we forbid accessing detached values at all
-		// this is bad because two things: it can unexpectedly break, and it is inconsistent
-		// I mean, who knows when exactly value disappeared from upstream array if we was not subscribed to it?
-		// noone knows! and by that reason box may become detached (if update happened during absence of value),
-		// or not (if it did not happen, or happened after value with the same key appears in array again)
-		// what can go wrong, usage-wise?
-		// well, if user stores element wrapper boxes - he should be prepared that sometimes they can throw
+		/*
+		this is bad, but I don't see a better solution
+		thing is, when you're not subscribed - you have absolutely zero guarantees that upstream did not change
+		(and you can't be always subscribed because it will create memory leak)
+		this has two consequences:
+		1. you can't rely that `index` stays the same
+		(so you cannot just grab upstream, take value on the index and expect it to be the value you're after)
+		2. you can't rely that your value is still in the array at all
+		(so you may become detached at arbitrary moment, possibly with outdated value)
+		we combat those two consequences with following countermeasures:
+		1. when we need to get the value, we ALWAYS receive value from wrapper box. no exceptions.
+		alternative to that will be grabbing upstream array, iterating over each item and checking for key equality
+		but this will be terrible for performance
+		2. we forbid accessing detached values at all
+		this is bad because two things: it can unexpectedly break, and it is inconsistent
+		I mean, who knows when exactly value disappeared from upstream array if we was not subscribed to it?
+		noone knows! and by that reason box may become detached (if update happened during absence of value),
+		or not (if it did not happen, or happened after value with the same key appears in array again)
+		what can go wrong, usage-wise?
+		well, if user stores element wrapper boxes - he should be prepared that sometimes they can throw
+		*/
 		this.checkNotDisposed()
 		this.upstream.tryUpdateChildrenValues()
 		this.checkNotDisposed() // second check, we may become disposed after update
