@@ -308,6 +308,7 @@ class ValueBox<T> extends (BoxBase as {
 })<T> implements WBoxFields<T> {
 
 	isWBox = true
+	isRBox = true
 
 	prop<K extends keyof T>(propKey: K): WBox<T[K]> {
 		// by the way, I could store propbox in some sort of map in the parent valuebox
@@ -343,6 +344,7 @@ class ValueBox<T> extends (BoxBase as {
 
 const valueBoxPrototype = extractPrototype(ValueBox)
 valueBoxPrototype.isWBox = true
+valueBoxPrototype.isRBox = true
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */

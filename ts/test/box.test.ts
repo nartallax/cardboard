@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
@@ -14,6 +14,10 @@ describe("box", () => {
 		const b = box(0)
 
 		expect(b()).to.be.equal(0)
+		expect(isRBox(b)).to.be(true)
+		expect(isWBox(b)).to.be(true)
+		expect(isRBox(b())).to.be(false)
+		expect(isWBox(b())).to.be(false)
 
 		b(5)
 
