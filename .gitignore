@@ -2,3 +2,5 @@ dist
 ts/generated
 .parcel-cache
 node_modules
+dts
+target

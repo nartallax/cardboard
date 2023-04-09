@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox} from "src/main"
+import {viewBox, box, WBox, RBox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 

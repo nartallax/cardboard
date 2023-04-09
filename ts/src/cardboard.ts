@@ -13,8 +13,11 @@ interface RBoxFields<T>{
 	 * (`viewBox(mapper)` will depend on all the boxes that mapper calls, which may be more than just this) */
 	map<R>(mapper: (value: T) => R): RBox<R>
 
-	/* Those methods are similar to wbox's ones, just those produce readonly boxes */
+	/** Get a RBox that refers to the property in this box */
 	prop<K extends keyof T>(propKey: K): RBox<T[K]>
+
+	/** Wrap each element of this RBox (assuming it contains an array) in its own RBox
+	 * More explaination in WBox's `wrapElements` comments */
 	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]>
 }
 type RBoxCallSignature<T> = () => T
