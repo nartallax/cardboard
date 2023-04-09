@@ -1,6 +1,6 @@
 {
   "name": "@nartallax/cardboard",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Data logistics library",
   "main": "cardboard.js",
   "types": "cardboard.d.ts",
@@ -17,10 +17,10 @@
     "dts:prepare": "rm -rf dts",
     "dts:generate": "./node_modules/.bin/tsc --project tsconfig.json --emitDeclarationOnly --declaration --outDir dts --removeComments false",
     "dts:cleanup": "mv ./dts/src/cardboard.d.ts ./target/cardboard.d.ts && rm -rf dts",
-    "build": "npm run build:prepare && npm run dts && npm run build:build && npm run build:move_artifacts && npm run build:copy_static",
+    "build": "npm run build:prepare && npm run dts && npm run build:build && npm run build:copy_artifacts && npm run build:copy_static",
     "build:prepare": "rm -rf ./target && rm -rf ./dist && mkdir ./target",
     "build:build": "./node_modules/.bin/parcel build --target release --no-cache",
-    "build:move_artifacts": "mv ./dist/release/* ./target/",
+    "build:copy_artifacts": "cp ./dist/release/* ./target/",
     "build:copy_static": "cp ./package.json ./target/ && cp ./LICENSE ./target/ && cp ./README.md ./target",
     "pub": "npm run test && npm run build && npm run pub:publish",
     "pub:publish": "cd target && npm publish --access public && cd .."
@@ -34,6 +34,7 @@
     "release": {
       "source": "./ts/src/cardboard.ts",
       "isLibrary": true,
+      "outputFormat": "esmodule",
       "optimize": true
     }
   },
