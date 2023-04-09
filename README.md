@@ -61,8 +61,9 @@ inputValue.subscribe(newValue => {
 And that's the basic idea of that library. Real-life use-cases can be more advanced, which is covered by following sections.  
 
 Note that boxes optimize their updates by comparing their old and new value with `===` operator. That means two things:  
-	1. You cannot trigger update by `myBox(myBox())`.
-	2. If your box contains an object - box won't be updated when the object is modified inplace. If you need to trigger an update - you need to create a new object with your new values. You should keep old object's property values though, as it will help `.prop` boxes to not update too much (see below)
+
+1. You cannot trigger update by `myBox(myBox())`.
+2. If your box contains an object - box won't be updated when the object is modified inplace. If you need to trigger an update - you need to create a new object with your new values. You should keep old object's property values though, as it will help `.prop` boxes to not update too much (see below)
 
 ## Basic RBox usage
 

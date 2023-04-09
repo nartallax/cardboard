@@ -1,11 +1,12 @@
 {
   "name": "@nartallax/cardboard",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Data logistics library",
   "main": "cardboard.js",
   "types": "cardboard.d.ts",
   "files": [
-    "cardboard.d.ts"
+    "cardboard.d.ts",
+    "cardboard.js.map"
   ],
   "scripts": {
     "test": "npm run test:generate && npm run test:build && npm run test:run",
@@ -22,7 +23,7 @@
     "build:move_artifacts": "mv ./dist/release/* ./target/",
     "build:copy_static": "cp ./package.json ./target/ && cp ./LICENSE ./target/ && cp ./README.md ./target",
     "pub": "npm run test && npm run build && npm run pub:publish",
-    "pub:publish": "npm publish --access public"
+    "pub:publish": "cd target && npm publish --access public && cd .."
   },
   "targets": {
     "test": {
