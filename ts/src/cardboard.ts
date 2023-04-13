@@ -19,12 +19,22 @@ interface RBoxFields<T>{
 	/** Wrap each element of this RBox (assuming it contains an array) in its own RBox
 	 * More explaination in WBox's `wrapElements` comments */
 	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]>
+
+	/** A nice(r) way to use wrapElements
+ 	* Make a RBox each element of which is a result of conversion of a source elements.
+	* Maintains order of elements as in original array; won't call mapper function for the same element twice */
+	mapArray<E, K, R>(this: RBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: RBox<E>) => R): RBox<R[]>
 }
 type RBoxCallSignature<T> = () => T
 
 /** Readonly box. You can only look at the value and subscribe to it, but not change that value directly.
  * Behind this interface could be writeable box, or viewBox, or something else entirely. */
 export type RBox<T> = RBoxCallSignature<T> & RBoxFields<T>
+/** Maybe RBox - RBox or non-boxed value */
+export type MRBox<T> = RBox<T> | T
+/** Ensure that value is boxed */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RBoxed<T> = T extends RBox<any> ? T : RBox<T>
 
 
 interface WBoxFields<T> extends RBoxFields<T>{
@@ -43,6 +53,8 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	 *
 	 * Can behave weirdly/inconsistently if there are no subscribers to this box or children boxes. */
 	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<WBox<E>[]>
+
+	mapArray<E, K, R>(this: WBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]>
 
 	/** Make a WBox that synchronises its value with this WBox */
 	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
@@ -63,12 +75,23 @@ export const box: <T>(value: T) => WBox<T> = makeValueBox
  * dependency list will be inferred automatically for you from the computing function */
 export const viewBox: <T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]) => RBox<T> = makeViewBox
 
+/** constBox is a box which value never changes
+ * exists mostly for convenience, to avoid writing two variants of code - one for plain values and one for boxes */
+export const constBox: <T>(value: T) => RBox<T> = makeConstBox
+/** If a value is a box - return it as is;
+ * otherwise wrap it in constBox */
+export const constBoxWrap: <T>(value: RBox<T> | T) => RBox<T> = wrapInConstBox
+
 export function isWBox<T>(x: unknown): x is WBox<T> {
 	return typeof(x) === "function" && (x as ValueBox<T>).isWBox === true
 }
 
 export function isRBox<T>(x: unknown): x is RBox<T> {
 	return typeof(x) === "function" && (x as unknown as ViewBox<T>).isRBox === true
+}
+
+export function isConstBox<T>(x: unknown): x is RBox<T> {
+	return typeof(x) === "function" && (x as unknown as ConstBox<T>).isConstBox === true
 }
 
 export function unbox<T>(x: RBox<T> | T): T
@@ -284,7 +307,7 @@ abstract class BoxBase<T> {
 		return makeViewBox(() => mapper(this()), [this])
 	}
 
-	wrapElements<E, K>(this: ViewBox<E[]> | ValueBox<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
+	wrapElements<E, K>(this: AnyBoxImpl<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
 		const result = makeViewBoxByPrototype<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(arrayValueWrapViewBoxPrototype)
 		result.getKey = getKey
 		result.upstream = this
@@ -292,6 +315,30 @@ abstract class BoxBase<T> {
 		result.childMap = null
 		Object.seal(result)
 		return result
+	}
+
+	mapArray<E, K, R>(this: AnyBoxImpl<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]> {
+		const map = new Map<WBox<E>, R>()
+
+		return (this as WBox<E[]>).wrapElements(getKey).map(itemBoxes => {
+			const leftoverBoxes = new Set(map.keys())
+
+			const result = itemBoxes.map(itemBox => {
+				leftoverBoxes.delete(itemBox)
+				let el = map.get(itemBox)
+				if(!el){
+					el = mapper(itemBox)
+					map.set(itemBox, el)
+				}
+				return el
+			})
+
+			for(const oldBox of leftoverBoxes){
+				map.delete(oldBox)
+			}
+
+			return result
+		})
 	}
 
 	toString(): string {
@@ -919,3 +966,56 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 
 }
 const arrayElementValueBoxProto = extractPrototype(ArrayElementValueBox)
+
+
+class ConstBox<T> implements RBoxFields<T> {
+	isRBox = true
+	isConstBox = true
+	value: T = null as unknown as T
+
+	subscribe() {
+		return constBoxUnsubscribeNoop
+	}
+
+	map<R>(mapper: (value: T) => R): RBox<R> {
+		return makeConstBox(mapper(this.value))
+	}
+
+	prop<K extends keyof T>(propKey: K): RBox<T[K]> {
+		return makeConstBox(this.value[propKey])
+	}
+
+	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]> {
+		void getKey
+		return makeConstBox((this as unknown as ConstBox<E[]>).value.map(item => makeConstBox(item)))
+	}
+
+	mapArray<E, K, R>(this: RBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]> {
+		void getKey
+		return makeConstBox((this as unknown as ConstBox<E[]>).value.map(item => mapper(makeConstBox(item))))
+	}
+
+}
+
+function constBoxUnsubscribeNoop(): void {
+	// it's nothing!
+}
+
+const constBoxProto = ConstBox.prototype
+constBoxProto.isRBox = true
+constBoxProto.isConstBox = true
+
+function makeConstBox<T>(value: T): RBox<T> {
+	function constBox(): T {
+		return value as T
+	}
+
+	const result: ConstBox<T> & RBox<T> = Object.setPrototypeOf(constBox, constBoxProto)
+	result.value = value
+	Object.seal(result)
+	return result
+}
+
+function wrapInConstBox<T>(value: T | RBox<T>): RBox<T> {
+	return isRBox(value) ? value : makeConstBox(value)
+}

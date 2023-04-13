@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
@@ -16,6 +16,7 @@ describe("box", () => {
 		expect(b()).to.be.equal(0)
 		expect(isRBox(b)).to.be(true)
 		expect(isWBox(b)).to.be(true)
+		expect(isConstBox(b)).to.be(false)
 		expect(isRBox(b())).to.be(false)
 		expect(isWBox(b())).to.be(false)
 		expect(unbox(b)).to.be(0)
@@ -45,6 +46,7 @@ describe("box", () => {
 
 		expect(isRBox(b)).to.be(true)
 		expect(isWBox(b)).to.be(false)
+		expect(isConstBox(b)).to.be(false)
 		expect(isRBox(b())).to.be(false)
 		expect(isWBox(b())).to.be(false)
 		expect(unbox(b)).to.be(0)
@@ -1893,6 +1895,38 @@ describe("box", () => {
 
 		unsub()
 		expect(b.haveSubscribers()).to.be(false)
+	})
+
+	test("const box", () => {
+		const b = constBox(5)
+		// expect(isRBox(b)).to.be(true)
+		// expect(isWBox(b)).to.be(false)
+		expect(isConstBox(b)).to.be(true)
+		expect(b()).to.be(5)
+		const unsub = b.subscribe(v => console.log(v))
+		expect(typeof(unsub)).to.be("function")
+		unsub()
+	})
+
+	test("map array", () => {
+		const arrBox = box([
+			{id: 1, name: "1"},
+			{id: 2, name: "2"},
+			{id: 3, name: "3"}
+		])
+
+		const mapResult = arrBox.mapArray(item => item.id, itemBox => itemBox.map(x => JSON.stringify(x), x => JSON.parse(x)))
+		const firstBox = mapResult()[0]!
+		expect(firstBox()).to.be("{\"id\":1,\"name\":\"1\"}")
+		firstBox("{\"id\":1,\"name\":\"uwu\"}")
+		expect(arrBox()[0]).to.eql({id: 1, name: "uwu"})
+
+		arrBox([arrBox()[1]!, arrBox()[2]!, arrBox()[0]!])
+		expect(arrBox()[0]).to.eql({id: 2, name: "2"})
+		expect(firstBox()).to.be("{\"id\":1,\"name\":\"uwu\"}")
+		arrBox([arrBox()[0]!, arrBox()[1]!, {...arrBox()[2]!, name: "owo"}])
+		expect(firstBox()).to.be("{\"id\":1,\"name\":\"owo\"}")
+
 	})
 
 })
