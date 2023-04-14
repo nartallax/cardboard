@@ -27,9 +27,16 @@ interface RBoxFields<T>{
 }
 type RBoxCallSignature<T> = () => T
 
+interface RBoxFieldsInternal<T> extends RBoxFields<T>{
+	readonly isRBox: true
+	dispose(): void
+	doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxInternal<B>): UnsubscribeFn
+}
+
 /** Readonly box. You can only look at the value and subscribe to it, but not change that value directly.
  * Behind this interface could be writeable box, or viewBox, or something else entirely. */
 export type RBox<T> = RBoxCallSignature<T> & RBoxFields<T>
+type RBoxInternal<T> = RBoxCallSignature<T> & RBoxFieldsInternal<T>
 /** Maybe RBox - RBox or non-boxed value */
 export type MRBox<T> = RBox<T> | T
 /** Ensure that value is boxed */
@@ -65,8 +72,14 @@ interface WBoxFields<T> extends RBoxFields<T>{
 }
 type WBoxCallSignature<T> = RBoxCallSignature<T> & ((newValue: T) => T)
 
+type WBoxFieldsInternal<T> = WBoxFields<T> & RBoxFieldsInternal<T> & {
+	isWBox: true
+	tryChangeValue<B>(value: T, box?: RBoxInternal<B>): void
+}
+
 /** Writeable box. Box that you can put value in, as well as look at value inside it and subscribe to it. */
 export type WBox<T> = WBoxCallSignature<T> & WBoxFields<T>
+type WBoxInternal<T> = WBoxCallSignature<T> & WBoxFieldsInternal<T>
 
 /** Make a simple writeable box */
 export const box: <T>(value: T) => WBox<T> = makeValueBox
@@ -82,12 +95,15 @@ export const constBox: <T>(value: T) => RBox<T> = makeConstBox
  * otherwise wrap it in constBox */
 export const constBoxWrap: <T>(value: RBox<T> | T) => RBox<T> = wrapInConstBox
 
-export function isWBox<T>(x: unknown): x is WBox<T> {
-	return typeof(x) === "function" && (x as ValueBox<T>).isWBox === true
+
+export const isWBox: <T>(x: unknown) => x is WBox<T> = isWBoxInternal
+function isWBoxInternal<T>(x: unknown): x is WBoxInternal<T> {
+	return typeof(x) === "function" && (x as WBoxInternal<T>).isWBox === true
 }
 
-export function isRBox<T>(x: unknown): x is RBox<T> {
-	return typeof(x) === "function" && (x as unknown as ViewBox<T>).isRBox === true
+export const isRBox: <T>(x: unknown) => x is RBox<T> = isRBoxInternal
+function isRBoxInternal<T>(x: unknown): x is RBoxInternal<T> {
+	return typeof(x) === "function" && (x as RBoxInternal<T>).isRBox === true
 }
 
 export function isConstBox<T>(x: unknown): x is RBox<T> {
@@ -109,8 +125,6 @@ export function unbox<T>(x: RBox<T> | T): T {
 ============================================================================================
 */
 
-type AnyBoxImpl<T> = ViewBox<T> | ValueBox<T>
-
 type NoValue = symbol
 const noValue: NoValue = Symbol()
 
@@ -122,15 +136,15 @@ interface ExternalSubscriber<T>{
 
 interface InternalSubscriber<T> extends ExternalSubscriber<T>{
 	// those props are here to compare if we should notify when pushing updates
-	box: RBoxBase<unknown>
+	box: RBoxInternal<unknown>
 }
 
 /** Stack of boxes that are currently computing their value
  * Each box that can possibly want to call other boxes should put an item on top of the stack
  * That way, proper dependency graph can be built */
 class BoxNotificationStack {
-	private notificationStack: (Set<AnyBoxImpl<unknown>> | null)[] = []
-	withAccessNotifications<R>(action: () => R, onAccess: Set<AnyBoxImpl<unknown>> | null): R {
+	private notificationStack: (Set<RBox<unknown>> | null)[] = []
+	withAccessNotifications<R>(action: () => R, onAccess: Set<RBox<unknown>> | null): R {
 		this.notificationStack.push(onAccess)
 		let result: R
 		try {
@@ -141,10 +155,10 @@ class BoxNotificationStack {
 		return result
 	}
 
-	notifyOnAccess<T>(v: AnyBoxImpl<T>): void {
+	notifyOnAccess<T>(v: RBox<T>): void {
 		const stackTop = this.notificationStack[this.notificationStack.length - 1]
 		if(stackTop){
-			stackTop.add(v as AnyBoxImpl<unknown>)
+			stackTop.add(v)
 		}
 	}
 }
@@ -191,7 +205,7 @@ abstract class BoxBase<T> {
 		}
 	}
 
-	doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
+	doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxInternal<B>): UnsubscribeFn {
 		const value = this.value
 		if(value === noValue){
 			throw new Error("Cannot subscribe to box: no value!")
@@ -220,7 +234,7 @@ abstract class BoxBase<T> {
 				throw new Error("Assertion failed")
 			}
 			const sub: InternalSubscriber<T> = {
-				handler, box: box as RBoxBase<unknown>,
+				handler, box: box,
 				lastKnownRevision: this.revision,
 				lastKnownValue: value as T
 			}
@@ -243,7 +257,7 @@ abstract class BoxBase<T> {
 		return this.doSubscribe(true, handler)
 	}
 
-	tryChangeValue<B>(value: T, box?: RBoxBase<B>): void {
+	tryChangeValue<B>(value: T, box?: RBox<B>): void {
 		// yes, objects can be changed without the change of reference, so this check will fail on such change
 		// it is explicit decision. that way, better performance can be achieved.
 		// because it's much better to explicitly ask user to tell us if something is changed or not
@@ -257,7 +271,7 @@ abstract class BoxBase<T> {
 		}
 	}
 
-	notify<B>(value: T, box: RBoxBase<B> | undefined): void {
+	notify<B>(value: T, box: RBox<B> | undefined): void {
 		const valueRevision = this.revision
 
 		if(this.internalSubscribers){
@@ -307,7 +321,7 @@ abstract class BoxBase<T> {
 		return makeViewBox(() => mapper(this()), [this])
 	}
 
-	wrapElements<E, K>(this: AnyBoxImpl<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
+	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
 		const result = makeViewBoxByPrototype<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(arrayValueWrapViewBoxPrototype)
 		result.getKey = getKey
 		result.upstream = this
@@ -317,7 +331,7 @@ abstract class BoxBase<T> {
 		return result
 	}
 
-	mapArray<E, K, R>(this: AnyBoxImpl<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]> {
+	mapArray<E, K, R>(this: RBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]> {
 		const map = new Map<WBox<E>, R>()
 
 		return (this as WBox<E[]>).wrapElements(getKey).map(itemBoxes => {
@@ -347,15 +361,13 @@ abstract class BoxBase<T> {
 
 }
 
-type RBoxBase<T> = BoxBase<T> & RBox<T>
-
 /** Just a box that just contains value */
 class ValueBox<T> extends (BoxBase as {
 	new<T>(): BoxBase<T> & WBoxCallSignature<T> & RBoxCallSignature<T>
 })<T> implements WBoxFields<T> {
 
-	isWBox = true
-	isRBox = true
+	isWBox = true as const
+	isRBox = true as const
 
 	prop<K extends keyof T>(propKey: K): WBox<T[K]> {
 		// by the way, I could store propbox in some sort of map in the parent valuebox
@@ -395,7 +407,7 @@ valueBoxPrototype.isRBox = true
 
 /** Box that is subscribed to one other box only when it has its own subscriber(s)
  * Usually that other box is viewed as upstream; source of data that this box is derived from */
-abstract class ValueBoxWithUpstream<T, U = unknown, B extends AnyBoxImpl<U> = AnyBoxImpl<U>> extends ValueBox<T> {
+abstract class ValueBoxWithUpstream<T, U = unknown, B extends RBoxInternal<U> = RBoxInternal<U>> extends ValueBox<T> {
 
 	upstreamUnsub: UnsubscribeFn | null = null
 	upstream = null as unknown as B
@@ -418,6 +430,9 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends AnyBoxImpl<U> = An
 
 	protected notifyUpstreamOnChange(value: T): void {
 		const upstreamObject = this.buildUpstreamValue(value)
+		if(!isWBoxInternal(this.upstream)){
+			throw new Error("Value box cannot update upstream value: upstream is readonly")
+		}
 		this.upstream.tryChangeValue(upstreamObject, this)
 	}
 
@@ -466,7 +481,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends AnyBoxImpl<U> = An
 		this.upstreamUnsub = this.upstream.doSubscribe(false, this.doOnUpstreamChange.bind(this), this)
 	}
 
-	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B>): UnsubscribeFn {
+	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxInternal<B>): UnsubscribeFn {
 		if(this.value === noValue){
 			this.value = this.getBoxValue()
 		}
@@ -478,7 +493,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends AnyBoxImpl<U> = An
 		}
 	}
 
-	override notify<B>(value: T, box: RBoxBase<B> | undefined): void {
+	override notify<B>(value: T, box: RBox<B> | undefined): void {
 		// it's kinda out of place, but anyway
 		// if this box have no subscribers - it should never store value
 		// because it also don't subscribe to upstream in that case (because amount of subscriptions should be minimised)
@@ -538,7 +553,7 @@ class FixedPropValueBox<U, K extends keyof U> extends ValueBoxWithUpstream<U[K],
 }
 const fixedPropValueBoxProto = extractPrototype(FixedPropValueBox)
 
-function makeUpstreamBox<T, U, B>(prototype: Prototype<ValueBoxWithUpstream<T, U> & B>, upstream: AnyBoxImpl<U>): ValueBoxWithUpstream<T, U> & B {
+function makeUpstreamBox<T, U, B>(prototype: Prototype<ValueBoxWithUpstream<T, U> & B>, upstream: RBoxInternal<U>): ValueBoxWithUpstream<T, U> & B {
 
 	function upstreamValueBox(...args: T[]): T {
 		if(args.length === 0){
@@ -590,9 +605,9 @@ function makeValueBox<T>(value: T): ValueBox<T> {
 
 abstract class ViewBox<T> extends (BoxBase as {
 	new<T>(): BoxBase<T> & RBoxCallSignature<T>
-})<T> implements RBoxFields<T> {
+})<T> implements RBoxFieldsInternal<T> {
 
-	isRBox = true
+	isRBox = true as const
 	/*
 	Here it gets a little tricky.
 	Lifetime of the view is by definition lower than lifetime of values it depends on
@@ -646,15 +661,15 @@ abstract class ViewBox<T> extends (BoxBase as {
 		const oldSubDisposers = this.subDisposers !== null ? [...this.subDisposers] : null
 
 		let newValue: T
-		let depList: readonly AnyBoxImpl<unknown>[]
+		let depList: readonly RBoxInternal<unknown>[]
 		const calc = this.boundCalcVal ||= this.calculateValue.bind(this)
 		if(this.explicitDependencyList === null){
-			const boxesAccessed = new Set<AnyBoxImpl<unknown>>()
+			const boxesAccessed = new Set<RBoxInternal<unknown>>()
 			newValue = notificationStack.withAccessNotifications(calc, boxesAccessed)
 			depList = [...boxesAccessed]
 		} else {
 			newValue = notificationStack.withAccessNotifications(calc, null)
-			depList = this.explicitDependencyList as AnyBoxImpl<unknown>[]
+			depList = this.explicitDependencyList as RBoxInternal<unknown>[]
 		}
 
 		// we can safely not pass a box here
@@ -693,7 +708,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 		}
 	}
 
-	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxBase<B> | undefined): UnsubscribeFn {
+	override doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxInternal<B>): UnsubscribeFn {
 		if(!this.haveSubscribers()){
 			// because we must have a value before doSubscribe can be called
 			// and also we will have a sub right now, might as well prepare for that
@@ -766,7 +781,7 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 
 	childMap: Map<K, ArrayElementValueBox<T, K>> | null = null
 	getKey = null as unknown as (value: T) => K
-	upstream = null as unknown as ViewBox<T[]> | ValueBox<T[]>
+	upstream = null as unknown as RBox<T[]>
 
 	protected override calculateValue(): ValueBox<T>[] {
 		if(this.childMap === null){
@@ -819,7 +834,7 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 	}
 
 	notifyValueChanged(value: T, box: ArrayElementValueBox<T, K>): void {
-		if(!isWBox(this.upstream)){
+		if(!isWBoxInternal<T[]>(this.upstream)){
 			// should be prevented by typechecker anyway
 			throw new Error("You cannot change the value of upstream array in readonly box through wrap-box")
 		}
@@ -968,9 +983,9 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], 
 const arrayElementValueBoxProto = extractPrototype(ArrayElementValueBox)
 
 
-class ConstBox<T> implements RBoxFields<T> {
-	isRBox = true
-	isConstBox = true
+class ConstBox<T> implements RBoxFieldsInternal<T> {
+	isRBox = true as const
+	isConstBox = true as const
 	value: T = null as unknown as T
 
 	subscribe() {
@@ -993,6 +1008,15 @@ class ConstBox<T> implements RBoxFields<T> {
 	mapArray<E, K, R>(this: RBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]> {
 		void getKey
 		return makeConstBox((this as unknown as ConstBox<E[]>).value.map(item => mapper(makeConstBox(item))))
+	}
+
+	doSubscribe(external: boolean, subscriber: SubscriberHandlerFn<T>): UnsubscribeFn {
+		void external, subscriber
+		return constBoxUnsubscribeNoop
+	}
+
+	dispose(): void {
+		// absolutely nothing!
 	}
 
 }

@@ -3,6 +3,12 @@
 Data logistics TS library, for those who are nostalgic of Knockout's observables.  
 It allows you to organize data flow in your project. Intended to use in frontend applications, but not bound to any runtime.  
 
+## Install
+
+```bash
+npm install @nartallax/cardboard
+```
+
 ## Basic WBox usage
 
 For example, suppose you have an input, and you need to organize bi-directional data flow; that is, you need to put initial value in input, then, as user changes value of the input, you need to notify the rest of your application that value is changed.  
@@ -185,6 +191,45 @@ console.log(parent()) // [{id: 1, name: "new name"}, {id: 2, name: "2"}]
 
 There's a catch to using this method: when a value leaves array, the box it is bound to is orphaned. That means changes to its value won't be propagated to upstream array, because there's nowhere to propagate. Even if later a value with the same ID appears in source array again - a new box will be created for that value, and old box will still be orphaned.  
 To help you notice such situations easier, orphaned boxes will throw an error when a value is set to them.  
+
+## mapArray
+
+`.mapArray` is a better way to use `.wrapElements`.  
+`.mapArray` creates an `RBox` that contains a result of applying mapper function to each source elements wrapped in individual box.  
+Original order is preserved; mapper is not called twice for the same element.  
+
+```typescript
+import {box} from "@nartallax/cardboard"
+
+const arrBox = box([
+	{id: 1, name: "1"},
+	{id: 2, name: "2"},
+	{id: 3, name: "3"}
+])
+const mapResult = arrBox.mapArray(item => item.id, itemBox => itemBox.map(x => JSON.stringify(x), x => JSON.parse(x)))
+const firstBox = mapResult()[0]!
+console.log(firstBox()) // {"id":1,"name":"1"}
+firstBox("{\"id\":1,\"name\":\"uwu\"}")
+console.log(arrBox()[0]) // {id: 1, name: "uwu"}
+```
+
+## constBox
+
+`constBox` is a type of `RBox` that never changes its value.  
+You can think of it as a `viewBox(() => someConstant)`, but more optimal.  
+This box exists because it's sometimes convenient to only write code in assumption that you will receive box and not a plain value.  
+`constBoxWrap` is a way to use this convenience - if its argument is a `RBox`, then it will return the box; otherwise it will create a const box with argument as value.  
+
+```typescript
+import {constBox, constBoxWrap} from "@nartallax/cardboard"
+
+const b = constBox(5)
+console.log(b()) // 5
+
+const bb = constBoxWrap(viewBox(() => 12345))
+console.log(bb()) // 12345
+
+```
 
 ## Naming
 

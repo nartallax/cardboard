@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox, constBoxWrap} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
@@ -1899,13 +1899,19 @@ describe("box", () => {
 
 	test("const box", () => {
 		const b = constBox(5)
-		// expect(isRBox(b)).to.be(true)
-		// expect(isWBox(b)).to.be(false)
+		expect(isRBox(b)).to.be(true)
+		expect(isWBox(b)).to.be(false)
 		expect(isConstBox(b)).to.be(true)
 		expect(b()).to.be(5)
 		const unsub = b.subscribe(v => console.log(v))
 		expect(typeof(unsub)).to.be("function")
 		unsub()
+
+		const bb = constBoxWrap(viewBox(() => 12345))
+		expect(isRBox(bb)).to.be(true)
+		expect(isWBox(bb)).to.be(false)
+		expect(isConstBox(bb)).to.be(false)
+		expect(bb()).to.be(12345)
 	})
 
 	test("map array", () => {
