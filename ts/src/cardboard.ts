@@ -41,7 +41,7 @@ type RBoxInternal<T> = RBoxCallSignature<T> & RBoxFieldsInternal<T>
 export type MRBox<T> = RBox<T> | T
 /** Ensure that value is boxed */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RBoxed<T> = [T] extends [RBox<any>] ? T : RBox<T>
+export type RBoxed<T> = [T] extends [RBox<any> | WBox<any>] ? T : RBox<T>
 
 
 interface WBoxFields<T> extends RBoxFields<T>{
