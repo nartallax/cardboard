@@ -1935,4 +1935,19 @@ describe("box", () => {
 
 	})
 
+	test("readonly array", () => {
+		const roArr: readonly {id: number, name: string}[] = [
+			{id: 1, name: "1"},
+			{id: 2, name: "2"},
+			{id: 3, name: "3"}
+		]
+		const arrBox = box(roArr)
+
+		const mapResult = arrBox.mapArray(item => item.id, itemBox => itemBox.map(x => JSON.stringify(x), x => JSON.parse(x)))
+		const firstBox = mapResult()[0]!
+		expect(firstBox()).to.be("{\"id\":1,\"name\":\"1\"}")
+		firstBox("{\"id\":1,\"name\":\"uwu\"}")
+		expect(arrBox()[0]).to.eql({id: 1, name: "uwu"})
+	})
+
 })

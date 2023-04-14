@@ -18,12 +18,12 @@ interface RBoxFields<T>{
 
 	/** Wrap each element of this RBox (assuming it contains an array) in its own RBox
 	 * More explaination in WBox's `wrapElements` comments */
-	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]>
+	wrapElements<E, K>(this: RBox<readonly E[]>, getKey: (element: E) => K): RBox<readonly RBox<E>[]>
 
 	/** A nice(r) way to use wrapElements
  	* Make a RBox each element of which is a result of conversion of a source elements.
 	* Maintains order of elements as in original array; won't call mapper function for the same element twice */
-	mapArray<E, K, R>(this: RBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: RBox<E>) => R): RBox<R[]>
+	mapArray<E, K, R>(this: RBox<readonly E[]>, getKey: (element: E) => K, mapper: (elementBox: RBox<E>) => R): RBox<readonly R[]>
 }
 type RBoxCallSignature<T> = () => T
 
@@ -59,9 +59,9 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	 * even if array grows again with values having same keys.
 	 *
 	 * Can behave weirdly/inconsistently if there are no subscribers to this box or children boxes. */
-	wrapElements<E, K>(this: WBox<E[]>, getKey: (element: E) => K): RBox<WBox<E>[]>
+	wrapElements<E, K>(this: WBox<readonly E[]>, getKey: (element: E) => K): RBox<readonly WBox<E>[]>
 
-	mapArray<E, K, R>(this: WBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]>
+	mapArray<E, K, R>(this: WBox<readonly E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<readonly R[]>
 
 	/** Make a WBox that synchronises its value with this WBox */
 	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
@@ -321,8 +321,8 @@ abstract class BoxBase<T> {
 		return makeViewBox(() => mapper(this()), [this])
 	}
 
-	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): ViewBox<ValueBox<E>[]> {
-		const result = makeViewBoxByPrototype<ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(arrayValueWrapViewBoxPrototype)
+	wrapElements<E, K>(this: RBox<readonly E[]>, getKey: (element: E) => K): ViewBox<readonly ValueBox<E>[]> {
+		const result = makeViewBoxByPrototype<readonly ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(arrayValueWrapViewBoxPrototype)
 		result.getKey = getKey
 		result.upstream = this
 		result.explicitDependencyList = [this]
@@ -331,7 +331,7 @@ abstract class BoxBase<T> {
 		return result
 	}
 
-	mapArray<E, K, R>(this: RBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]> {
+	mapArray<E, K, R>(this: RBox<readonly E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<readonly R[]> {
 		const map = new Map<WBox<E>, R>()
 
 		return (this as WBox<E[]>).wrapElements(getKey).map(itemBoxes => {
@@ -777,11 +777,11 @@ function makeViewBoxByPrototype<T, B extends ViewBox<T>>(prototype: Prototype<B>
 	return result
 }
 
-class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
+class ArrayValueWrapViewBox<T, K> extends ViewBox<readonly ValueBox<T>[]> {
 
 	childMap: Map<K, ArrayElementValueBox<T, K>> | null = null
 	getKey = null as unknown as (value: T) => K
-	upstream = null as unknown as RBox<T[]>
+	upstream = null as unknown as RBox<readonly T[]>
 
 	protected override calculateValue(): ValueBox<T>[] {
 		if(this.childMap === null){
@@ -803,7 +803,7 @@ class ArrayValueWrapViewBox<T, K> extends ViewBox<ValueBox<T>[]> {
 				box.index = index
 				box.tryChangeValue(item, this)
 			} else {
-				box = makeUpstreamBox<T, ValueBox<T>[], ArrayElementValueBox<T, K>>(arrayElementValueBoxProto, this)
+				box = makeUpstreamBox<T, readonly ValueBox<T>[], ArrayElementValueBox<T, K>>(arrayElementValueBoxProto, this)
 				box.internalSubscribers = null
 				box.externalSubscribers = null
 				box.revision = 1
@@ -896,7 +896,7 @@ const arrayValueWrapViewBoxPrototype = extractPrototype(ArrayValueWrapViewBox)
 /** A wrap around single element of an array.
  * This is more of a view box than a box-with-upstream;
  * Making it a box-with-upstream only makes it more performant */
-class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, ValueBox<T>[], ArrayValueWrapViewBox<T, K>> {
+class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, readonly ValueBox<T>[], ArrayValueWrapViewBox<T, K>> {
 
 	disposed = false
 	index = -1
@@ -1000,14 +1000,14 @@ class ConstBox<T> implements RBoxFieldsInternal<T> {
 		return makeConstBox(this.value[propKey])
 	}
 
-	wrapElements<E, K>(this: RBox<E[]>, getKey: (element: E) => K): RBox<RBox<E>[]> {
+	wrapElements<E, K>(this: RBox<readonly E[]>, getKey: (element: E) => K): RBox<readonly RBox<E>[]> {
 		void getKey
-		return makeConstBox((this as unknown as ConstBox<E[]>).value.map(item => makeConstBox(item)))
+		return makeConstBox((this as unknown as ConstBox<readonly E[]>).value.map(item => makeConstBox(item)))
 	}
 
-	mapArray<E, K, R>(this: RBox<E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<R[]> {
+	mapArray<E, K, R>(this: RBox<readonly E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<readonly R[]> {
 		void getKey
-		return makeConstBox((this as unknown as ConstBox<E[]>).value.map(item => mapper(makeConstBox(item))))
+		return makeConstBox((this as unknown as ConstBox<readonly E[]>).value.map(item => mapper(makeConstBox(item))))
 	}
 
 	doSubscribe(external: boolean, subscriber: SubscriberHandlerFn<T>): UnsubscribeFn {
