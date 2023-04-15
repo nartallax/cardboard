@@ -531,7 +531,7 @@ describe("box", () => {
 		a(3)
 		expect(c()).to.be.equal(5)
 		b(3)
-		expect(c()).to.be.equal(6)
+		expect(c()).to.be.equal(5) // no resubscription - wrong value; that's why you don't do that
 		a(4)
 		expect(c()).to.be.equal(7)
 
@@ -564,7 +564,7 @@ describe("box", () => {
 		a(3)
 		expect(c()).to.be.equal(5)
 		b(3)
-		expect(c()).to.be.equal(6)
+		expect(c()).to.be.equal(5) // used unlisted box in mapper - wrong value
 		a(4)
 		expect(c()).to.be.equal(7)
 
@@ -1956,6 +1956,28 @@ describe("box", () => {
 		expect(someBox()).to.be("uwu")
 		const otherBoxToTypecheck: RBoxed<WBox<string>> = wbox
 		expect(otherBoxToTypecheck()).to.be("uwu")
+	})
+
+	test("box with explicit dependency list caches result always", () => {
+		const a = box(5)
+		let callCount = 0
+		const b = a.map(x => {
+			callCount++
+			return x + 10
+		})
+
+		expect(callCount).to.be(0)
+		expect(b()).to.be(15)
+		expect(callCount).to.be(1)
+		expect(b()).to.be(15)
+		expect(callCount).to.be(1)
+
+		a(10)
+		expect(callCount).to.be(1) // no subscription; `b` shouldn't know that `a` changed
+		expect(b()).to.be(20)
+		expect(callCount).to.be(2)
+		expect(b()).to.be(20)
+		expect(callCount).to.be(2)
 	})
 
 })

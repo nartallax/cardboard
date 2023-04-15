@@ -66,3 +66,15 @@ export function extractPrototype<T>(cls: {new(): T}): Prototype<T> {
 
 /** A prototype extracted from a class. */
 export type Prototype<T> = Record<keyof T, unknown>
+
+export function arraysShallowEqual(a: readonly unknown[], b: readonly unknown[]): boolean {
+	if(a.length !== b.length){
+		return false
+	}
+	for(let i = 0; i < a.length; i++){
+		if(b[i] !== a[i]){
+			return false
+		}
+	}
+	return true
+}

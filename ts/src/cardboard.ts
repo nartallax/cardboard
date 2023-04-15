@@ -1,4 +1,4 @@
-import {Prototype, anythingToString, extractPrototype} from "src/common"
+import {Prototype, anythingToString, arraysShallowEqual, extractPrototype} from "src/common"
 
 type SubscriberHandlerFn<T = unknown> = (value: T) => void
 type UnsubscribeFn = () => void
@@ -326,6 +326,7 @@ abstract class BoxBase<T> {
 		result.getKey = getKey
 		result.upstream = this
 		result.explicitDependencyList = [this]
+		result.explicitDependencyValues = null
 		result.childMap = null
 		Object.seal(result)
 		return result
@@ -631,6 +632,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 	protected abstract calculateValue(): T
 
 	explicitDependencyList: readonly RBox<unknown>[] | null = null
+	explicitDependencyValues: readonly unknown[] | null = null
 
 	private subDispose(): void {
 		if(this.subDisposers !== null){
@@ -640,6 +642,15 @@ abstract class ViewBox<T> extends (BoxBase as {
 	}
 
 	private shouldRecalcValue(): boolean {
+		const newDepValues = this.getExplicitDepValues()
+		if(newDepValues !== null){
+			if(this.hasUnchangedExplicitDeps(newDepValues)){
+				return false
+			}
+			this.explicitDependencyValues = newDepValues
+			return true
+		}
+
 		if(this.value === noValue){
 			return true // no value? let's recalculate
 		}
@@ -652,6 +663,22 @@ abstract class ViewBox<T> extends (BoxBase as {
 		}
 
 		return false // we have value, no need to do anything
+	}
+
+	private getExplicitDepValues(): unknown[] | null {
+		if(this.explicitDependencyList === null){
+			return null
+		}
+
+		return this.explicitDependencyList.map(value => value())
+	}
+
+	private hasUnchangedExplicitDeps(newDepValues: unknown[]): boolean {
+		if(this.explicitDependencyList === null){
+			return false
+		}
+
+		return !!this.explicitDependencyValues && arraysShallowEqual(newDepValues, this.explicitDependencyValues)
 	}
 
 	private recalcValueAndResubscribe(forceSubscribe: boolean): void {
@@ -668,7 +695,14 @@ abstract class ViewBox<T> extends (BoxBase as {
 			newValue = notificationStack.withAccessNotifications(calc, boxesAccessed)
 			depList = [...boxesAccessed]
 		} else {
-			newValue = notificationStack.withAccessNotifications(calc, null)
+			const newDepValues = this.getExplicitDepValues()!
+			if(this.hasUnchangedExplicitDeps(newDepValues) && this.value !== noValue){
+				newValue = this.value as T
+			} else {
+				this.explicitDependencyValues = newDepValues
+				newValue = notificationStack.withAccessNotifications(calc, null)
+
+			}
 			depList = this.explicitDependencyList as RBoxInternal<unknown>[]
 		}
 
@@ -690,7 +724,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 					this.subDisposers.push(depList[i]!.doSubscribe(false, doOnDependencyUpdated, this))
 				}
 			}
-		} else {
+		} else if(!this.explicitDependencyList){
 			this.value = noValue
 		}
 		if(oldSubDisposers){
@@ -732,7 +766,11 @@ abstract class ViewBox<T> extends (BoxBase as {
 		}
 
 		const calc = this.boundCalcVal ||= this.calculateValue.bind(this)
-		return notificationStack.withAccessNotifications(calc, null)
+		const result = notificationStack.withAccessNotifications(calc, null)
+		if(this.explicitDependencyList !== null){
+			this.value = result
+		}
+		return result
 	}
 
 	prop<K extends keyof T>(propKey: K): RBox<T[K]> {
@@ -757,6 +795,7 @@ function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly 
 	const result = makeViewBoxByPrototype<T, ComputingFnViewBox<T>>(computinFnViewBoxPrototype)
 	result.calculateValue = computingFn
 	result.explicitDependencyList = explicitDependencyList ?? null
+	result.explicitDependencyValues = null
 	Object.seal(result)
 	return result
 }
