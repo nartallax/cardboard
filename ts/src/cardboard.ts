@@ -24,6 +24,9 @@ interface RBoxFields<T>{
  	* Make a RBox each element of which is a result of conversion of a source elements.
 	* Maintains order of elements as in original array; won't call mapper function for the same element twice */
 	mapArray<E, K, R>(this: RBox<readonly E[]>, getKey: (element: E) => K, mapper: (elementBox: RBox<E>) => R): RBox<readonly R[]>
+
+	/** This helps type inferrence, and also can be used to check for RBox instead of `isRBox(smth)` */
+	readonly isRBox: true
 }
 type RBoxCallSignature<T> = () => T
 
@@ -31,6 +34,7 @@ interface RBoxFieldsInternal<T> extends RBoxFields<T>{
 	readonly isRBox: true
 	dispose(): void
 	doSubscribe<B>(external: boolean, handler: SubscriberHandlerFn<T>, box?: RBoxInternal<B>): UnsubscribeFn
+	haveSubscribers(): boolean
 }
 
 /** Readonly box. You can only look at the value and subscribe to it, but not change that value directly.
@@ -41,7 +45,7 @@ type RBoxInternal<T> = RBoxCallSignature<T> & RBoxFieldsInternal<T>
 export type MRBox<T> = RBox<T> | T
 /** Ensure that value is boxed */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RBoxed<T> = [T] extends [RBox<any> | WBox<any>] ? T : RBox<T>
+export type RBoxed<T> = [T] extends [RBox<infer X>] ? RBox<X> : [T] extends [WBox<infer Y>] ? RBox<Y> : RBox<T>
 
 
 interface WBoxFields<T> extends RBoxFields<T>{
@@ -67,13 +71,12 @@ interface WBoxFields<T> extends RBoxFields<T>{
 	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
 	map<R>(mapper: (value: T) => R): RBox<R>
 
-	/** This really helps Typescript sometimes better infer stuff */
-	readonly thisHelpsTypings?: true
+	/** This helps type inferrence, and also can be used to check for WBox instead of `isWBox(smth)` */
+	readonly isWBox: true
 }
 type WBoxCallSignature<T> = RBoxCallSignature<T> & ((newValue: T) => T)
 
 type WBoxFieldsInternal<T> = WBoxFields<T> & RBoxFieldsInternal<T> & {
-	isWBox: true
 	tryChangeValue<B>(value: T, box?: RBoxInternal<B>): void
 }
 
@@ -1044,7 +1047,7 @@ class ConstBox<T> implements RBoxFieldsInternal<T> {
 		return makeConstBox((this as unknown as ConstBox<readonly E[]>).value.map(item => makeConstBox(item)))
 	}
 
-	mapArray<E, K, R>(this: RBox<readonly E[]>, getKey: (element: E) => K, mapper: (elementBox: WBox<E>) => R): RBox<readonly R[]> {
+	mapArray<E, K, R>(this: RBox<readonly E[]>, getKey: (element: E) => K, mapper: (elementBox: RBox<E>) => R): RBox<readonly R[]> {
 		void getKey
 		return makeConstBox((this as unknown as ConstBox<readonly E[]>).value.map(item => mapper(makeConstBox(item))))
 	}
@@ -1056,6 +1059,10 @@ class ConstBox<T> implements RBoxFieldsInternal<T> {
 
 	dispose(): void {
 		// absolutely nothing!
+	}
+
+	haveSubscribers(): boolean {
+		return false
 	}
 
 }

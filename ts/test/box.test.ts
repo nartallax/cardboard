@@ -2,9 +2,7 @@ import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox, c
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
-interface RBoxInternal<T> extends RBox<T> {
-	haveSubscribers(): boolean
-}
+type RBoxInternal<T> = RBox<T> & {haveSubscribers(): boolean}
 
 type WBoxInternal<T> = WBox<T> & RBoxInternal<T>
 
@@ -693,7 +691,7 @@ describe("box", () => {
 		const b = box(5)
 		const v = viewBox(() => b() * 2)
 
-		const rb = b as RBoxInternal<number>
+		const rb = b as unknown as RBoxInternal<number>
 		const rv = v as RBoxInternal<number>
 
 		expect(rb.haveSubscribers()).to.be.equal(false)
@@ -726,7 +724,7 @@ describe("box", () => {
 		const v = viewBox(() => b() * 2)
 		const vv = viewBox(() => v() - 2)
 
-		const rb = b as RBoxInternal<number>
+		const rb = b as unknown as RBoxInternal<number>
 		const rv = v as RBoxInternal<number>
 		const rvv = vv as RBoxInternal<number>
 
