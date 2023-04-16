@@ -1224,7 +1224,7 @@ describe("box", () => {
 
 		expect(parent.haveSubscribers()).to.be.equal(true)
 		parent([])
-		expect(box1).to.throwError(/box for key 1 is no longer attached/i)
+		expect(box1).to.throwError(/box for key 2 is no longer attached/i)
 	})
 
 	test("prop and arraywrap chain with subscribers", () => {
@@ -1579,8 +1579,7 @@ describe("box", () => {
 		expect(parent.haveSubscribers()).to.be.equal(false)
 		expect(callCount).to.be.equal(2)
 		expect(lastValue.name).to.be.equal("3")
-		// interesting result. anyway, it throws and that's what I need
-		expect(box1).to.throwError(/box for key 7 is no longer attached/i)
+		expect(box1).to.throwError(/box for key 5 is no longer attached/i)
 	})
 
 	test("arraywrap of viewbox of arraywrap with sub no throw", () => {
@@ -1954,9 +1953,9 @@ describe("box", () => {
 		const someSomeBox: WBox<string> = constBoxWrap(wbox)
 		expect(someSomeBox()).to.be("uwu")
 		expect(someBox()).to.be("uwu")
-		expect(someBox.isRBox).to.be(true)
-		expect(isRBox(someBox)).to.be(true)
-		expect(isWBox(someBox)).to.be(false)
+		expect({someBoxIsRBox: someBox.isRBox}).to.eql({someBoxIsRBox: true})
+		expect({isRboxSomeBox: isRBox(someBox)}).to.eql({isRboxSomeBox: true})
+		expect({isWBoxSomeBox: isWBox(someBox)}).to.eql({isWBoxSomeBox: true})
 		expect(someSomeBox).to.be(someBox)
 		expect(someBox).to.be(wbox)
 		const otherBoxToTypecheck: Boxed<WBox<string>> = wbox
@@ -1983,6 +1982,40 @@ describe("box", () => {
 		expect(callCount).to.be(2)
 		expect(b()).to.be(20)
 		expect(callCount).to.be(2)
+	})
+
+	test("two-way mapper only invokes actual mapper if source value changed", () => {
+		const a = box(5)
+		let directCalls = 0
+		let reverseCalls = 0
+		const b = a.map(aVal => {
+			directCalls++
+			return aVal * 2
+		}, bVal => {
+			reverseCalls++
+			return bVal / 2
+		})
+
+		expect({directCalls}).to.eql({directCalls: 0})
+		expect({reverseCalls}).to.eql({reverseCalls: 0})
+
+		expect(b()).to.be(10)
+		expect({directCalls}).to.eql({directCalls: 1})
+		expect({reverseCalls}).to.eql({reverseCalls: 0})
+
+		expect(b()).to.be(10)
+		expect({directCalls}).to.eql({directCalls: 1})
+		expect({reverseCalls}).to.eql({reverseCalls: 0})
+
+		b(30)
+		expect(a()).to.be(15)
+		expect({directCalls}).to.eql({directCalls: 1})
+		expect({reverseCalls}).to.eql({reverseCalls: 1})
+
+		b(30)
+		expect(a()).to.be(15)
+		expect({directCalls}).to.eql({directCalls: 1})
+		expect({reverseCalls}).to.eql({reverseCalls: 1})
 	})
 
 })

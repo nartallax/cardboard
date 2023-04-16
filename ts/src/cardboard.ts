@@ -325,11 +325,9 @@ abstract class BoxBase<T> {
 	}
 
 	wrapElements<E, K>(this: RBox<readonly E[]>, getKey: (element: E) => K): ViewBox<readonly ValueBox<E>[]> {
-		const result = makeViewBoxByPrototype<readonly ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(arrayValueWrapViewBoxPrototype)
+		const result = makeViewBoxByPrototype<readonly ValueBox<E>[], ArrayValueWrapViewBox<E, K>>(arrayValueWrapViewBoxPrototype, [this])
 		result.getKey = getKey
 		result.upstream = this
-		result.explicitDependencyList = [this]
-		result.explicitDependencyValues = null
 		result.childMap = null
 		Object.seal(result)
 		return result
@@ -415,6 +413,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends RBoxInternal<U> = 
 
 	upstreamUnsub: UnsubscribeFn | null = null
 	upstream = null as unknown as B
+	lastKnownUpstreamValue: U | null = null
 
 	protected abstract extractValueFromUpstream(upstreamObject: U): T
 	protected abstract buildUpstreamValue(value: T): U
@@ -433,10 +432,11 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends RBoxInternal<U> = 
 	}
 
 	protected notifyUpstreamOnChange(value: T): void {
-		const upstreamObject = this.buildUpstreamValue(value)
 		if(!isWBoxInternal(this.upstream)){
 			throw new Error("Value box cannot update upstream value: upstream is readonly")
 		}
+		const upstreamObject = this.buildUpstreamValue(value)
+		this.lastKnownUpstreamValue = upstreamObject
 		this.upstream.tryChangeValue(upstreamObject, this)
 	}
 
@@ -447,14 +447,24 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends RBoxInternal<U> = 
 	}
 
 	getBoxValue(): T {
-		// just checking if we have value before returning it is not enough
-		// sometimes when we have value we can be not subscribed
-		// that means that our value can be outdated and we need to fetch new one regardless
-		if(this.value !== noValue && this.upstreamUnsub !== null){
-			return this.value as T
-		} else {
-			return this.fetchValueFromUpstream()
+		let upstreamValue: U | null = null
+		if(this.value !== noValue){
+			// just checking if we have value before returning it is not enough
+			// sometimes when we have value we can be not subscribed
+			// that means that our value can be outdated and we need to fetch new one regardless
+			if(this.upstreamUnsub !== null){
+				return this.value as T
+			}
+
+			upstreamValue = notificationStack.withAccessNotifications(this.upstream, null)
+			if(this.lastKnownUpstreamValue === upstreamValue){
+				return this.value as T
+			}
 		}
+
+		this.lastKnownUpstreamValue = upstreamValue ||= notificationStack.withAccessNotifications(this.upstream, null)
+		this.value = this.fetchValueFromUpstream()
+		return this.value
 	}
 
 	tryUpdateUpstreamSub(): void {
@@ -472,7 +482,6 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends RBoxInternal<U> = 
 		}
 		this.upstreamUnsub()
 		this.upstreamUnsub = null
-		this.value = this.getEmptyValue()
 	}
 
 	private subToUpstream(): void {
@@ -498,14 +507,7 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends RBoxInternal<U> = 
 	}
 
 	override notify<B>(value: T, box: RBox<B> | undefined): void {
-		// it's kinda out of place, but anyway
-		// if this box have no subscribers - it should never store value
-		// because it also don't subscribe to upstream in that case (because amount of subscriptions should be minimised)
-		if(!this.shouldBeSubscribed()){
-			this.value = this.getEmptyValue()
-		}
-
-		// this is also a little out of place
+		// this is a little out of place
 		// think of this block as a notification to parent that child value is changed
 		// (although this is not conventional call to subscription)
 		if(box as unknown !== this.upstream){
@@ -514,11 +516,6 @@ abstract class ValueBoxWithUpstream<T, U = unknown, B extends RBoxInternal<U> = 
 
 		super.notify(value, box)
 	}
-
-	protected getEmptyValue(): T | NoValue {
-		return noValue
-	}
-
 }
 
 class MapperBoxWithUpstream<T, U> extends ValueBoxWithUpstream<T, U> {
@@ -575,6 +572,7 @@ function makeUpstreamBox<T, U, B>(prototype: Prototype<ValueBoxWithUpstream<T, U
 	result.upstream = upstream
 	result.internalSubscribers = null
 	result.externalSubscribers = null
+	result.lastKnownUpstreamValue = null
 	result.revision = 1
 	return result
 }
@@ -795,21 +793,21 @@ class ComputingFnViewBox<T> extends ViewBox<T> {
 const computinFnViewBoxPrototype = extractPrototype(ComputingFnViewBox)
 
 function makeViewBox<T>(computingFn: () => T, explicitDependencyList?: readonly RBox<unknown>[]): ViewBox<T> {
-	const result = makeViewBoxByPrototype<T, ComputingFnViewBox<T>>(computinFnViewBoxPrototype)
+	const result = makeViewBoxByPrototype<T, ComputingFnViewBox<T>>(computinFnViewBoxPrototype, explicitDependencyList)
 	result.calculateValue = computingFn
-	result.explicitDependencyList = explicitDependencyList ?? null
-	result.explicitDependencyValues = null
 	Object.seal(result)
 	return result
 }
 
-function makeViewBoxByPrototype<T, B extends ViewBox<T>>(prototype: Prototype<B>): B {
+function makeViewBoxByPrototype<T, B extends ViewBox<T>>(prototype: Prototype<B>, explicitDependencyList?: readonly RBox<unknown>[]): B {
 	function viewBox(): T {
 		return result.getValue()
 	}
 
 	const result: B = Object.setPrototypeOf(viewBox, prototype)
 	result.value = noValue
+	result.explicitDependencyList = explicitDependencyList ?? null
+	result.explicitDependencyValues = null
 	result.internalSubscribers = null
 	result.externalSubscribers = null
 	result.subDisposers = null
@@ -1017,10 +1015,6 @@ class ArrayElementValueBox<T, K> extends ValueBoxWithUpstream<T, readonly ValueB
 		this.upstream.notifyValueChanged(value, this)
 	}
 
-	protected override getEmptyValue(): NoValue | T {
-		return this.disposed ? noValue : this.value
-	}
-
 }
 const arrayElementValueBoxProto = extractPrototype(ArrayElementValueBox)
 
@@ -1090,10 +1084,5 @@ function wrapInConstBox<T>(value: WBox<T>): WBox<T>
 function wrapInConstBox<T>(value: RBox<T>): RBox<T>
 function wrapInConstBox<T>(value: T): RBox<T>
 function wrapInConstBox<T>(value: T): WBox<T> | RBox<T> {
-	if(isRBox<T>(value)){
-		return value
-	} else {
-		return makeConstBox(value)
-	}
-	// return isRBox(value) ? value : makeConstBox(value)
+	return isRBox<T>(value) ? value : makeConstBox(value)
 }
