@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox, constBoxWrap, RBoxed} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox, constBoxWrap, Boxed} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
@@ -1950,9 +1950,16 @@ describe("box", () => {
 
 	test("wbox is rbox in types", () => {
 		const wbox = box("uwu")
-		const someBox: RBoxed<WBox<string>> = constBoxWrap(wbox)
+		const someBox: Boxed<WBox<string>> = constBoxWrap(wbox)
+		const someSomeBox: WBox<string> = constBoxWrap(wbox)
+		expect(someSomeBox()).to.be("uwu")
 		expect(someBox()).to.be("uwu")
-		const otherBoxToTypecheck: RBoxed<WBox<string>> = wbox
+		expect(someBox.isRBox).to.be(true)
+		expect(isRBox(someBox)).to.be(true)
+		expect(isWBox(someBox)).to.be(false)
+		expect(someSomeBox).to.be(someBox)
+		expect(someBox).to.be(wbox)
+		const otherBoxToTypecheck: Boxed<WBox<string>> = wbox
 		expect(otherBoxToTypecheck()).to.be("uwu")
 	})
 

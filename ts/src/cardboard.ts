@@ -45,7 +45,7 @@ type RBoxInternal<T> = RBoxCallSignature<T> & RBoxFieldsInternal<T>
 export type MRBox<T> = RBox<T> | T
 /** Ensure that value is boxed */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RBoxed<T> = [T] extends [RBox<infer X>] ? RBox<X> : [T] extends [WBox<infer Y>] ? RBox<Y> : RBox<T>
+export type Boxed<T> = [T] extends [WBox<infer X>] ? WBox<X> : [T] extends [RBox<infer Y>] ? RBox<Y> : RBox<T>
 
 
 interface WBoxFields<T> extends RBoxFields<T>{
@@ -96,7 +96,7 @@ export const viewBox: <T>(computingFn: () => T, explicitDependencyList?: readonl
 export const constBox: <T>(value: T) => RBox<T> = makeConstBox
 /** If a value is a box - return it as is;
  * otherwise wrap it in constBox */
-export const constBoxWrap: <T>(value: RBox<T> | T) => RBox<T> = wrapInConstBox
+export const constBoxWrap = wrapInConstBox
 
 
 export const isWBox: <T>(x: unknown) => x is WBox<T> = isWBoxInternal
@@ -1086,6 +1086,14 @@ function makeConstBox<T>(value: T): RBox<T> {
 	return result
 }
 
-function wrapInConstBox<T>(value: T | RBox<T>): RBox<T> {
-	return isRBox(value) ? value : makeConstBox(value)
+function wrapInConstBox<T>(value: WBox<T>): WBox<T>
+function wrapInConstBox<T>(value: RBox<T>): RBox<T>
+function wrapInConstBox<T>(value: T): RBox<T>
+function wrapInConstBox<T>(value: T): WBox<T> | RBox<T> {
+	if(isRBox<T>(value)){
+		return value
+	} else {
+		return makeConstBox(value)
+	}
+	// return isRBox(value) ? value : makeConstBox(value)
 }
