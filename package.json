@@ -1,27 +1,30 @@
 {
   "name": "@nartallax/cardboard",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Data logistics library",
   "main": "cardboard.js",
   "types": "cardboard.d.ts",
-  "files": [
-    "cardboard.d.ts",
-    "cardboard.js.map"
-  ],
+  "exports": {
+    "import": "./esm/cardboard.mjs",
+    "require": "./cjs/cardboard.cjs"
+  },
+  "type": "module",
   "scripts": {
-    "test": "npm run test:generate && npm run test:build && npm run test:run",
+    "test": "npm run typecheck && npm run test:generate && npm run test:build && npm run test:run",
     "test:generate": "node ./node_modules/.bin/clamsensor_codegen ts/test ts/generated/test.ts",
     "test:build": "./node_modules/.bin/parcel build --target test --no-cache",
     "test:run": "node ./dist/test/test.js",
+    "typecheck": "cd ts && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null",
     "dts": "npm run dts:prepare && npm run dts:generate && npm run dts:cleanup",
     "dts:prepare": "rm -rf dts",
     "dts:generate": "./node_modules/.bin/tsc --project tsconfig.json --emitDeclarationOnly --declaration --outDir dts --removeComments false",
     "dts:cleanup": "mv ./dts/src/cardboard.d.ts ./target/cardboard.d.ts && rm -rf dts",
-    "build": "npm run build:prepare && npm run dts && npm run build:build && npm run build:copy_artifacts && npm run build:copy_static",
+    "build": "npm run build:prepare && npm run dts && npm run build:esm && npm run build:cjs && npm run build:copy_static",
     "build:prepare": "rm -rf ./target && rm -rf ./dist && mkdir ./target",
-    "build:build": "./node_modules/.bin/parcel build --target release --no-cache",
-    "build:copy_artifacts": "cp ./dist/release/* ./target/",
-    "build:copy_static": "cp ./package.json ./target/ && cp ./LICENSE ./target/ && cp ./README.md ./target",
+    "build:esm": "./node_modules/.bin/parcel build --target release_esm --no-cache && mkdir target/esm && cp ./dist/release_esm/cardboard.js ./target/esm/cardboard.mjs && cp ./dist/release_esm/cardboard.js.map ./target/esm/cardboard.mjs.map",
+    "build:cjs": "./node_modules/.bin/parcel build --target release_cjs --no-cache && mkdir target/cjs && cp ./dist/release_cjs/cardboard.js ./target/cjs/cardboard.cjs && cp ./dist/release_cjs/cardboard.js.map ./target/cjs/cardboard.cjs.map",
+    "build:copy_static": "cp ./LICENSE ./target/ && cp ./README.md ./target && npm run build:cut_package",
+    "build:cut_package": "./node_modules/.bin/package-cutter --output ./target/package.json",
     "pub": "npm run test && npm run build && npm run pub:publish",
     "pub:publish": "cd target && npm publish --access public && cd .."
   },
@@ -29,12 +32,19 @@
     "test": {
       "source": "./ts/generated/test.ts",
       "context": "node",
-      "optimize": false
+      "optimize": false,
+      "outputFormat": "esmodule"
     },
-    "release": {
+    "release_esm": {
       "source": "./ts/src/cardboard.ts",
       "isLibrary": true,
       "outputFormat": "esmodule",
+      "optimize": true
+    },
+    "release_cjs": {
+      "source": "./ts/src/cardboard.ts",
+      "isLibrary": true,
+      "outputFormat": "commonjs",
       "optimize": true
     }
   },
@@ -49,7 +59,8 @@
   },
   "homepage": "https://github.com/nartallax/cardboard#readme",
   "devDependencies": {
-    "@nartallax/clamsensor": "^2.0.3",
+    "@nartallax/clamsensor": "^2.0.9",
+    "@nartallax/package-cutter": "^1.0.2",
     "@types/expect.js": "^0.3.29",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
