@@ -1,12 +1,9 @@
 {
   "name": "@nartallax/cardboard",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Data logistics library",
   "types": "cardboard.d.ts",
-  "exports": {
-    "import": "./esm/cardboard.mjs",
-    "require": "./cjs/cardboard.cjs"
-  },
+  "main": "cardboard.js",
   "type": "module",
   "scripts": {
     "test": "npm run typecheck && npm run test:generate && npm run test:build && npm run test:run",
@@ -18,10 +15,9 @@
     "dts:prepare": "rm -rf dts",
     "dts:generate": "./node_modules/.bin/tsc --project tsconfig.json --emitDeclarationOnly --declaration --outDir dts --removeComments false",
     "dts:cleanup": "mv ./dts/src/cardboard.d.ts ./target/cardboard.d.ts && rm -rf dts",
-    "build": "npm run build:prepare && npm run dts && npm run build:esm && npm run build:cjs && npm run build:copy_static",
+    "build": "npm run build:prepare && npm run dts && npm run build:build && npm run build:copy_static",
     "build:prepare": "rm -rf ./target && rm -rf ./dist && mkdir ./target",
-    "build:esm": "./node_modules/.bin/parcel build --target release_esm --no-cache && mkdir target/esm && cp ./dist/release_esm/cardboard.js ./target/esm/cardboard.mjs && cp ./dist/release_esm/cardboard.js.map ./target/esm/cardboard.js.map",
-    "build:cjs": "./node_modules/.bin/parcel build --target release_cjs --no-cache && mkdir target/cjs && cp ./dist/release_cjs/cardboard.js ./target/cjs/cardboard.cjs && cp ./dist/release_cjs/cardboard.js.map ./target/cjs/cardboard.js.map",
+    "build:build": "./node_modules/.bin/parcel build --target release --no-cache && cp ./dist/release/* ./target/",
     "build:copy_static": "cp ./LICENSE ./target/ && cp ./README.md ./target && npm run build:cut_package",
     "build:cut_package": "./node_modules/.bin/package-cutter --output ./target/package.json",
     "pub": "npm run test && npm run build && npm run pub:publish",
@@ -34,16 +30,10 @@
       "optimize": false,
       "outputFormat": "esmodule"
     },
-    "release_esm": {
+    "release": {
       "source": "./ts/src/cardboard.ts",
       "isLibrary": true,
       "outputFormat": "esmodule",
-      "optimize": true
-    },
-    "release_cjs": {
-      "source": "./ts/src/cardboard.ts",
-      "isLibrary": true,
-      "outputFormat": "commonjs",
       "optimize": true
     }
   },
