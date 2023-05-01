@@ -1,6 +1,6 @@
 {
   "name": "@nartallax/cardboard",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Data logistics library",
   "types": "cardboard.d.ts",
   "exports": {
@@ -20,8 +20,8 @@
     "dts:cleanup": "mv ./dts/src/cardboard.d.ts ./target/cardboard.d.ts && rm -rf dts",
     "build": "npm run build:prepare && npm run dts && npm run build:esm && npm run build:cjs && npm run build:copy_static",
     "build:prepare": "rm -rf ./target && rm -rf ./dist && mkdir ./target",
-    "build:esm": "./node_modules/.bin/parcel build --target release_esm --no-cache && mkdir target/esm && cp ./dist/release_esm/cardboard.js ./target/esm/cardboard.mjs && cp ./dist/release_esm/cardboard.js.map ./target/esm/cardboard.mjs.map",
-    "build:cjs": "./node_modules/.bin/parcel build --target release_cjs --no-cache && mkdir target/cjs && cp ./dist/release_cjs/cardboard.js ./target/cjs/cardboard.cjs && cp ./dist/release_cjs/cardboard.js.map ./target/cjs/cardboard.cjs.map",
+    "build:esm": "./node_modules/.bin/parcel build --target release_esm --no-cache && mkdir target/esm && cp ./dist/release_esm/cardboard.js ./target/esm/cardboard.mjs && cp ./dist/release_esm/cardboard.js.map ./target/esm/cardboard.js.map",
+    "build:cjs": "./node_modules/.bin/parcel build --target release_cjs --no-cache && mkdir target/cjs && cp ./dist/release_cjs/cardboard.js ./target/cjs/cardboard.cjs && cp ./dist/release_cjs/cardboard.js.map ./target/cjs/cardboard.js.map",
     "build:copy_static": "cp ./LICENSE ./target/ && cp ./README.md ./target && npm run build:cut_package",
     "build:cut_package": "./node_modules/.bin/package-cutter --output ./target/package.json",
     "pub": "npm run test && npm run build && npm run pub:publish",
