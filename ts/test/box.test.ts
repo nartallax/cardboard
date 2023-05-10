@@ -1,10 +1,11 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox, constBoxWrap, Boxed} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, constBox, isConstBox, constBoxWrap, Boxed, MRBox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
 type RBoxInternal<T> = RBox<T> & {haveSubscribers(): boolean}
-
 type WBoxInternal<T> = WBox<T> & RBoxInternal<T>
+
+type CheckEquals<A, B> = A extends B ? B extends A ? true : false : false
 
 describe("box", () => {
 
@@ -2016,6 +2017,30 @@ describe("box", () => {
 		expect(a()).to.be(15)
 		expect({directCalls}).to.eql({directCalls: 1})
 		expect({reverseCalls}).to.eql({reverseCalls: 1})
+	})
+
+	test("const box wrap produces correct types", () => {
+		const mrboxA: MRBox<number> = 5
+		const cboxA = constBoxWrap(mrboxA)
+		expect(cboxA()).to.be(5)
+		const checkA: CheckEquals<typeof cboxA, RBox<number>> = true
+		expect(checkA).to.be(true)
+
+		const mrboxB: MRBox<string> = box("uwu")
+		const cboxB = constBoxWrap(mrboxB)
+		expect(cboxB).to.be(mrboxB)
+		expect(cboxB()).to.be("uwu")
+		const checkB: CheckEquals<typeof cboxB, RBox<string>> = true
+		expect(checkB).to.be(true)
+
+		const props: {
+			options: MRBox<readonly {readonly label: string, readonly value: string}[]>
+		} = {options: box([])}
+
+		const cboxC = constBoxWrap(props.options)
+		expect(cboxC).to.be(props.options)
+		const checkC: CheckEquals<typeof cboxC, RBox<readonly {readonly label: string, readonly value: string}[]>> = true
+		expect(checkC).to.be(true)
 	})
 
 })

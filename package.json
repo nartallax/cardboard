@@ -1,6 +1,6 @@
 {
   "name": "@nartallax/cardboard",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Data logistics library",
   "types": "cardboard.d.ts",
   "main": "cardboard.js",
@@ -48,7 +48,7 @@
   },
   "homepage": "https://github.com/nartallax/cardboard#readme",
   "devDependencies": {
-    "@nartallax/clamsensor": "^2.0.9",
+    "@nartallax/clamsensor": "^2.0.10",
     "@nartallax/package-cutter": "^1.0.2",
     "@types/expect.js": "^0.3.29",
     "@typescript-eslint/eslint-plugin": "^5.57.1",

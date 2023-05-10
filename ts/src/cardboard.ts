@@ -1082,6 +1082,9 @@ function makeConstBox<T>(value: T): RBox<T> {
 
 function wrapInConstBox<T>(value: WBox<T>): WBox<T>
 function wrapInConstBox<T>(value: RBox<T>): RBox<T>
+// formal logic tells us that this case should be covered by case above and below
+// but it's not true (and there's a test for that)
+function wrapInConstBox<T>(value: MRBox<T>): RBox<T>
 function wrapInConstBox<T>(value: T): RBox<T>
 function wrapInConstBox<T>(value: T): WBox<T> | RBox<T> {
 	return isRBox<T>(value) ? value : makeConstBox(value)
