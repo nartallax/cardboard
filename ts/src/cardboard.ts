@@ -634,6 +634,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 
 	explicitDependencyList: readonly RBox<unknown>[] | null = null
 	explicitDependencyValues: readonly unknown[] | null = null
+	isCalculatingNow = false
 
 	private subDispose(): void {
 		if(this.subDisposers !== null){
@@ -760,18 +761,27 @@ abstract class ViewBox<T> extends (BoxBase as {
 	}
 
 	getValue(): T {
-		notificationStack.notifyOnAccess(this)
-
-		if(!this.shouldRecalcValue()){
-			return this.value as T
+		if(this.isCalculatingNow){
+			throw new Error("Trying to get a value of box while the value is being recalculated; this indicates a loop in value calculation.")
 		}
 
-		const calc = this.boundCalcVal ||= this.calculateValue.bind(this)
-		const result = notificationStack.withAccessNotifications(calc, null)
-		if(this.explicitDependencyList !== null){
-			this.value = result
+		this.isCalculatingNow = true
+		try {
+			notificationStack.notifyOnAccess(this)
+
+			if(!this.shouldRecalcValue()){
+				return this.value as T
+			}
+
+			const calc = this.boundCalcVal ||= this.calculateValue.bind(this)
+			const result = notificationStack.withAccessNotifications(calc, null)
+			if(this.explicitDependencyList !== null){
+				this.value = result
+			}
+			return result
+		} finally {
+			this.isCalculatingNow = false
 		}
-		return result
 	}
 
 	prop<K extends keyof T>(propKey: K): RBox<T[K]> {
@@ -808,6 +818,7 @@ function makeViewBoxByPrototype<T, B extends ViewBox<T>>(prototype: Prototype<B>
 	result.value = noValue
 	result.explicitDependencyList = explicitDependencyList ?? null
 	result.explicitDependencyValues = null
+	result.isCalculatingNow = false
 	result.internalSubscribers = null
 	result.externalSubscribers = null
 	result.subDisposers = null

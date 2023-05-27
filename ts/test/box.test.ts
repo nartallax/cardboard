@@ -2043,4 +2043,24 @@ describe("box", () => {
 		expect(checkC).to.be(true)
 	})
 
+	test("maparray box should throw if its value is requested while the value is being recalculated", () => {
+		const urls = viewBox(() => ["1", "2", "3"])
+		let maxImageHeight = 0
+		const calcMaxHeight = () => {
+			const imgs = images()
+			console.log(imgs)
+			maxImageHeight = imgs.reduce((a, b) => Math.max(a, b.height), 0)
+		}
+		const images = urls.mapArray(
+			url => url,
+			url => {
+				const img = {width: parseInt(url()), height: parseInt(url())}
+				calcMaxHeight()
+				return img
+			}
+		)
+		expect(images).to.throwError(/loop/)
+		void maxImageHeight
+	})
+
 })
