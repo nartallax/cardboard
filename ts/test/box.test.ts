@@ -2063,4 +2063,17 @@ describe("box", () => {
 		void maxImageHeight
 	})
 
+	test("mapped box will recalculate value after unsub and resub", () => {
+		const noop = () => { /* nothing */}
+
+		const srcArray = box([1, 2, 3])
+		const firstMappedArray = srcArray.map(srcArray => srcArray.map(x => x * 2))
+		const secondMappedArray = firstMappedArray.map(srcArray => srcArray.map(x => x + 1))
+		let unsub = secondMappedArray.subscribe(noop)
+		expect(secondMappedArray()).to.eql([3, 5, 7])
+		unsub()
+		unsub = secondMappedArray.subscribe(noop)
+		expect(secondMappedArray()).to.eql([3, 5, 7])
+	})
+
 })

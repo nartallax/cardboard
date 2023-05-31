@@ -646,7 +646,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 	private shouldRecalcValue(): boolean {
 		const newDepValues = this.getExplicitDepValues()
 		if(newDepValues !== null){
-			if(this.hasUnchangedExplicitDeps(newDepValues)){
+			if(this.areAllExplicitDepsUnchanged(newDepValues)){
 				return false
 			}
 			this.explicitDependencyValues = newDepValues
@@ -675,7 +675,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 		return this.explicitDependencyList.map(value => value())
 	}
 
-	private hasUnchangedExplicitDeps(newDepValues: unknown[]): boolean {
+	private areAllExplicitDepsUnchanged(newDepValues: unknown[]): boolean {
 		if(this.explicitDependencyList === null){
 			return false
 		}
@@ -698,7 +698,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 			depList = [...boxesAccessed]
 		} else {
 			const newDepValues = this.getExplicitDepValues()!
-			if(this.hasUnchangedExplicitDeps(newDepValues) && this.value !== noValue){
+			if(this.areAllExplicitDepsUnchanged(newDepValues) && this.value !== noValue){
 				newValue = this.value as T
 			} else {
 				this.explicitDependencyValues = newDepValues
@@ -756,6 +756,7 @@ abstract class ViewBox<T> extends (BoxBase as {
 			if(!this.haveSubscribers()){
 				this.subDispose()
 				this.value = noValue
+				this.explicitDependencyValues = null
 			}
 		}
 	}
