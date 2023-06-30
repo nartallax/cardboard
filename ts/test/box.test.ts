@@ -2076,14 +2076,26 @@ describe("box", () => {
 		expect(secondMappedArray()).to.eql([3, 5, 7])
 	})
 
-	test("two-way mapped box receives updates", () => {
+	test("two-way mapped box receives updates when upstream is returned back to starting value", () => {
 		const px = box("3px")
+
+		let first = 0
+		let second = 0
+
+		px.subscribe(() => first++)
+		px.subscribe(() => second++)
 		const abs = px.map(str => parseInt(str), num => num + "px")
 		let lastKnownValue = -1
-		const unsub = abs.subscribe(newValue => lastKnownValue = newValue)
-		px("4px")
+		abs.subscribe(newValue => lastKnownValue = newValue)
+		abs(4)
+		expect(px()).to.be("4px")
+		expect(first).to.be(1)
+		expect(second).to.be(1)
 		expect(lastKnownValue).to.be(4)
-		unsub()
+		px("3px")
+		expect(first).to.be(2)
+		expect(second).to.be(2)
+		expect(lastKnownValue).to.be(3)
 	})
 
 })

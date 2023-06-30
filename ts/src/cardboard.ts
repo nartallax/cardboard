@@ -281,6 +281,10 @@ abstract class BoxBase<T> {
 			for(const sub of this.internalSubscribers){
 			// if the notification came from the same box - we should not notify it again
 				if(sub.box === box){
+					// if the change came from that sub's box - the box must be more up-to-date than we are
+					// so it makes sense to set last known values here
+					sub.lastKnownRevision = valueRevision
+					sub.lastKnownValue = value
 					continue
 				}
 
