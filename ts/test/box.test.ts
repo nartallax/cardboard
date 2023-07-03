@@ -110,31 +110,6 @@ describe("box", () => {
 		expect(cRecalcs).to.be.equal(2)
 	})
 
-	test("subscriber does not receive outdated values", () => {
-		const b = box(0)
-		b.subscribe(v => b(Math.floor(v / 2) * 2))
-		let lastVisibleValue = b()
-		let callsCount = 0
-		b.subscribe(v => {
-			lastVisibleValue = v
-			callsCount++
-		})
-
-		expect(callsCount).to.be.equal(0)
-		b(1)
-		expect(callsCount).to.be.equal(0)
-		expect(lastVisibleValue).to.be.equal(0)
-		b(2)
-		expect(callsCount).to.be.equal(1)
-		expect(lastVisibleValue).to.be.equal(2)
-		b(3)
-		expect(callsCount).to.be.equal(1)
-		expect(lastVisibleValue).to.be.equal(2)
-		b(4)
-		expect(callsCount).to.be.equal(2)
-		expect(lastVisibleValue).to.be.equal(4)
-	})
-
 	test("basic property subbox test", () => {
 		const parent = box({a: 5})
 		const child = parent.prop("a")

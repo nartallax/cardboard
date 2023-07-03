@@ -1,8 +1,10 @@
-import {ChangeHandler, WBox} from "src/new/types"
+import {ChangeHandler, Subscriber, WBox} from "src/new/types"
 
 export class ValueBox<T> implements WBox<T> {
 
-	private readonly subscriptions = new Set<ChangeHandler<T>>()
+	private readonly subscriptions = new Map<ChangeHandler<T>, Subscriber<T>>()
+	/** A revision is a counter that is incremented each time the value of the box is changed */
+	private revision = 1
 
 	constructor(private value: T) {}
 
@@ -23,12 +25,13 @@ export class ValueBox<T> implements WBox<T> {
 			return
 		}
 
+		this.revision++
 		this.value = newValue
 		this.callSubscribers(newValue)
 	}
 
 	subscribe(handler: ChangeHandler<T>): void {
-		this.subscriptions.add(handler)
+		this.subscriptions.set(handler, {lastKnownValue: this.value})
 	}
 
 	unsubscribe(handler: ChangeHandler<T>): void {
@@ -36,8 +39,18 @@ export class ValueBox<T> implements WBox<T> {
 	}
 
 	private callSubscribers(value: T): void {
-		for(const subscriber of this.subscriptions){
-			subscriber(value)
+		const startingRevision = this.revision
+		for(const [handler, subscriber] of this.subscriptions){
+			if(subscriber.lastKnownValue !== value){
+				subscriber.lastKnownValue = value
+				handler(value)
+			}
+			if(this.revision !== startingRevision){
+				// some of the subscribers changed value of the box;
+				// it doesn't make sense to proceed further in this round of calls,
+				// because there is another round of calls probably in progress, or maybe even already completed
+				break
+			}
 		}
 	}
 }

@@ -80,7 +80,6 @@ describe("ValueBox", () => {
 		expect(counter.lastCallValue).to.be(x)
 	})
 
-
 	test("subscriber does not receive outdated values", () => {
 		const b = box(0)
 		b.subscribe(v => b.set(Math.floor(v / 2) * 2))
