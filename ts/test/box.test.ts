@@ -9,36 +9,6 @@ type CheckEquals<A, B> = A extends B ? B extends A ? true : false : false
 
 describe("box", () => {
 
-	test("wbox simple test", () => {
-		const b = box(0)
-
-		expect(b()).to.be.equal(0)
-		expect(isRBox(b)).to.be(true)
-		expect(isWBox(b)).to.be(true)
-		expect(isConstBox(b)).to.be(false)
-		expect(isRBox(b())).to.be(false)
-		expect(isWBox(b())).to.be(false)
-		expect(unbox(b)).to.be(0)
-
-		b(5)
-
-		expect(b()).to.be.equal(5)
-
-		let subscriberCalledTimes = 0
-		const unsub = b.subscribe(() => subscriberCalledTimes++)
-		expect(subscriberCalledTimes).to.be.equal(0)
-
-		b(10)
-		expect(subscriberCalledTimes).to.be.equal(1)
-		b(10)
-		expect(subscriberCalledTimes).to.be.equal(1)
-		b(15)
-		expect(subscriberCalledTimes).to.be.equal(2)
-		unsub()
-		b(7)
-		expect(subscriberCalledTimes).to.be.equal(2)
-	})
-
 	test("viewBox simple test", () => {
 		const a = box(0)
 		const b = viewBox(() => Math.floor(a() / 2))
@@ -96,30 +66,6 @@ describe("box", () => {
 
 		disposeB()
 		disposeC()
-	})
-
-	test("same-value notification culling", () => {
-		const b = box<unknown>({a: 5})
-		let calls = 0
-		b.subscribe(() => calls++)
-		b({a: 10})
-		expect(calls).to.be.equal(1)
-		b(b())
-		expect(calls).to.be.equal(1)
-		b(null)
-		expect(calls).to.be.equal(2)
-		b(null)
-		expect(calls).to.be.equal(2)
-
-		const obj = {b: 5}
-		b(obj)
-		expect(calls).to.be.equal(3)
-		b(obj)
-		expect(calls).to.be.equal(3)
-		b(5)
-		expect(calls).to.be.equal(4)
-		b(5)
-		expect(calls).to.be.equal(4)
 	})
 
 	test("view only subscribes to direct dependencies", () => {

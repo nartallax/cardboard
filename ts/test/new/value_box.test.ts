@@ -79,4 +79,25 @@ describe("ValueBox", () => {
 		expect(counter.callCount).to.be(2)
 		expect(counter.lastCallValue).to.be(x)
 	})
+
+
+	test("subscriber does not receive outdated values", () => {
+		const b = box(0)
+		b.subscribe(v => b.set(Math.floor(v / 2) * 2))
+		const counter = makeCallCounter()
+		b.subscribe(counter)
+
+		expect(counter.callCount).to.be.equal(0)
+		b.set(1)
+		expect(counter.callCount).to.be.equal(0)
+		b.set(2)
+		expect(counter.callCount).to.be.equal(1)
+		expect(counter.lastCallValue).to.be.equal(2)
+		b.set(3)
+		expect(counter.callCount).to.be.equal(1)
+		expect(counter.lastCallValue).to.be.equal(2)
+		b.set(4)
+		expect(counter.callCount).to.be.equal(2)
+		expect(counter.lastCallValue).to.be.equal(4)
+	})
 })
