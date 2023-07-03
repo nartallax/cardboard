@@ -1,22 +1,3 @@
-export type ChangeHandler<T> = (value: T) => void
-export interface Subscriber<T> {
-	/** Last value with which handler was called.
-	 * Having just a revision number won't do here, because value can go back-and-forth
-	 * within one update session.
-	 *
-	 * This field must always contain value;
-	 * when someone subscribes, it must be initiated with current value of the box.
-	 * This is required to maintain the behaviour that subscriber knows what value the box had
-	 * right before the subscription happens; so the call with the very same value could not happen in the next update.
-	 *
-	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
-	 * or to the same value as the box already has; it will only be different within update rounds */
-	lastKnownValue: T
-}
-
-/** Maybe RBox - RBox or non-boxed value */
-export type MRBox<T> = RBox<T> | T
-
 /** Readonly box: a box which contents you can get, but cannot directly put anything into. */
 export interface RBox<T>{
 	/** Get the value that is stored in this box. */
@@ -38,4 +19,23 @@ export interface RBox<T>{
 export interface WBox<T> extends RBox<T> {
 	/** Put the value in the box, overwriting existing value and calling all the change handlers. */
 	set(value: T): void
+}
+
+/** Maybe RBox - RBox or non-boxed value */
+export type MRBox<T> = RBox<T> | T
+
+export type ChangeHandler<T> = (value: T) => void
+export interface Subscriber<T> {
+	/** Last value with which handler was called.
+	 * Having just a revision number won't do here, because value can go back-and-forth
+	 * within one update session.
+	 *
+	 * This field must always contain value;
+	 * when someone subscribes, it must be initiated with current value of the box.
+	 * This is required to maintain the behaviour that subscriber knows what value the box had
+	 * right before the subscription happens; so the call with the very same value could not happen in the next update.
+	 *
+	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
+	 * or to the same value as the box already has; it will only be different within update rounds */
+	lastKnownValue: T
 }

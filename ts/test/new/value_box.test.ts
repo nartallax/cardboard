@@ -1,10 +1,11 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {isWBox, unbox, box, isRBox} from "src/new/cardboard"
+import {isWBox, unbox, box, isRBox, isConstBox} from "src/new/cardboard"
 import {makeCallCounter} from "test/test_utils"
 
 describe("ValueBox", () => {
 
+	// TODO: move some of this tests to common...?
 	test("isRBox", () => {
 		expect(isRBox(0)).to.be(false)
 		expect(isRBox({})).to.be(false)
@@ -15,6 +16,12 @@ describe("ValueBox", () => {
 		expect(isWBox(0)).to.be(false)
 		expect(isWBox({})).to.be(false)
 		expect(isWBox(box(5))).to.be(true)
+	})
+
+	test("isConstBox", () => {
+		expect(isConstBox(0)).to.be(false)
+		expect(isConstBox({})).to.be(false)
+		expect(isConstBox(box(5))).to.be(false)
 	})
 
 	test("unbox", () => {
