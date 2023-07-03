@@ -99,4 +99,20 @@ describe("ValueBox", () => {
 		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(4)
 	})
+
+	test("subscribers are called in the order of subscription", () => {
+		let str = ""
+		const b = box(0)
+		const middleSubscriber = () => str += "b"
+		b.subscribe(() => str += "a")
+		b.subscribe(middleSubscriber)
+		b.subscribe(() => str += "c")
+		b.set(1)
+		expect(str).to.be("abc")
+		b.unsubscribe(middleSubscriber)
+		b.subscribe(middleSubscriber)
+		str = ""
+		b.set(2)
+		expect(str).to.be("acb")
+	})
 })
