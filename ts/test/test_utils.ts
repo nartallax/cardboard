@@ -10,3 +10,5 @@ export function makeCallCounter<T = any>(): CallCounter<T> {
 	res.lastCallValue = null
 	return res
 }
+
+export type IfTypeEquals<A, B> = A extends B ? B extends A ? true : false : false

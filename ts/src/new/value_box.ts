@@ -1,5 +1,10 @@
 import {ChangeHandler, Subscriber, WBox} from "src/new/types"
 
+/** Make new basic writable box */
+export const box = <T>(value: T): WBox<T> => {
+	return new ValueBox(value)
+}
+
 export class ValueBox<T> implements WBox<T> {
 
 	private readonly subscriptions = new Map<ChangeHandler<T>, Subscriber<T>>()

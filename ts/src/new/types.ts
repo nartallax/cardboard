@@ -24,6 +24,18 @@ export interface WBox<T> extends RBox<T> {
 /** Maybe RBox - RBox or non-boxed value */
 export type MRBox<T> = RBox<T> | T
 
+/** If the type is non-box - wrap it in RBox value
+ *
+ * Does the same to types that constBoxWrap() does to values */
+export type Boxed<T> = TakeBoxes<T> | RBox<TakeNonBoxes<T>>
+type TakeBoxes<T> = T extends RBox<any> ? T : never
+type TakeNonBoxes<T> = T extends RBox<any> ? never : T
+
+/** Returns the value type of the box, if T is the box; otherwise returns T
+ *
+ * Does the same to types that unbox() does to values */
+export type Unboxed<T> = T extends RBox<infer X> ? X : T
+
 export type ChangeHandler<T> = (value: T) => void
 export interface Subscriber<T> {
 	/** Last value with which handler was called.

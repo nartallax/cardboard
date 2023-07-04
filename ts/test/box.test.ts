@@ -1,11 +1,9 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, isConstBox, constBoxWrap, Boxed, MRBox} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, isConstBox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
 type RBoxInternal<T> = RBox<T> & {haveSubscribers(): boolean}
 type WBoxInternal<T> = WBox<T> & RBoxInternal<T>
-
-type CheckEquals<A, B> = A extends B ? B extends A ? true : false : false
 
 describe("box", () => {
 
@@ -1852,21 +1850,6 @@ describe("box", () => {
 		expect(arrBox()[0]).to.eql({id: 1, name: "uwu"})
 	})
 
-	test("wbox is rbox in types", () => {
-		const wbox = box("uwu")
-		const someBox: Boxed<WBox<string>> = constBoxWrap(wbox)
-		const someSomeBox: WBox<string> = constBoxWrap(wbox)
-		expect(someSomeBox()).to.be("uwu")
-		expect(someBox()).to.be("uwu")
-		expect({someBoxIsRBox: someBox.isRBox}).to.eql({someBoxIsRBox: true})
-		expect({isRboxSomeBox: isRBox(someBox)}).to.eql({isRboxSomeBox: true})
-		expect({isWBoxSomeBox: isWBox(someBox)}).to.eql({isWBoxSomeBox: true})
-		expect(someSomeBox).to.be(someBox)
-		expect(someBox).to.be(wbox)
-		const otherBoxToTypecheck: Boxed<WBox<string>> = wbox
-		expect(otherBoxToTypecheck()).to.be("uwu")
-	})
-
 	test("box with explicit dependency list caches result always", () => {
 		const a = box(5)
 		let callCount = 0
@@ -1921,30 +1904,6 @@ describe("box", () => {
 		expect(a()).to.be(15)
 		expect({directCalls}).to.eql({directCalls: 1})
 		expect({reverseCalls}).to.eql({reverseCalls: 1})
-	})
-
-	test("const box wrap produces correct types", () => {
-		const mrboxA: MRBox<number> = 5
-		const cboxA = constBoxWrap(mrboxA)
-		expect(cboxA()).to.be(5)
-		const checkA: CheckEquals<typeof cboxA, RBox<number>> = true
-		expect(checkA).to.be(true)
-
-		const mrboxB: MRBox<string> = box("uwu")
-		const cboxB = constBoxWrap(mrboxB)
-		expect(cboxB).to.be(mrboxB)
-		expect(cboxB()).to.be("uwu")
-		const checkB: CheckEquals<typeof cboxB, RBox<string>> = true
-		expect(checkB).to.be(true)
-
-		const props: {
-			options: MRBox<readonly {readonly label: string, readonly value: string}[]>
-		} = {options: box([])}
-
-		const cboxC = constBoxWrap(props.options)
-		expect(cboxC).to.be(props.options)
-		const checkC: CheckEquals<typeof cboxC, RBox<readonly {readonly label: string, readonly value: string}[]>> = true
-		expect(checkC).to.be(true)
 	})
 
 	test("maparray box should throw if its value is requested while the value is being recalculated", () => {
