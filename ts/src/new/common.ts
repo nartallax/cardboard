@@ -1,6 +1,7 @@
 import {ConstBox, constBox} from "src/new/const_box"
 import {WBox, RBox, Boxed, Unboxed} from "src/new/types"
 import {ValueBox} from "src/new/value_box"
+import {ViewBox} from "src/new/view_box"
 
 /** Wrap a value in a const box, if the value is not a box; otherwise return that box as is */
 export const constBoxWrap = <T>(boxOrValue: T): Boxed<T> => {
@@ -17,7 +18,7 @@ export const unbox = <T>(boxOrValue: T): Unboxed<T> => {
  * Note that every box supplied by this library is an RBox;
  * every WBox is an RBox, every const box is an RBox, etc */
 export const isRBox = (value: unknown): value is RBox<unknown> => {
-	return isWBox(value) || isConstBox(value)
+	return isWBox(value) || isConstBox(value) || value instanceof ViewBox
 }
 
 /** Checks if the value is a writable box */

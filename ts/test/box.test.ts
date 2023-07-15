@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox, isConstBox} from "src/cardboard"
+import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
@@ -6,107 +6,6 @@ type RBoxInternal<T> = RBox<T> & {haveSubscribers(): boolean}
 type WBoxInternal<T> = WBox<T> & RBoxInternal<T>
 
 describe("box", () => {
-
-	test("viewBox simple test", () => {
-		const a = box(0)
-		const b = viewBox(() => Math.floor(a() / 2))
-
-		expect(isRBox(b)).to.be(true)
-		expect(isWBox(b)).to.be(false)
-		expect(isConstBox(b)).to.be(false)
-		expect(isRBox(b())).to.be(false)
-		expect(isWBox(b())).to.be(false)
-		expect(unbox(b)).to.be(0)
-
-		let calls = 0
-		const unsub = b.subscribe(() => calls++)
-		expect(calls).to.be.equal(0)
-		expect(b()).to.be.equal(0)
-
-		a(1)
-		expect(b()).to.be.equal(0)
-		expect(calls).to.be.equal(0)
-
-		a(2)
-		expect(b()).to.be.equal(1)
-		expect(calls).to.be.equal(1)
-
-		unsub()
-		a(5)
-		expect(b()).to.be.equal(2)
-		expect(calls).to.be.equal(1)
-	})
-
-	test("chain subscription test", () => {
-		const a = box(5)
-		const b = viewBox(() => a() * 2)
-		const c = viewBox(() => b() * 3)
-
-		let successB = false
-		let successC = false
-
-		b()
-		const disposeB = b.subscribe(() => {
-			successB = true
-		})
-
-		c()
-		const disposeC = c.subscribe(() => {
-			successC = true
-		})
-		a(10)
-
-		expect(a()).to.be.equal(10)
-		expect(b()).to.be.equal(20)
-		expect(c()).to.be.equal(60)
-		expect(successB).to.be.equal(true)
-		expect(successC).to.be.equal(true)
-
-		disposeB()
-		disposeC()
-	})
-
-	test("view only subscribes to direct dependencies", () => {
-		const a = box(5)
-		let bRecalcs = 0
-		const b = viewBox(() => {
-			bRecalcs++
-			return Math.floor(a() / 2)
-		})
-		let cRecalcs = 0
-		const c = viewBox(() => {
-			cRecalcs++
-			return b() + 1
-		})
-
-		let bCalls = 0
-		b.subscribe(() => bCalls++)
-		let cCalls = 0
-		c.subscribe(() => cCalls++)
-		expect(b()).to.be.equal(2)
-		expect(c()).to.be.equal(3)
-		expect(bRecalcs).to.be.equal(1)
-		expect(cRecalcs).to.be.equal(1)
-
-		a(6)
-		expect(bCalls).to.be.equal(1)
-		expect(cCalls).to.be.equal(1)
-		expect(b()).to.be.equal(3)
-		expect(c()).to.be.equal(4)
-		expect(bRecalcs).to.be.equal(2)
-		expect(cRecalcs).to.be.equal(2)
-
-		a(7)
-		expect(bCalls).to.be.equal(1)
-		expect(cCalls).to.be.equal(1)
-		expect(b()).to.be.equal(3)
-		expect(c()).to.be.equal(4)
-		// THIS what this test is all about
-		// b recalculated, but c does not
-		// because c is only subscribed to b, and b did not change
-		expect(bRecalcs).to.be.equal(3)
-		expect(cRecalcs).to.be.equal(2)
-	})
 
 	test("basic property subbox test", () => {
 		const parent = box({a: 5})
@@ -365,28 +264,6 @@ describe("box", () => {
 		expect(child().c).to.be.equal(20)
 	})
 
-	test("views calculations when noone is subscribed", () => {
-		const b = box(5)
-		let calcCount = 0
-		const view = viewBox(() => {
-			calcCount++
-			return b() * 2
-		})
-
-		expect(calcCount).to.be.equal(0)
-		expect(view()).to.be.equal(10)
-		expect(calcCount).to.be.equal(1)
-		expect(view()).to.be.equal(10)
-		expect(calcCount).to.be.equal(2)
-
-		b(6)
-		expect(calcCount).to.be.equal(2)
-		expect(view()).to.be.equal(12)
-		expect(calcCount).to.be.equal(3)
-		expect(view()).to.be.equal(12)
-		expect(calcCount).to.be.equal(4)
-	})
-
 	test("view only subscribes to param box, not to the parent box", () => {
 		const parent = box({a: 5})
 		const child = parent.prop("a")
@@ -416,55 +293,6 @@ describe("box", () => {
 		expect(calcCount).to.be.equal(2)
 		expect(parentNotifications).to.be.equal(2)
 		expect(childNotifications).to.be.equal(1)
-	})
-
-	test("view works fine with zero dependencies", () => {
-		let calcCount = 0
-		const view = viewBox(() => {
-			calcCount++
-			return 2 * 2
-		})
-
-		expect(view()).to.be.equal(4)
-		expect(calcCount).to.be.equal(1)
-		expect(view()).to.be.equal(4)
-		expect(calcCount).to.be.equal(2)
-
-		let subCalls = 0
-		view.subscribe(() => {
-			subCalls++
-		})
-
-		expect(subCalls).to.be.equal(0)
-		expect(view()).to.be.equal(4)
-		expect(subCalls).to.be.equal(0)
-	})
-
-	test("explicit dependency list in views", () => {
-		const a = box(2)
-		const b = box(2)
-		const c = viewBox(() => a() + b(), [a])
-
-		expect(c()).to.be.equal(4)
-		a(3)
-		expect(c()).to.be.equal(5)
-		b(3)
-		expect(c()).to.be.equal(5) // no resubscription - wrong value; that's why you don't do that
-		a(4)
-		expect(c()).to.be.equal(7)
-
-		let callsCount = 0
-		c.subscribe(() => callsCount++)
-		expect(callsCount).to.be.equal(0)
-		a(5)
-		expect(callsCount).to.be.equal(1)
-		expect(c()).to.be.equal(8)
-		b(4)
-		expect(callsCount).to.be.equal(1)
-		expect(c()).to.be.equal(8)
-		a(6)
-		expect(callsCount).to.be.equal(2)
-		expect(c()).to.be.equal(10)
 	})
 
 	test("map method", () => {
@@ -605,77 +433,6 @@ describe("box", () => {
 		expect(propA1.haveSubscribers()).to.be.equal(false)
 		expect(propA2.haveSubscribers()).to.be.equal(false)
 		expect(propB.haveSubscribers()).to.be.equal(false)
-	})
-
-	test("viewboxes are unsubscribing properly", () => {
-		const b = box(5)
-		const v = viewBox(() => b() * 2)
-
-		const rb = b as unknown as RBoxInternal<number>
-		const rv = v as RBoxInternal<number>
-
-		expect(rb.haveSubscribers()).to.be.equal(false)
-		expect(rv.haveSubscribers()).to.be.equal(false)
-		expect(v()).to.be.equal(10)
-		expect(rb.haveSubscribers()).to.be.equal(false)
-		expect(rv.haveSubscribers()).to.be.equal(false)
-
-		let notifyCount = 0
-		const unsub = v.subscribe(() => notifyCount++)
-		expect(notifyCount).to.be.equal(0)
-		expect(rb.haveSubscribers()).to.be.equal(true)
-		expect(rv.haveSubscribers()).to.be.equal(true)
-		expect(v()).to.be.equal(10)
-
-		b(6)
-		expect(notifyCount).to.be.equal(1)
-		expect(rb.haveSubscribers()).to.be.equal(true)
-		expect(rv.haveSubscribers()).to.be.equal(true)
-		expect(v()).to.be.equal(12)
-
-		unsub()
-		expect(notifyCount).to.be.equal(1)
-		expect(rb.haveSubscribers()).to.be.equal(false)
-		expect(rv.haveSubscribers()).to.be.equal(false)
-	})
-
-	test("chain viewboxes are unsubscribing properly", () => {
-		const b = box(5)
-		const v = viewBox(() => b() * 2)
-		const vv = viewBox(() => v() - 2)
-
-		const rb = b as unknown as RBoxInternal<number>
-		const rv = v as RBoxInternal<number>
-		const rvv = vv as RBoxInternal<number>
-
-		expect(rb.haveSubscribers()).to.be.equal(false)
-		expect(rv.haveSubscribers()).to.be.equal(false)
-		expect(rvv.haveSubscribers()).to.be.equal(false)
-		expect(vv()).to.be.equal(8)
-		expect(rb.haveSubscribers()).to.be.equal(false)
-		expect(rv.haveSubscribers()).to.be.equal(false)
-		expect(rvv.haveSubscribers()).to.be.equal(false)
-
-		let notifyCount = 0
-		const unsub = vv.subscribe(() => notifyCount++)
-		expect(notifyCount).to.be.equal(0)
-		expect(rb.haveSubscribers()).to.be.equal(true)
-		expect(rv.haveSubscribers()).to.be.equal(true)
-		expect(rvv.haveSubscribers()).to.be.equal(true)
-		expect(vv()).to.be.equal(8)
-
-		b(6)
-		expect(notifyCount).to.be.equal(1)
-		expect(rb.haveSubscribers()).to.be.equal(true)
-		expect(rv.haveSubscribers()).to.be.equal(true)
-		expect(rvv.haveSubscribers()).to.be.equal(true)
-		expect(vv()).to.be.equal(10)
-
-		unsub()
-		expect(notifyCount).to.be.equal(1)
-		expect(rb.haveSubscribers()).to.be.equal(false)
-		expect(rv.haveSubscribers()).to.be.equal(false)
-		expect(rvv.haveSubscribers()).to.be.equal(false)
 	})
 
 	test("propboxes are unsubscribing properly", () => {
