@@ -13,6 +13,11 @@ export interface RBox<T>{
 
 	/** Removes a subscriber from the box */
 	unsubscribe(handler: ChangeHandler<T>): void
+
+	/** Create another box, value of which entirely depends on value of this one box
+	 *
+	 * Even if other boxes are used in this box, they won't trigger recalculation */
+	map<R>(mapper: (value: T) => R): RBox<R>
 }
 
 /** Writable box: a box in which you can put value, and get value from. */

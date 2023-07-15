@@ -1,4 +1,4 @@
-import {ChangeHandler, Subscriber, WBox, notificationStack} from "src/new/internal"
+import {ChangeHandler, RBox, Subscriber, ViewBox, WBox, notificationStack} from "src/new/internal"
 
 export abstract class BaseBox<T> implements WBox<T> {
 	private readonly subscriptions = new Map<ChangeHandler<T>, Subscriber<T>>()
@@ -60,6 +60,10 @@ export abstract class BaseBox<T> implements WBox<T> {
 				break
 			}
 		}
+	}
+
+	map<R>(mapper: (value: T) => R): RBox<R> {
+		return new ViewBox(() => mapper(this.get()), [this])
 	}
 
 }

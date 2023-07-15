@@ -257,4 +257,31 @@ describe("ViewBox", () => {
 		expect(rvv.haveSubscribers()).to.be.equal(false)
 	})
 
+	test("map method", () => {
+		const a = box(2)
+		const b = box(2)
+		const c = a.map(num => num + b.get())
+
+		expect(c.get()).to.be.equal(4)
+		a.set(3)
+		expect(c.get()).to.be.equal(5)
+		b.set(3)
+		expect(c.get()).to.be.equal(5) // used unlisted box in mapper - wrong value
+		a.set(4)
+		expect(c.get()).to.be.equal(7)
+
+		const counter = makeCallCounter()
+		c.subscribe(counter)
+		expect(counter.callCount).to.be.equal(0)
+		a.set(5)
+		expect(counter.callCount).to.be.equal(1)
+		expect(c.get()).to.be.equal(8)
+		b.set(4)
+		expect(counter.callCount).to.be.equal(1)
+		expect(c.get()).to.be.equal(8)
+		a.set(6)
+		expect(counter.callCount).to.be.equal(2)
+		expect(c.get()).to.be.equal(10)
+	})
+
 })

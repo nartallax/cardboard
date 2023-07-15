@@ -23,4 +23,8 @@ export class ConstBox<T> implements RBox<T> {
 	unsubscribe(handler: ChangeHandler<T>): void {
 		void handler
 	}
+
+	map<R>(mapper: (value: T) => R): RBox<R> {
+		return new ConstBox(mapper(this.value))
+	}
 }

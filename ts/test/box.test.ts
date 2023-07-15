@@ -1,4 +1,4 @@
-import {viewBox, box, WBox, RBox, isRBox, isWBox, unbox} from "src/cardboard"
+import {viewBox, box, WBox, RBox} from "src/cardboard"
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 
@@ -293,39 +293,6 @@ describe("box", () => {
 		expect(calcCount).to.be.equal(2)
 		expect(parentNotifications).to.be.equal(2)
 		expect(childNotifications).to.be.equal(1)
-	})
-
-	test("map method", () => {
-		const a = box(2)
-		const b = box(2)
-		const c = a.map(num => num + b())
-
-		expect(isRBox(c)).to.be(true)
-		expect(isWBox(c)).to.be(false)
-		expect(isRBox(c())).to.be(false)
-		expect(isWBox(c())).to.be(false)
-		expect(unbox(c)).to.be(4)
-
-		expect(c()).to.be.equal(4)
-		a(3)
-		expect(c()).to.be.equal(5)
-		b(3)
-		expect(c()).to.be.equal(5) // used unlisted box in mapper - wrong value
-		a(4)
-		expect(c()).to.be.equal(7)
-
-		let callsCount = 0
-		c.subscribe(() => callsCount++)
-		expect(callsCount).to.be.equal(0)
-		a(5)
-		expect(callsCount).to.be.equal(1)
-		expect(c()).to.be.equal(8)
-		b(4)
-		expect(callsCount).to.be.equal(1)
-		expect(c()).to.be.equal(8)
-		a(6)
-		expect(callsCount).to.be.equal(2)
-		expect(c()).to.be.equal(10)
 	})
 
 	test("two same-field prop boxes", () => {
