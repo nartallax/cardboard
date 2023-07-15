@@ -1,7 +1,7 @@
 import type {DependencyList, RBox} from "src/new/internal"
 
 /** This class allows non-trivial boxes to gather information on which boxes they depend on */
-export class NotificationStack {
+class NotificationStack {
 
 	private stack: DependencyList[] = []
 	private stackSet: Set<DependencyList> = new Set()
@@ -28,3 +28,5 @@ export class NotificationStack {
 	}
 
 }
+
+export const notificationStack = new NotificationStack()

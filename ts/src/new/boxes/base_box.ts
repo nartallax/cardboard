@@ -1,6 +1,4 @@
-import {NotificationStack, ChangeHandler, Subscriber, WBox} from "src/new/internal"
-
-export const notificationStack = new NotificationStack()
+import {ChangeHandler, Subscriber, WBox, notificationStack} from "src/new/internal"
 
 export abstract class BaseBox<T> implements WBox<T> {
 	private readonly subscriptions = new Map<ChangeHandler<T>, Subscriber<T>>()
