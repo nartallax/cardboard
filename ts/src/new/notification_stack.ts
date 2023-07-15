@@ -1,5 +1,4 @@
-import {DependencyList} from "src/new/dependency_lists/dependency_list"
-import {RBox} from "src/new/types"
+import type {DependencyList, RBox} from "src/new/internal"
 
 /** This class allows non-trivial boxes to gather information on which boxes they depend on */
 export class NotificationStack {

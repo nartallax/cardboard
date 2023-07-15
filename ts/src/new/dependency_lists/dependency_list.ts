@@ -1,4 +1,4 @@
-import {RBox} from "src/new/types"
+import type {RBox} from "src/new/internal"
 
 /** A list of boxes some calculation depends on  */
 export interface DependencyList {

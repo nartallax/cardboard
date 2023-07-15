@@ -1,8 +1,4 @@
-import {BaseBox, notificationStack} from "src/new/base_box"
-import {DependencyList} from "src/new/dependency_lists/dependency_list"
-import {DynamicDependencyList} from "src/new/dependency_lists/dynamic_dependency_list"
-import {StaticDependencyList} from "src/new/dependency_lists/static_dependency_list"
-import {ChangeHandler, RBox} from "src/new/types"
+import {BaseBox, notificationStack, DependencyList, DynamicDependencyList, StaticDependencyList, ChangeHandler, RBox} from "src/new/internal"
 
 /** Make new view box, readonly box that calculates its value based on passed functiion */
 export const viewBox = <T>(calcFunction: () => T, explicitDependencyList?: readonly RBox<unknown>[]): RBox<T> => {

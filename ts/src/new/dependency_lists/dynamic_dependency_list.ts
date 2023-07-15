@@ -1,5 +1,4 @@
-import {BaseDependencyList, DependencyList} from "src/new/dependency_lists/dependency_list"
-import {RBox} from "src/new/types"
+import {BaseDependencyList, DependencyList, RBox} from "src/new/internal"
 
 /* FIXME: test for box that changes its value during the call
 like,

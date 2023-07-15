@@ -1,5 +1,4 @@
-import {NotificationStack} from "src/new/notification_stack"
-import {ChangeHandler, Subscriber, WBox} from "src/new/types"
+import {NotificationStack, ChangeHandler, Subscriber, WBox} from "src/new/internal"
 
 export const notificationStack = new NotificationStack()
 

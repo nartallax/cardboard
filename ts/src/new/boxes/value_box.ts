@@ -1,5 +1,4 @@
-import {BaseBox} from "src/new/base_box"
-import {WBox} from "src/new/types"
+import {BaseBox, WBox} from "src/new/internal"
 
 /** Make new basic writable box */
 export const box = <T>(value: T): WBox<T> => {

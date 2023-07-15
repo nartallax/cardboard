@@ -1,5 +1,4 @@
-import {RBox} from "src/new/types"
-import {BaseDependencyList, DependencyList} from "src/new/dependency_lists/dependency_list"
+import {BaseDependencyList, DependencyList, RBox} from "src/new/internal"
 
 export class StaticDependencyList extends BaseDependencyList implements DependencyList {
 	readonly isStatic!: boolean

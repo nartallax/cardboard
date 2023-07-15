@@ -1,7 +1,4 @@
-import {ConstBox, constBox} from "src/new/const_box"
-import {WBox, RBox, Boxed, Unboxed} from "src/new/types"
-import {ValueBox} from "src/new/value_box"
-import {ViewBox} from "src/new/view_box"
+import {ConstBox, constBox, WBox, RBox, Boxed, Unboxed, ValueBox, ViewBox} from "src/new/internal"
 
 /** Wrap a value in a const box, if the value is not a box; otherwise return that box as is */
 export const constBoxWrap = <T>(boxOrValue: T): Boxed<T> => {

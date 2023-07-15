@@ -1,4 +1,4 @@
-import {ChangeHandler, RBox} from "src/new/types"
+import {ChangeHandler, RBox} from "src/new/internal"
 
 /** Make a new constant box, a readonly box which value never changes
  *
