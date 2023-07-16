@@ -30,13 +30,13 @@ export abstract class BaseMapDependencyList {
 
 	subscribeToDependencies(): void {
 		for(const dependency of this.boxes.keys()){
-			dependency.subscribeInternal(this.onDependencyUpdate, this.ownerBox)
+			dependency.subscribe(this.onDependencyUpdate, this.ownerBox)
 		}
 	}
 
 	unsubscribeFromDependencies(): void {
 		for(const dependency of this.boxes.keys()){
-			dependency.unsubscribeInternal(this.onDependencyUpdate, this.ownerBox)
+			dependency.unsubscribe(this.onDependencyUpdate, this.ownerBox)
 		}
 	}
 

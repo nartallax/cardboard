@@ -65,13 +65,13 @@ export class ViewBox<T> extends BaseBox<T> {
 		return super.get()
 	}
 
-	subscribe(handler: ChangeHandler<T>): void {
+	subscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void {
 		const hadSubs = this.haveSubscribers()
-		super.subscribe(handler)
+		super.subscribe(handler, box)
 
 		if(!hadSubs){
 			if(this.shouldRecalculate(true)){
-				// something may change when we wasn't subscribed to our dependencies
+				// something may change while we wasn't subscribed to our dependencies
 				// that's why we should recalculate - so our value is actual
 				this.recalculate(true)
 			} else {
@@ -82,8 +82,8 @@ export class ViewBox<T> extends BaseBox<T> {
 		}
 	}
 
-	unsubscribe(handler: ChangeHandler<T>): void {
-		super.unsubscribe(handler)
+	unsubscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void {
+		super.unsubscribe(handler, box)
 
 		if(!this.haveSubscribers()){
 			this.dependencyList.unsubscribeFromDependencies()

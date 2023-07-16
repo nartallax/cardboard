@@ -40,33 +40,27 @@ export abstract class BaseBox<T> implements WBox<T>, RBoxInternal<T> {
 		return this.value
 	}
 
-	subscribe(handler: ChangeHandler<T>): void {
-		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
+	subscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void {
+		if(box){
+			(this.internalSubscriptions ||= new Map()).set(handler, {lastKnownValue: this.value, box})
+		} else {
+			(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
+		}
 	}
 
-	unsubscribe(handler: ChangeHandler<T>): void {
-		if(!this.subscriptions){
+	unsubscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void {
+		const subs = box ? this.internalSubscriptions : this.subscriptions
+		if(!subs){
 			return
 		}
 
-		this.subscriptions.delete(handler)
-		if(this.subscriptions.size === 0){
-			this.subscriptions = null
-		}
-	}
-
-	subscribeInternal(handler: ChangeHandler<T>, box: RBox<unknown>): void {
-		(this.internalSubscriptions ||= new Map()).set(handler, {lastKnownValue: this.value, box})
-	}
-
-	unsubscribeInternal(handler: ChangeHandler<T>): void {
-		if(!this.internalSubscriptions){
-			return
-		}
-
-		this.internalSubscriptions.delete(handler)
-		if(this.internalSubscriptions.size === 0){
-			this.internalSubscriptions = null
+		subs.delete(handler)
+		if(subs.size === 0){
+			if(box){
+				this.internalSubscriptions = null
+			} else {
+				this.subscriptions = null
+			}
 		}
 	}
 

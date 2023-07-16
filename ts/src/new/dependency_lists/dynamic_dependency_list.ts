@@ -26,6 +26,7 @@ export class DynamicDependencyList extends BaseMapDependencyList implements Depe
 				// (i.e. we only store one value per box)
 				// so if there's more than one value per calculation - it's extremely confusing for us
 				// I cannot think of how this could happen in real app, so for now this situation will throw
+				// TODO: test for this
 				throw new Error(`A box ${box} was called more than once during single calculation, and the last known value (${value}) was not the same as first one (${oldValue}); this is highly suspicious and can lead to many problems.`)
 			}
 		}

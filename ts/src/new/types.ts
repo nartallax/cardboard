@@ -21,8 +21,8 @@ export interface RBox<T>{
 }
 
 export interface RBoxInternal<T> extends RBox<T>{
-	subscribeInternal(handler: ChangeHandler<T>, box: RBoxInternal<unknown>): void
-	unsubscribeInternal(handler: ChangeHandler<T>, box: RBoxInternal<unknown>): void
+	subscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void
+	unsubscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void
 }
 
 /** Writable box: a box in which you can put value, and get value from. */

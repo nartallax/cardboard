@@ -18,11 +18,11 @@ export class SingleDependencyList<T> implements DependencyList {
 	}
 
 	subscribeToDependencies(): void {
-		this.dependency.subscribeInternal(this.onDependencyUpdate, this.ownerBox)
+		this.dependency.subscribe(this.onDependencyUpdate, this.ownerBox)
 	}
 
 	unsubscribeFromDependencies(): void {
-		this.dependency.unsubscribeInternal(this.onDependencyUpdate, this.ownerBox)
+		this.dependency.unsubscribe(this.onDependencyUpdate, this.ownerBox)
 	}
 
 	didDependencyListChange(): boolean {
