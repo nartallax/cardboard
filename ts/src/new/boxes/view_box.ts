@@ -11,7 +11,7 @@ export class ViewBox<T> extends BaseBox<T> {
 	private readonly dependencyList: DependencyList
 
 	constructor(private readonly calcFunction: () => T, explicitDependencyList?: readonly RBoxInternal<unknown>[]) {
-		const onDependencyUpdate = () => this.recalculate()
+		const onDependencyUpdate = (_: unknown, box: RBox<unknown>) => this.recalculate(box)
 		const depList = explicitDependencyList
 			? explicitDependencyList.length === 1
 				? new SingleDependencyList(explicitDependencyList[0]!, onDependencyUpdate)
@@ -23,7 +23,10 @@ export class ViewBox<T> extends BaseBox<T> {
 		this.dependencyList = depList
 	}
 
-	private recalculate(justHadFirstSubscriber?: boolean): void {
+	/** Recalculate the value, calling the calculation function, and set it to this box
+	 *
+	 * @param box the box that caused this value to be recalculated. Won't receive update about result. */
+	private recalculate(box?: RBoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
 		const shouldResubscribe = !this.dependencyList.isStatic && this.haveSubscribers()
 		if(!justHadFirstSubscriber && shouldResubscribe){
 			this.dependencyList.unsubscribeFromDependencies()
@@ -31,7 +34,7 @@ export class ViewBox<T> extends BaseBox<T> {
 
 		this.dependencyList.reset()
 		const newValue = notificationStack.withNotifications(this.dependencyList, this.calcFunction)
-		this.set(newValue)
+		this.set(newValue, box)
 
 		if(shouldResubscribe){
 			this.dependencyList.subscribeToDependencies()
@@ -46,7 +49,7 @@ export class ViewBox<T> extends BaseBox<T> {
 			return false
 		}
 
-		// this is a little bit bad, because if we have a big "network" of viewboxes,
+		// this is a little bit bad, because if we have a big "network" of viewboxes noone subscribed to,
 		// then each .get() to viewbox will trigger a chain checks for each box in network
 		// which could happen on first render of an app UI, for example
 		// nothing really can be done with it without introducing "non-update" bugs
@@ -65,7 +68,7 @@ export class ViewBox<T> extends BaseBox<T> {
 		return super.get()
 	}
 
-	subscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void {
+	subscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void {
 		const hadSubs = this.haveSubscribers()
 		super.subscribe(handler, box)
 
@@ -73,7 +76,7 @@ export class ViewBox<T> extends BaseBox<T> {
 			if(this.shouldRecalculate(true)){
 				// something may change while we wasn't subscribed to our dependencies
 				// that's why we should recalculate - so our value is actual
-				this.recalculate(true)
+				this.recalculate(undefined, true)
 			} else {
 				// even if we don't recalculate - we must subscribe to dependencies
 				// (if we recalculate - it will subscribe anyway)
@@ -82,7 +85,7 @@ export class ViewBox<T> extends BaseBox<T> {
 		}
 	}
 
-	unsubscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void {
+	unsubscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void {
 		super.unsubscribe(handler, box)
 
 		if(!this.haveSubscribers()){

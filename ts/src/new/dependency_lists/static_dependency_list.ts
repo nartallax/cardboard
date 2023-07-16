@@ -1,9 +1,9 @@
-import {BaseMapDependencyList, DependencyList, RBoxInternal} from "src/new/internal"
+import {BaseMapDependencyList, ChangeHandler, DependencyList, RBoxInternal} from "src/new/internal"
 
 export class StaticDependencyList extends BaseMapDependencyList implements DependencyList {
 	readonly isStatic!: boolean
 
-	constructor(boxes: readonly RBoxInternal<unknown>[], onDependencyUpdate: (value: unknown) => void) {
+	constructor(boxes: readonly RBoxInternal<unknown>[], onDependencyUpdate: ChangeHandler<unknown>) {
 		super(onDependencyUpdate)
 		for(const box of boxes){
 			this.boxes.set(box, box.get())

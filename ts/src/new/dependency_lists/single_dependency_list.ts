@@ -1,4 +1,4 @@
-import {DependencyList, RBoxInternal} from "src/new/internal"
+import {ChangeHandler, DependencyList, RBoxInternal} from "src/new/internal"
 
 /** A dependency list for cases when you have only one dependency
  *
@@ -13,7 +13,7 @@ export class SingleDependencyList<T> implements DependencyList {
 
 	constructor(
 		private readonly dependency: RBoxInternal<T>,
-		private readonly onDependencyUpdate: (value: unknown) => void) {
+		private readonly onDependencyUpdate: ChangeHandler<T>) {
 		this.lastKnownDependencyValue = dependency.get()
 	}
 

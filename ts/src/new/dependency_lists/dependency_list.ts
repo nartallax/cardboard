@@ -1,4 +1,4 @@
-import type {RBoxInternal} from "src/new/internal"
+import type {ChangeHandler, RBoxInternal} from "src/new/internal"
 
 /** A list of boxes some calculation depends on  */
 export interface DependencyList {
@@ -26,7 +26,7 @@ export abstract class BaseMapDependencyList {
 	ownerBox!: RBoxInternal<unknown>
 
 	// TODO: maybe we don't need this function, and it can be a method?
-	constructor(private readonly onDependencyUpdate: (value: unknown) => void) {}
+	constructor(private readonly onDependencyUpdate: ChangeHandler<unknown>) {}
 
 	subscribeToDependencies(): void {
 		for(const dependency of this.boxes.keys()){

@@ -9,10 +9,10 @@ export interface RBox<T>{
 	 *
 	 * Note that the handler is stored until explicitly unsubscribed;
 	 * this may cause memory leaks in some scenarios. */
-	subscribe(handler: ChangeHandler<T>): void
+	subscribe(handler: ChangeHandler<T, this>): void
 
 	/** Removes a subscriber from the box */
-	unsubscribe(handler: ChangeHandler<T>): void
+	unsubscribe(handler: ChangeHandler<T, this>): void
 
 	/** Create another box, value of which entirely depends on value of this one box
 	 *
@@ -20,15 +20,19 @@ export interface RBox<T>{
 	map<R>(mapper: (value: T) => R): RBox<R>
 }
 
-export interface RBoxInternal<T> extends RBox<T>{
-	subscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void
-	unsubscribe(handler: ChangeHandler<T>, box?: RBoxInternal<unknown>): void
-}
-
 /** Writable box: a box in which you can put value, and get value from. */
 export interface WBox<T> extends RBox<T> {
 	/** Put the value in the box, overwriting existing value and calling all the change handlers. */
 	set(value: T): void
+}
+
+export interface RBoxInternal<T> extends RBox<T>{
+	subscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void
+	unsubscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void
+}
+
+export interface WBoxInternal<T> extends Omit<WBox<T>, "subscribe" | "unsubscribe">, RBoxInternal<T>{
+	set(value: T, box?: WBoxInternal<T>): void
 }
 
 /** Maybe RBox - RBox or non-boxed value */
@@ -46,7 +50,7 @@ type TakeNonBoxes<T> = T extends RBox<any> ? never : T
  * Does the same to types that unbox() does to values */
 export type Unboxed<T> = T extends RBox<infer X> ? X : T
 
-export type ChangeHandler<T> = (value: T) => void
+export type ChangeHandler<T, B extends RBox<T> = RBox<T>> = (value: T, box: B) => void
 export interface Subscriber<T> {
 	/** Last value with which handler was called.
 	 * Having just a revision number won't do here, because value can go back-and-forth
