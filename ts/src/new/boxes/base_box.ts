@@ -1,7 +1,9 @@
-import {ChangeHandler, RBox, Subscriber, ViewBox, WBox, notificationStack} from "src/new/internal"
+import {ChangeHandler, InternalSubscriber, RBox, RBoxInternal, Subscriber, ViewBox, WBox, notificationStack} from "src/new/internal"
 
-export abstract class BaseBox<T> implements WBox<T> {
-	private readonly subscriptions = new Map<ChangeHandler<T>, Subscriber<T>>()
+export abstract class BaseBox<T> implements WBox<T>, RBoxInternal<T> {
+	private subscriptions: Map<ChangeHandler<T>, Subscriber<T>> | null = null
+	// TODO: do we really need ChangeHandler here? maybe I can do it in a more optimal way?
+	private internalSubscriptions: Map<ChangeHandler<T>, InternalSubscriber<T>> | null = null
 	/** A revision is a counter that is incremented each time the value of the box is changed
 	 *
 	 * This value must never be visible outside of this box.
@@ -20,7 +22,7 @@ export abstract class BaseBox<T> implements WBox<T> {
 	constructor(protected value: T) {}
 
 	haveSubscribers(): boolean {
-		return this.subscriptions.size > 0
+		return !!(this.subscriptions || this.internalSubscriptions)
 	}
 
 	set(newValue: T): void {
@@ -39,25 +41,65 @@ export abstract class BaseBox<T> implements WBox<T> {
 	}
 
 	subscribe(handler: ChangeHandler<T>): void {
-		this.subscriptions.set(handler, {lastKnownValue: this.value})
+		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
 	}
 
 	unsubscribe(handler: ChangeHandler<T>): void {
+		if(!this.subscriptions){
+			return
+		}
+
 		this.subscriptions.delete(handler)
+		if(this.subscriptions.size === 0){
+			this.subscriptions = null
+		}
 	}
 
-	private callSubscribers(value: T): void {
+	subscribeInternal(handler: ChangeHandler<T>, box: RBox<unknown>): void {
+		(this.internalSubscriptions ||= new Map()).set(handler, {lastKnownValue: this.value, box})
+	}
+
+	unsubscribeInternal(handler: ChangeHandler<T>): void {
+		if(!this.internalSubscriptions){
+			return
+		}
+
+		this.internalSubscriptions.delete(handler)
+		if(this.internalSubscriptions.size === 0){
+			this.internalSubscriptions = null
+		}
+	}
+
+	private callSubscribers(value: T, excludeBox?: RBox<unknown>): void {
 		const startingRevision = this.revision
-		for(const [handler, subscriber] of this.subscriptions){
-			if(subscriber.lastKnownValue !== value){
-				subscriber.lastKnownValue = value
-				handler(value)
+
+		if(this.internalSubscriptions){
+			for(const [handler, subscriber] of this.internalSubscriptions){
+				if(subscriber.box === excludeBox){
+					continue
+				}
+				if(subscriber.lastKnownValue !== value){
+					subscriber.lastKnownValue = value
+					handler(value)
+				}
+				if(this.revision !== startingRevision){
+					// some of the subscribers changed value of the box;
+					// it doesn't make sense to proceed further in this round of calls,
+					// because there is another round of calls probably in progress, or maybe even already completed
+					return
+				}
 			}
-			if(this.revision !== startingRevision){
-				// some of the subscribers changed value of the box;
-				// it doesn't make sense to proceed further in this round of calls,
-				// because there is another round of calls probably in progress, or maybe even already completed
-				break
+		}
+
+		if(this.subscriptions){
+			for(const [handler, subscriber] of this.subscriptions){
+				if(subscriber.lastKnownValue !== value){
+					subscriber.lastKnownValue = value
+					handler(value)
+				}
+				if(this.revision !== startingRevision){
+					return
+				}
 			}
 		}
 	}

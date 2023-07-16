@@ -1,4 +1,4 @@
-import {DependencyList, RBox} from "src/new/internal"
+import {DependencyList, RBoxInternal} from "src/new/internal"
 
 /** A dependency list for cases when you have only one dependency
  *
@@ -6,20 +6,23 @@ import {DependencyList, RBox} from "src/new/internal"
 export class SingleDependencyList<T> implements DependencyList {
 	readonly isStatic!: boolean
 
+	// see ownerBox prop on base
+	ownerBox!: RBoxInternal<unknown>
+
 	private lastKnownDependencyValue: T
 
 	constructor(
-		private readonly dependency: RBox<T>,
+		private readonly dependency: RBoxInternal<T>,
 		private readonly onDependencyUpdate: (value: unknown) => void) {
 		this.lastKnownDependencyValue = dependency.get()
 	}
 
 	subscribeToDependencies(): void {
-		this.dependency.subscribe(this.onDependencyUpdate)
+		this.dependency.subscribeInternal(this.onDependencyUpdate, this.ownerBox)
 	}
 
 	unsubscribeFromDependencies(): void {
-		this.dependency.unsubscribe(this.onDependencyUpdate)
+		this.dependency.unsubscribeInternal(this.onDependencyUpdate, this.ownerBox)
 	}
 
 	didDependencyListChange(): boolean {

@@ -1,4 +1,4 @@
-import {ChangeHandler, RBox} from "src/new/internal"
+import {RBox, RBoxInternal} from "src/new/internal"
 
 /** Make a new constant box, a readonly box which value never changes
  *
@@ -8,20 +8,27 @@ export const constBox = <T>(value: T): RBox<T> => {
 	return new ConstBox(value)
 }
 
-export class ConstBox<T> implements RBox<T> {
+export class ConstBox<T> implements RBoxInternal<T> {
 	constructor(private readonly value: T) {}
 
 	get(): T {
 		return this.value
 	}
 
-	subscribe(handler: ChangeHandler<T>): void {
-		// handler will never be called, so we might as well drop it
-		void handler
+	subscribe(): void {
+		// nothing. handler will never be called anyway
 	}
 
-	unsubscribe(handler: ChangeHandler<T>): void {
-		void handler
+	subscribeInternal(): void {
+		// nothing
+	}
+
+	unsubscribe(): void {
+		// nothing. we don't do anything on subscription and might as well do nothing on unsubscription
+	}
+
+	unsubscribeInternal(): void {
+		// nothing
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R> {

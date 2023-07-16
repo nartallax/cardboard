@@ -1,16 +1,16 @@
 import {SingleDependencyList} from "src/new/dependency_lists/single_dependency_list"
-import {BaseBox, notificationStack, DependencyList, DynamicDependencyList, StaticDependencyList, ChangeHandler, RBox} from "src/new/internal"
+import {BaseBox, notificationStack, DependencyList, DynamicDependencyList, StaticDependencyList, ChangeHandler, RBox, RBoxInternal} from "src/new/internal"
 
 /** Make new view box, readonly box that calculates its value based on passed function */
 export const viewBox = <T>(calcFunction: () => T, explicitDependencyList?: readonly RBox<unknown>[]): RBox<T> => {
-	return new ViewBox(calcFunction, explicitDependencyList)
+	return new ViewBox(calcFunction, explicitDependencyList as readonly RBoxInternal<unknown>[])
 }
 
 export class ViewBox<T> extends BaseBox<T> {
 
 	private readonly dependencyList: DependencyList
 
-	constructor(private readonly calcFunction: () => T, explicitDependencyList?: readonly RBox<unknown>[]) {
+	constructor(private readonly calcFunction: () => T, explicitDependencyList?: readonly RBoxInternal<unknown>[]) {
 		const onDependencyUpdate = () => this.recalculate()
 		const depList = explicitDependencyList
 			? explicitDependencyList.length === 1
@@ -19,6 +19,7 @@ export class ViewBox<T> extends BaseBox<T> {
 			: new DynamicDependencyList(onDependencyUpdate)
 		const initialValue = notificationStack.withNotifications(depList, calcFunction)
 		super(initialValue)
+		depList.ownerBox = this
 		this.dependencyList = depList
 	}
 
@@ -45,6 +46,10 @@ export class ViewBox<T> extends BaseBox<T> {
 			return false
 		}
 
+		// this is a little bit bad, because if we have a big "network" of viewboxes,
+		// then each .get() to viewbox will trigger a chain checks for each box in network
+		// which could happen on first render of an app UI, for example
+		// nothing really can be done with it without introducing "non-update" bugs
 		if(!this.dependencyList.didDependencyListChange()){
 			return false
 		}

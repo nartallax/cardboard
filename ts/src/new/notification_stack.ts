@@ -1,4 +1,4 @@
-import type {DependencyList, RBox} from "src/new/internal"
+import type {DependencyList, RBoxInternal} from "src/new/internal"
 
 /** This class allows non-trivial boxes to gather information on which boxes they depend on */
 class NotificationStack {
@@ -20,7 +20,7 @@ class NotificationStack {
 		}
 	}
 
-	notify<T>(box: RBox<T>, value: T): void {
+	notify<T>(box: RBoxInternal<T>, value: T): void {
 		const stackTop = this.stack[this.stack.length - 1]
 		if(stackTop && !stackTop.isStatic){
 			stackTop.notifyDependencyCall(box, value)

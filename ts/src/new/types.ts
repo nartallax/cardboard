@@ -20,6 +20,11 @@ export interface RBox<T>{
 	map<R>(mapper: (value: T) => R): RBox<R>
 }
 
+export interface RBoxInternal<T> extends RBox<T>{
+	subscribeInternal(handler: ChangeHandler<T>, box: RBoxInternal<unknown>): void
+	unsubscribeInternal(handler: ChangeHandler<T>, box: RBoxInternal<unknown>): void
+}
+
 /** Writable box: a box in which you can put value, and get value from. */
 export interface WBox<T> extends RBox<T> {
 	/** Put the value in the box, overwriting existing value and calling all the change handlers. */
@@ -55,4 +60,8 @@ export interface Subscriber<T> {
 	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
 	 * or to the same value as the box already has; it will only be different within update rounds */
 	lastKnownValue: T
+}
+
+export interface InternalSubscriber<T> extends Subscriber<T> {
+	readonly box: RBox<T>
 }
