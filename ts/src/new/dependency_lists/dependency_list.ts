@@ -14,7 +14,8 @@ export interface DependencyList {
 	subscribeToDependencies(): void
 }
 
-export abstract class BaseDependencyList {
+/** A dependency list that stores dependencies and their values in a map */
+export abstract class BaseMapDependencyList {
 	protected readonly boxes: Map<RBox<unknown>, unknown> = new Map()
 
 	constructor(private readonly onDependencyUpdate: (value: unknown) => void) {}

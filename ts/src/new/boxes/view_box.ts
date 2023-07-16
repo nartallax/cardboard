@@ -1,6 +1,7 @@
+import {SingleDependencyList} from "src/new/dependency_lists/single_dependency_list"
 import {BaseBox, notificationStack, DependencyList, DynamicDependencyList, StaticDependencyList, ChangeHandler, RBox} from "src/new/internal"
 
-/** Make new view box, readonly box that calculates its value based on passed functiion */
+/** Make new view box, readonly box that calculates its value based on passed function */
 export const viewBox = <T>(calcFunction: () => T, explicitDependencyList?: readonly RBox<unknown>[]): RBox<T> => {
 	return new ViewBox(calcFunction, explicitDependencyList)
 }
@@ -12,7 +13,9 @@ export class ViewBox<T> extends BaseBox<T> {
 	constructor(private readonly calcFunction: () => T, explicitDependencyList?: readonly RBox<unknown>[]) {
 		const onDependencyUpdate = () => this.recalculate()
 		const depList = explicitDependencyList
-			? new StaticDependencyList(explicitDependencyList, onDependencyUpdate)
+			? explicitDependencyList.length === 1
+				? new SingleDependencyList(explicitDependencyList[0]!, onDependencyUpdate)
+				: new StaticDependencyList(explicitDependencyList, onDependencyUpdate)
 			: new DynamicDependencyList(onDependencyUpdate)
 		const initialValue = notificationStack.withNotifications(depList, calcFunction)
 		super(initialValue)

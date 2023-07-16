@@ -1,4 +1,4 @@
-import {BaseDependencyList, DependencyList, RBox} from "src/new/internal"
+import {BaseMapDependencyList, DependencyList, RBox} from "src/new/internal"
 
 /* FIXME: test for box that changes its value during the call
 like,
@@ -11,7 +11,7 @@ viewBox(() => {
 */
 
 /** A list of boxes and their values, calculated dynamically at runtime */
-export class DynamicDependencyList extends BaseDependencyList implements DependencyList {
+export class DynamicDependencyList extends BaseMapDependencyList implements DependencyList {
 	readonly isStatic!: boolean
 
 	reset(): void {
