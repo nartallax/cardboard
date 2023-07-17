@@ -27,15 +27,15 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 
 	/** Update the value of the box, calling the subscribers.
 	 *
-	 * @param box the box that caused the change. Won't be notified of the change happening. */
-	set(newValue: T, box?: RBoxInternal<unknown>): void {
+	 * @param changeSourceBox the box that caused the change. Won't be notified of the change happening. */
+	set(newValue: T, changeSourceBox?: RBoxInternal<unknown>): void {
 		if(this.value === newValue){
 			return
 		}
 
 		this.revision++
 		this.value = newValue
-		this.callSubscribers(newValue, box)
+		this.notifyOnValueChange(newValue, changeSourceBox)
 	}
 
 	get(): T {
@@ -67,12 +67,12 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		}
 	}
 
-	private callSubscribers(value: T, excludeBox?: RBox<unknown>): void {
+	private notifyOnValueChange(value: T, changeSourceBox?: RBox<unknown>): boolean {
 		const startingRevision = this.revision
 
 		if(this.internalSubscriptions){
 			for(const [handler, subscriber] of this.internalSubscriptions){
-				if(subscriber.box === excludeBox){
+				if(subscriber.box === changeSourceBox){
 					continue
 				}
 				if(subscriber.lastKnownValue !== value){
@@ -83,7 +83,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 					// some of the subscribers changed value of the box;
 					// it doesn't make sense to proceed further in this round of calls,
 					// because there is another round of calls probably in progress, or maybe even already completed
-					return
+					return false
 				}
 			}
 		}
@@ -95,10 +95,12 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 					handler(value, this)
 				}
 				if(this.revision !== startingRevision){
-					return
+					return false
 				}
 			}
 		}
+
+		return true
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R> {
