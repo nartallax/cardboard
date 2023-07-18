@@ -1,9 +1,9 @@
-import type {ChangeHandler, DownstreamBox, RBox, RBoxInternal, Subscriber, WBox, WBoxInternal} from "src/new/internal"
-import {ViewBox, notificationStack} from "src/new/internal"
+import type {ChangeHandler, DownstreamBoxImpl, RBox, RBoxInternal, Subscriber, WBox, WBoxInternal} from "src/new/internal"
+import {MapBox, ViewBox, notificationStack} from "src/new/internal"
 
 export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	private subscriptions: Map<ChangeHandler<T, this>, Subscriber<T>> | null = null
-	private internalSubscriptions: Map<DownstreamBox<any>, Subscriber<T>> | null = null
+	private internalSubscriptions: Map<DownstreamBoxImpl<any>, Subscriber<T>> | null = null
 	/** A revision is a counter that is incremented each time the value of the box is changed
 	 *
 	 * This value must never be visible outside of this box.
@@ -50,7 +50,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
 	}
 
-	subscribeInternal<S>(box: DownstreamBox<S>): void {
+	subscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
 		(this.internalSubscriptions ||= new Map()).set(box, {lastKnownValue: this.value})
 	}
 
@@ -65,7 +65,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		}
 	}
 
-	unsubscribeInternal<S>(box: DownstreamBox<S>): void {
+	unsubscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
 		if(!this.internalSubscriptions){
 			return
 		}
@@ -76,12 +76,14 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		}
 	}
 
-	private notifyOnValueChange(value: T, changeSourceBox?: RBox<unknown>): boolean {
+	protected notifyOnValueChange(value: T, changeSourceBox?: RBoxInternal<unknown>): boolean {
 		const startingRevision = this.revision
 
 		if(this.internalSubscriptions){
 			for(const [box, subscriber] of this.internalSubscriptions){
 				if(box === changeSourceBox){
+					// that box already knows what value of this box should be
+					subscriber.lastKnownValue = value
 					continue
 				}
 				if(subscriber.lastKnownValue !== value){
@@ -112,8 +114,14 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		return true
 	}
 
-	map<R>(mapper: (value: T) => R): RBox<R> {
-		return new ViewBox(() => mapper(this.get()), [this])
+	map<R>(mapper: (value: T) => R): RBox<R>
+	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
+	map<R>(mapper: (value: T) => R, reverseMapper?: (value: R) => T): RBox<R> {
+		if(!reverseMapper){
+			// TODO: subclass this? to avoid new function
+			return new ViewBox(() => mapper(this.get()), [this])
+		}
+		return new MapBox(this, mapper, reverseMapper)
 	}
 
 }

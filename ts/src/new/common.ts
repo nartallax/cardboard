@@ -1,4 +1,4 @@
-import {ConstBox, constBox, WBox, RBox, Boxed, Unboxed, ValueBox, ViewBox} from "src/new/internal"
+import {ConstBox, constBox, WBox, RBox, Boxed, Unboxed, ValueBox, ViewBox, MapBox} from "src/new/internal"
 
 /** Wrap a value in a const box, if the value is not a box; otherwise return that box as is */
 export const constBoxWrap = <T>(boxOrValue: T): Boxed<T> => {
@@ -20,7 +20,7 @@ export const isRBox = (value: unknown): value is RBox<unknown> => {
 
 /** Checks if the value is a writable box */
 export const isWBox = (value: unknown): value is WBox<unknown> => {
-	return value instanceof ValueBox
+	return value instanceof ValueBox || value instanceof MapBox
 }
 
 /** Checks if the value is a constant box.

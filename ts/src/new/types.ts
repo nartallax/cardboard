@@ -26,15 +26,24 @@ export interface RBox<T>{
 export interface WBox<T> extends RBox<T> {
 	/** Put the value in the box, overwriting existing value and calling all the change handlers. */
 	set(value: T): void
+
+	map<R>(mapper: (value: T) => R): RBox<R>
+	/** Create another box, value of which entirely depends on value of this one box
+	 * New box will also propagate its value to this box if changed
+	 *
+	 * Even if other boxes are used in this box, they won't trigger recalculation */
+	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
 }
 
 export interface RBoxInternal<T> extends RBox<T>{
 	subscribeInternal<S>(box: DownstreamBox<S>): void
 	unsubscribeInternal<S>(box: DownstreamBox<S>): void
+	// this one is explosed for tests
+	haveSubscribers(): boolean
 }
 
-export interface WBoxInternal<T> extends Omit<WBox<T>, "subscribe" | "unsubscribe">, RBoxInternal<T>{
-	set(value: T, box?: WBoxInternal<T>): void
+export interface WBoxInternal<T> extends Omit<WBox<T>, "subscribe" | "unsubscribe">, Omit<RBoxInternal<T>, "map">{
+	set(value: T, box?: RBoxInternal<unknown>): void
 }
 
 /** Maybe RBox - RBox or non-boxed value */

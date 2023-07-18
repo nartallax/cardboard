@@ -31,6 +31,10 @@ export class ConstBox<T> implements RBoxInternal<T> {
 		// nothing
 	}
 
+	haveSubscribers(): boolean {
+		return false
+	}
+
 	map<R>(mapper: (value: T) => R): RBox<R> {
 		return new ConstBox(mapper(this.value))
 	}

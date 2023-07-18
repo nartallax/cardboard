@@ -1,7 +1,14 @@
 import {BaseBox, notificationStack, ChangeHandler, RBoxInternal, DependencyList} from "src/new/internal"
 
-/** DownstreamBox is a box that is derived from some other box (or several) */
-export abstract class DownstreamBox<T> extends BaseBox<T> {
+export interface DownstreamBox<T> extends RBoxInternal<T> {
+	calculate(): T
+	readonly dependencyList: DependencyList
+}
+
+/** DownstreamBox is a box that is derived from some other box (or several)
+ *
+ * Various downstream boxes can form a network of values, propagated through internal subscribers */
+export abstract class DownstreamBoxImpl<T> extends BaseBox<T> {
 
 	/** Calculate value of this box based on its internal calculation logic */
 	abstract calculate(): T
@@ -68,7 +75,7 @@ export abstract class DownstreamBox<T> extends BaseBox<T> {
 		this.onSubscription(hadSubs)
 	}
 
-	subscribeInternal<S>(box: DownstreamBox<S>): void {
+	subscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
 		const hadSubs = this.haveSubscribers()
 		super.subscribeInternal(box)
 		this.onSubscription(hadSubs)
@@ -79,7 +86,7 @@ export abstract class DownstreamBox<T> extends BaseBox<T> {
 		this.onUnsubscription()
 	}
 
-	unsubscribeInternal<S>(box: DownstreamBox<S>): void {
+	unsubscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
 		super.unsubscribeInternal(box)
 		this.onUnsubscription()
 	}

@@ -1,7 +1,8 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 import {box, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/new/cardboard"
-import {InternalRBox, makeCallCounter} from "test/test_utils"
+import {RBoxInternal} from "src/new/types"
+import {makeCallCounter} from "test/test_utils"
 
 describe("ViewBox", () => {
 
@@ -190,8 +191,8 @@ describe("ViewBox", () => {
 		const b = box(5)
 		const v = viewBox(() => b.get() * 2)
 
-		const rb = b as unknown as InternalRBox<number>
-		const rv = v as InternalRBox<number>
+		const rb = b as unknown as RBoxInternal<number>
+		const rv = v as RBoxInternal<number>
 
 		expect(rb.haveSubscribers()).to.be.equal(false)
 		expect(rv.haveSubscribers()).to.be.equal(false)
@@ -223,9 +224,9 @@ describe("ViewBox", () => {
 		const v = viewBox(() => b.get() * 2)
 		const vv = viewBox(() => v.get() - 2)
 
-		const rb = b as unknown as InternalRBox<number>
-		const rv = v as InternalRBox<number>
-		const rvv = vv as InternalRBox<number>
+		const rb = b as unknown as RBoxInternal<number>
+		const rv = v as RBoxInternal<number>
+		const rvv = vv as RBoxInternal<number>
 
 		expect(rb.haveSubscribers()).to.be.equal(false)
 		expect(rv.haveSubscribers()).to.be.equal(false)
@@ -282,6 +283,31 @@ describe("ViewBox", () => {
 		a.set(6)
 		expect(counter.callCount).to.be.equal(2)
 		expect(c.get()).to.be.equal(10)
+	})
+
+
+	test("viewbox with explicit dependency list caches result always", () => {
+		// this test may be a bit outdated, because all viewboxes now cache values, but anyway
+
+		const a = box(5)
+		let callCount = 0
+		const b = a.map(x => {
+			callCount++
+			return x + 10
+		})
+
+		expect(callCount).to.be(1)
+		expect(b.get()).to.be(15)
+		expect(callCount).to.be(1)
+		expect(b.get()).to.be(15)
+		expect(callCount).to.be(1)
+
+		a.set(10)
+		expect(callCount).to.be(1) // no subscription; `b` shouldn't know that `a` changed
+		expect(b.get()).to.be(20)
+		expect(callCount).to.be(2)
+		expect(b.get()).to.be(20)
+		expect(callCount).to.be(2)
 	})
 
 })

@@ -1391,49 +1391,6 @@ describe("box", () => {
 		expect(box2().name).to.be.equal("3")
 	})
 
-	test("wbox mapping basic", () => {
-		const b = box(1)
-		const bb = b.map(x => x * 2, x => x / 2)
-
-		expect(b()).to.be(1)
-		expect(bb()).to.be(2)
-
-		b(2)
-		expect(b()).to.be(2)
-		expect(bb()).to.be(4)
-
-		bb(12)
-		expect(b()).to.be(6)
-		expect(bb()).to.be(12)
-	})
-
-	test("wbox mapping basic sub", () => {
-		const b = box(1) as WBoxInternal<number>
-		const bb = b.map(x => x * 2, x => x / 2)
-
-		expect(b.haveSubscribers()).to.be(false)
-		let v: number | null = null
-		const unsub = bb.subscribe(x => v = x)
-
-		expect(b.haveSubscribers()).to.be(true)
-		expect(b()).to.be(1)
-		expect(bb()).to.be(2)
-		expect(v).to.be(null)
-
-		b(2)
-		expect(b()).to.be(2)
-		expect(bb()).to.be(4)
-		expect(v).to.be(4)
-
-		bb(12)
-		expect(b()).to.be(6)
-		expect(bb()).to.be(12)
-		expect(v).to.be(12)
-
-		unsub()
-		expect(b.haveSubscribers()).to.be(false)
-	})
-
 	test("wbox mapping after prop", () => {
 		const b = box({a: 5})
 		const bb = b.prop("a")
@@ -1574,62 +1531,6 @@ describe("box", () => {
 		expect(arrBox()[0]).to.eql({id: 1, name: "uwu"})
 	})
 
-	test("box with explicit dependency list caches result always", () => {
-		const a = box(5)
-		let callCount = 0
-		const b = a.map(x => {
-			callCount++
-			return x + 10
-		})
-
-		expect(callCount).to.be(0)
-		expect(b()).to.be(15)
-		expect(callCount).to.be(1)
-		expect(b()).to.be(15)
-		expect(callCount).to.be(1)
-
-		a(10)
-		expect(callCount).to.be(1) // no subscription; `b` shouldn't know that `a` changed
-		expect(b()).to.be(20)
-		expect(callCount).to.be(2)
-		expect(b()).to.be(20)
-		expect(callCount).to.be(2)
-	})
-
-	test("two-way mapper only invokes actual mapper if source value changed", () => {
-		const a = box(5)
-		let directCalls = 0
-		let reverseCalls = 0
-		const b = a.map(aVal => {
-			directCalls++
-			return aVal * 2
-		}, bVal => {
-			reverseCalls++
-			return bVal / 2
-		})
-
-		expect({directCalls}).to.eql({directCalls: 0})
-		expect({reverseCalls}).to.eql({reverseCalls: 0})
-
-		expect(b()).to.be(10)
-		expect({directCalls}).to.eql({directCalls: 1})
-		expect({reverseCalls}).to.eql({reverseCalls: 0})
-
-		expect(b()).to.be(10)
-		expect({directCalls}).to.eql({directCalls: 1})
-		expect({reverseCalls}).to.eql({reverseCalls: 0})
-
-		b(30)
-		expect(a()).to.be(15)
-		expect({directCalls}).to.eql({directCalls: 1})
-		expect({reverseCalls}).to.eql({reverseCalls: 1})
-
-		b(30)
-		expect(a()).to.be(15)
-		expect({directCalls}).to.eql({directCalls: 1})
-		expect({reverseCalls}).to.eql({reverseCalls: 1})
-	})
-
 	test("maparray box should throw if its value is requested while the value is being recalculated", () => {
 		const urls = viewBox(() => ["1", "2", "3"])
 		let maxImageHeight = 0
@@ -1648,41 +1549,6 @@ describe("box", () => {
 		)
 		expect(images).to.throwError(/loop/)
 		void maxImageHeight
-	})
-
-	test("mapped box will recalculate value after unsub and resub", () => {
-		const noop = () => { /* nothing */}
-
-		const srcArray = box([1, 2, 3])
-		const firstMappedArray = srcArray.map(srcArray => srcArray.map(x => x * 2))
-		const secondMappedArray = firstMappedArray.map(srcArray => srcArray.map(x => x + 1))
-		let unsub = secondMappedArray.subscribe(noop)
-		expect(secondMappedArray()).to.eql([3, 5, 7])
-		unsub()
-		unsub = secondMappedArray.subscribe(noop)
-		expect(secondMappedArray()).to.eql([3, 5, 7])
-	})
-
-	test("two-way mapped box receives updates when upstream is returned back to starting value", () => {
-		const px = box("3px")
-
-		let first = 0
-		let second = 0
-
-		px.subscribe(() => first++)
-		px.subscribe(() => second++)
-		const abs = px.map(str => parseInt(str), num => num + "px")
-		let lastKnownValue = -1
-		abs.subscribe(newValue => lastKnownValue = newValue)
-		abs(4)
-		expect(px()).to.be("4px")
-		expect(first).to.be(1)
-		expect(second).to.be(1)
-		expect(lastKnownValue).to.be(4)
-		px("3px")
-		expect(first).to.be(2)
-		expect(second).to.be(2)
-		expect(lastKnownValue).to.be(3)
 	})
 
 })
