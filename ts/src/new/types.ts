@@ -20,6 +20,9 @@ export interface RBox<T>{
 	 *
 	 * Even if other boxes are used in this box, they won't trigger recalculation */
 	map<R>(mapper: (value: T) => R): RBox<R>
+
+	/** Create another box which holds value of a property under that name */
+	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
 }
 
 /** Writable box: a box in which you can put value, and get value from. */
@@ -33,6 +36,10 @@ export interface WBox<T> extends RBox<T> {
 	 *
 	 * Even if other boxes are used in this box, they won't trigger recalculation */
 	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
+
+	/** Create another box which holds value of a property under that name */
+	prop<K extends keyof T>(this: WBox<T>, propName: K): WBox<T[K]>
+	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
 }
 
 export interface RBoxInternal<T> extends RBox<T>{
@@ -42,7 +49,7 @@ export interface RBoxInternal<T> extends RBox<T>{
 	haveSubscribers(): boolean
 }
 
-export interface WBoxInternal<T> extends Omit<WBox<T>, "subscribe" | "unsubscribe">, Omit<RBoxInternal<T>, "map">{
+export interface WBoxInternal<T> extends WBox<T>, Omit<RBoxInternal<T>, "map" | "prop" | "subscribe" | "unsubscribe">{
 	set(value: T, box?: RBoxInternal<unknown>): void
 }
 

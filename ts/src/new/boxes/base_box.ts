@@ -1,5 +1,5 @@
 import type {ChangeHandler, DownstreamBoxImpl, RBox, RBoxInternal, Subscriber, WBox, WBoxInternal} from "src/new/internal"
-import {MapBox, ViewBox, notificationStack} from "src/new/internal"
+import {MapBox, PropRBox, PropWBox, ViewBox, isWBox, notificationStack} from "src/new/internal"
 
 export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	private subscriptions: Map<ChangeHandler<T, this>, Subscriber<T>> | null = null
@@ -122,6 +122,12 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 			return new ViewBox(() => mapper(this.get()), [this])
 		}
 		return new MapBox(this, mapper, reverseMapper)
+	}
+
+	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
+	prop<K extends keyof T>(this: WBox<T>, propName: K): WBox<T[K]>
+	prop<K extends keyof T>(propName: K): WBox<T[K]> | RBox<T[K]> {
+		return isWBox(this) ? new PropWBox(this, propName) : new PropRBox(this, propName)
 	}
 
 }

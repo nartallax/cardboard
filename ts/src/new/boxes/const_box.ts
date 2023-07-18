@@ -38,4 +38,8 @@ export class ConstBox<T> implements RBoxInternal<T> {
 	map<R>(mapper: (value: T) => R): RBox<R> {
 		return new ConstBox(mapper(this.value))
 	}
+
+	prop<K extends keyof T>(propName: K): RBox<T[K]> {
+		return new ConstBox(this.value[propName])
+	}
 }

@@ -42,7 +42,7 @@ export abstract class DownstreamBoxImpl<T> extends BaseBox<T> {
 		}
 	}
 
-	private shouldRecalculate(justHadFirstSubscriber?: boolean): boolean {
+	protected shouldRecalculate(justHadFirstSubscriber?: boolean): boolean {
 		if(!justHadFirstSubscriber && this.haveSubscribers()){
 			// if we have subscribers - we are subscribed to our dependencies
 			// that means we recalculate each time a dependency is changed
@@ -61,7 +61,7 @@ export abstract class DownstreamBoxImpl<T> extends BaseBox<T> {
 		return true
 	}
 
-	get(): T {
+	override get(): T {
 		if(this.shouldRecalculate()){
 			this.calculateAndResubscribe()
 		}

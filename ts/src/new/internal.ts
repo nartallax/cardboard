@@ -10,8 +10,10 @@ export * from "src/new/notification_stack"
 
 export * from "src/new/boxes/base_box"
 export * from "src/new/boxes/downstream_box"
+export * from "src/new/boxes/single_downstream_box"
 
 export * from "src/new/boxes/map_box"
+export * from "src/new/boxes/prop_box"
 export * from "src/new/boxes/view_box"
 export * from "src/new/boxes/value_box"
 export * from "src/new/boxes/const_box"
