@@ -5,4 +5,9 @@ export const box = <T>(value: T): WBox<T> => {
 	return new ValueBox(value)
 }
 
-export class ValueBox<T> extends BaseBox<T> {}
+export class ValueBox<T> extends BaseBox<T> {
+	constructor(value: T) {
+		super()
+		this.value = value
+	}
+}

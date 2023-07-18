@@ -11,7 +11,7 @@ viewBox(() => {
 */
 
 /** A list of boxes and their values, calculated dynamically at runtime */
-export class DynamicDependencyList extends BaseMapDependencyList implements DependencyList {
+export class DynamicDependencyList<O> extends BaseMapDependencyList<O> implements DependencyList {
 	readonly isStatic!: boolean
 
 	reset(): void {

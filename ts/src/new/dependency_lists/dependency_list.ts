@@ -1,12 +1,7 @@
-import type {ChangeHandler, RBoxInternal} from "src/new/internal"
+import type {DownstreamBox, RBoxInternal} from "src/new/internal"
 
 /** A list of boxes some calculation depends on  */
 export interface DependencyList {
-	/** A box this dependency list belongs to
-	 *
-	 * MUST be set after construction
-	 * this property cannot be set in constructor because this list is often constructed in constructor of box itself */
-	ownerBox: RBoxInternal<unknown>
 	/** Static dependency lists can never change
 	 * This sometimes can lead to optimizations */
 	readonly isStatic: boolean
@@ -20,23 +15,20 @@ export interface DependencyList {
 }
 
 /** A dependency list that stores dependencies and their values in a map */
-export abstract class BaseMapDependencyList {
+export abstract class BaseMapDependencyList<O> {
 	protected readonly boxes: Map<RBoxInternal<unknown>, unknown> = new Map()
 
-	ownerBox!: RBoxInternal<unknown>
-
-	// TODO: maybe we don't need this function, and it can be a method?
-	constructor(private readonly onDependencyUpdate: ChangeHandler<unknown>) {}
+	constructor(private readonly ownerBox: DownstreamBox<O>) {}
 
 	subscribeToDependencies(): void {
 		for(const dependency of this.boxes.keys()){
-			dependency.subscribe(this.onDependencyUpdate, this.ownerBox)
+			dependency.subscribeInternal(this.ownerBox)
 		}
 	}
 
 	unsubscribeFromDependencies(): void {
 		for(const dependency of this.boxes.keys()){
-			dependency.unsubscribe(this.onDependencyUpdate, this.ownerBox)
+			dependency.unsubscribeInternal(this.ownerBox)
 		}
 	}
 

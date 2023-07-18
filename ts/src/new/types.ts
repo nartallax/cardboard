@@ -1,3 +1,5 @@
+import type {DownstreamBox} from "src/new/internal"
+
 /** Readonly box: a box which contents you can get, but cannot directly put anything into. */
 export interface RBox<T>{
 	/** Get the value that is stored in this box. */
@@ -27,8 +29,8 @@ export interface WBox<T> extends RBox<T> {
 }
 
 export interface RBoxInternal<T> extends RBox<T>{
-	subscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void
-	unsubscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void
+	subscribeInternal<S>(box: DownstreamBox<S>): void
+	unsubscribeInternal<S>(box: DownstreamBox<S>): void
 }
 
 export interface WBoxInternal<T> extends Omit<WBox<T>, "subscribe" | "unsubscribe">, RBoxInternal<T>{
@@ -64,8 +66,4 @@ export interface Subscriber<T> {
 	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
 	 * or to the same value as the box already has; it will only be different within update rounds */
 	lastKnownValue: T
-}
-
-export interface InternalSubscriber<T> extends Subscriber<T> {
-	readonly box: RBox<T>
 }

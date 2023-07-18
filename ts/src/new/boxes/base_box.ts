@@ -1,9 +1,9 @@
-import {ChangeHandler, InternalSubscriber, RBox, RBoxInternal, Subscriber, ViewBox, WBox, WBoxInternal, notificationStack} from "src/new/internal"
+import type {ChangeHandler, DownstreamBox, RBox, RBoxInternal, Subscriber, WBox, WBoxInternal} from "src/new/internal"
+import {ViewBox, notificationStack} from "src/new/internal"
 
 export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	private subscriptions: Map<ChangeHandler<T, this>, Subscriber<T>> | null = null
-	// TODO: do we really need ChangeHandler here? maybe I can do it in a more optimal way?
-	private internalSubscriptions: Map<ChangeHandler<T, this>, InternalSubscriber<T>> | null = null
+	private internalSubscriptions: Map<DownstreamBox<any>, Subscriber<T>> | null = null
 	/** A revision is a counter that is incremented each time the value of the box is changed
 	 *
 	 * This value must never be visible outside of this box.
@@ -19,7 +19,10 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	 * that's why if you rely on revision to check if the value changed you'll get some false-positives */
 	private revision = 1
 
-	constructor(protected value: T) {}
+	/** Must be set right after construction
+	 * It takes much more trouble to set this value in constructor than set it later
+	 * (i.e. you cannot call methods before you have value, but to get value you need to call a method) */
+	protected value!: T
 
 	haveSubscribers(): boolean {
 		return !!(this.subscriptions || this.internalSubscriptions)
@@ -43,27 +46,33 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		return this.value
 	}
 
-	subscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void {
-		if(box){
-			(this.internalSubscriptions ||= new Map()).set(handler, {lastKnownValue: this.value, box})
-		} else {
-			(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
-		}
+	subscribe(handler: ChangeHandler<T, this>): void {
+		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
 	}
 
-	unsubscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void {
-		const subs = box ? this.internalSubscriptions : this.subscriptions
-		if(!subs){
+	subscribeInternal<S>(box: DownstreamBox<S>): void {
+		(this.internalSubscriptions ||= new Map()).set(box, {lastKnownValue: this.value})
+	}
+
+	unsubscribe(handler: ChangeHandler<T, this>): void {
+		if(!this.subscriptions){
 			return
 		}
 
-		subs.delete(handler)
-		if(subs.size === 0){
-			if(box){
-				this.internalSubscriptions = null
-			} else {
-				this.subscriptions = null
-			}
+		this.subscriptions.delete(handler)
+		if(this.subscriptions.size === 0){
+			this.subscriptions = null
+		}
+	}
+
+	unsubscribeInternal<S>(box: DownstreamBox<S>): void {
+		if(!this.internalSubscriptions){
+			return
+		}
+
+		this.internalSubscriptions.delete(box)
+		if(this.internalSubscriptions.size === 0){
+			this.internalSubscriptions = null
 		}
 	}
 
@@ -71,13 +80,13 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		const startingRevision = this.revision
 
 		if(this.internalSubscriptions){
-			for(const [handler, subscriber] of this.internalSubscriptions){
-				if(subscriber.box === changeSourceBox){
+			for(const [box, subscriber] of this.internalSubscriptions){
+				if(box === changeSourceBox){
 					continue
 				}
 				if(subscriber.lastKnownValue !== value){
 					subscriber.lastKnownValue = value
-					handler(value, this)
+					box.calculateAndResubscribe(this)
 				}
 				if(this.revision !== startingRevision){
 					// some of the subscribers changed value of the box;

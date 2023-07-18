@@ -1,30 +1,33 @@
-import {BaseBox, notificationStack, DependencyList, ChangeHandler, RBoxInternal} from "src/new/internal"
+import {BaseBox, notificationStack, ChangeHandler, RBoxInternal, DependencyList} from "src/new/internal"
 
-/** MapBox is a box that is derived from some other box (or several) */
-export abstract class MapBox<T> extends BaseBox<T> {
+/** DownstreamBox is a box that is derived from some other box (or several) */
+export abstract class DownstreamBox<T> extends BaseBox<T> {
 
 	/** Calculate value of this box based on its internal calculation logic */
-	protected abstract calculate(): T
+	abstract calculate(): T
 
-	constructor(private readonly dependencyList: DependencyList, initialValue: T) {
-		super(initialValue)
-		this.dependencyList.ownerBox = this
+	dependencyList!: DependencyList
+
+	/** Set all values that must be set in constructor */
+	protected init(dependencyList: DependencyList): void {
+		this.dependencyList = dependencyList
+		this.value = notificationStack.calculateWithNotifications(this)
 	}
 
-	// FIXME: private
 	/** Calculate the value, calling the calculation function, set it to this box,
 	 * update dependency list and update subscriptions
 	 *
+	 * This value should be called as handler of internal subscription calls
+	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
-	protected calculateAndResubscribe(changeSourceBox?: RBoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
+	calculateAndResubscribe(changeSourceBox?: RBoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
 		const shouldResubscribe = !this.dependencyList.isStatic && this.haveSubscribers()
 		if(!justHadFirstSubscriber && shouldResubscribe){
 			this.dependencyList.unsubscribeFromDependencies()
 		}
 
 		this.dependencyList.reset()
-		// TODO: don't create function here, use method
-		const newValue = notificationStack.withNotifications(this.dependencyList, () => this.calculate())
+		const newValue = notificationStack.calculateWithNotifications(this)
 		this.set(newValue, changeSourceBox)
 
 		if(shouldResubscribe){
@@ -59,10 +62,29 @@ export abstract class MapBox<T> extends BaseBox<T> {
 		return super.get()
 	}
 
-	subscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void {
+	subscribe(handler: ChangeHandler<T, this>): void {
 		const hadSubs = this.haveSubscribers()
-		super.subscribe(handler, box)
+		super.subscribe(handler)
+		this.onSubscription(hadSubs)
+	}
 
+	subscribeInternal<S>(box: DownstreamBox<S>): void {
+		const hadSubs = this.haveSubscribers()
+		super.subscribeInternal(box)
+		this.onSubscription(hadSubs)
+	}
+
+	unsubscribe(handler: ChangeHandler<T, this>): void {
+		super.unsubscribe(handler)
+		this.onUnsubscription()
+	}
+
+	unsubscribeInternal<S>(box: DownstreamBox<S>): void {
+		super.unsubscribeInternal(box)
+		this.onUnsubscription()
+	}
+
+	private onSubscription(hadSubs: boolean): void {
 		if(!hadSubs){
 			if(this.shouldRecalculate(true)){
 				// something may change while we wasn't subscribed to our dependencies
@@ -76,9 +98,7 @@ export abstract class MapBox<T> extends BaseBox<T> {
 		}
 	}
 
-	unsubscribe(handler: ChangeHandler<T, this>, box?: RBoxInternal<unknown>): void {
-		super.unsubscribe(handler, box)
-
+	private onUnsubscription(): void {
 		if(!this.haveSubscribers()){
 			this.dependencyList.unsubscribeFromDependencies()
 		}

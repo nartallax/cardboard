@@ -1,28 +1,25 @@
-import {ChangeHandler, DependencyList, RBoxInternal} from "src/new/internal"
+import {DependencyList, DownstreamBox, RBoxInternal} from "src/new/internal"
 
 /** A dependency list for cases when you have only one dependency
  *
  * Optimisation for StaticDependencyList that avoids creating a map */
-export class SingleDependencyList<T> implements DependencyList {
+export class SingleDependencyList<O, T> implements DependencyList {
 	readonly isStatic!: boolean
-
-	// see ownerBox prop on base
-	ownerBox!: RBoxInternal<unknown>
 
 	private lastKnownDependencyValue: T
 
 	constructor(
-		private readonly dependency: RBoxInternal<T>,
-		private readonly onDependencyUpdate: ChangeHandler<T>) {
+		private readonly ownerBox: DownstreamBox<O>,
+		private readonly dependency: RBoxInternal<T>) {
 		this.lastKnownDependencyValue = dependency.get()
 	}
 
 	subscribeToDependencies(): void {
-		this.dependency.subscribe(this.onDependencyUpdate, this.ownerBox)
+		this.dependency.subscribeInternal(this.ownerBox)
 	}
 
 	unsubscribeFromDependencies(): void {
-		this.dependency.unsubscribe(this.onDependencyUpdate, this.ownerBox)
+		this.dependency.unsubscribeInternal(this.ownerBox)
 	}
 
 	didDependencyListChange(): boolean {
