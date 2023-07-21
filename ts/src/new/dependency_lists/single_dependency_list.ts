@@ -33,6 +33,7 @@ export class SingleDependencyList<O, T> implements DependencyList {
 	notifyDependencyCall(): void {
 		throw new Error("This method was never meant to be called")
 	}
+
 }
 
 // TODO: this should be a decorator, but Parcel doesn't support them at the moment

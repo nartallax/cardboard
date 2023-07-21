@@ -1,4 +1,5 @@
-import {RBox, RBoxInternal} from "src/new/internal"
+import {ConstArrayContext} from "src/new/array_contexts/const_array_context"
+import {ArrayContext, RBox, WBox, WBoxInternal} from "src/new/internal"
 
 /** Make a new constant box, a readonly box which value never changes
  *
@@ -8,11 +9,15 @@ export const constBox = <T>(value: T): RBox<T> => {
 	return new ConstBox(value)
 }
 
-export class ConstBox<T> implements RBoxInternal<T> {
+export class ConstBox<T> implements WBoxInternal<T> {
 	constructor(private readonly value: T) {}
 
 	get(): T {
 		return this.value
+	}
+
+	set(): void {
+		throw new Error("You cannot set anything to constant box")
 	}
 
 	subscribe(): void {
@@ -35,11 +40,21 @@ export class ConstBox<T> implements RBoxInternal<T> {
 		return false
 	}
 
-	map<R>(mapper: (value: T) => R): RBox<R> {
+	map<R>(mapper: (value: T) => R): WBox<R> {
 		return new ConstBox(mapper(this.value))
 	}
 
-	prop<K extends keyof T>(propName: K): RBox<T[K]> {
+	prop<K extends keyof T>(propName: K): WBox<T[K]> {
 		return new ConstBox(this.value[propName])
+	}
+
+	getArrayContext<E, K>(this: ConstBox<E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, WBox<E>> {
+		return new ConstArrayContext<E, K>(this, getKey)
+	}
+
+	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+	mapArray<E, R>(this: ConstBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]> | WBox<R[]> {
+		return new ConstBox(this.value.map((item, index) => mapper(item, index)))
 	}
 }

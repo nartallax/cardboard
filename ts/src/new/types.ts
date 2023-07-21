@@ -1,4 +1,4 @@
-import type {DownstreamBox} from "src/new/internal"
+import type {UpstreamSubscriber} from "src/new/internal"
 
 /** Readonly box: a box which contents you can get, but cannot directly put anything into. */
 export interface RBox<T>{
@@ -23,6 +23,13 @@ export interface RBox<T>{
 
 	/** Create another box which holds value of a property under that name */
 	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
+
+	/** If this box contains an array - this will create an array context for it */
+	getArrayContext<E, K>(this: RBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, RBox<E>>
+
+	/** Apply mapper to each individual value in the array, getting array with new items
+	 * Will only apply mapper to new/changed items when the source array changes */
+	mapArray<E, R>(this: RBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
 }
 
 /** Writable box: a box in which you can put value, and get value from. */
@@ -40,16 +47,30 @@ export interface WBox<T> extends RBox<T> {
 	/** Create another box which holds value of a property under that name */
 	prop<K extends keyof T>(this: WBox<T>, propName: K): WBox<T[K]>
 	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
+
+	/** If this box contains an array - this will create an array context for it */
+	getArrayContext<E, K>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, WBox<E>>
+
+	/** Apply mapper to each individual value in the array, getting array with new items
+	 * Will only apply mapper to new/changed items when the source array changes */
+	mapArray<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArray<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+}
+
+/** An object that helps to manage boxes that wrap individual items of an array box */
+export interface ArrayContext<T, K, B extends RBox<T>>{
+	getBoxes(): B[]
+	getBoxForKey(key: K): B
 }
 
 export interface RBoxInternal<T> extends RBox<T>{
-	subscribeInternal<S>(box: DownstreamBox<S>): void
-	unsubscribeInternal<S>(box: DownstreamBox<S>): void
+	subscribeInternal(box: UpstreamSubscriber): void
+	unsubscribeInternal(box: UpstreamSubscriber): void
 	// this one is explosed for tests
 	haveSubscribers(): boolean
 }
 
-export interface WBoxInternal<T> extends WBox<T>, Omit<RBoxInternal<T>, "map" | "prop" | "subscribe" | "unsubscribe">{
+export interface WBoxInternal<T> extends WBox<T>, Omit<RBoxInternal<T>, "map" | "prop" | "subscribe" | "unsubscribe" | "getArrayContext" | "mapArray">{
 	set(value: T, box?: RBoxInternal<unknown>): void
 }
 

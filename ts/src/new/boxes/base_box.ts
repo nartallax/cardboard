@@ -1,9 +1,11 @@
-import type {ChangeHandler, DownstreamBoxImpl, RBox, RBoxInternal, Subscriber, WBox, WBoxInternal} from "src/new/internal"
-import {MapBox, PropRBox, PropWBox, ViewBox, isWBox, notificationStack} from "src/new/internal"
+import type {ChangeHandler, RBox, RBoxInternal, Subscriber, UpstreamSubscriber, WBox, WBoxInternal} from "src/new/internal"
+import {ArrayContextImpl, MapBox, PropRBox, PropWBox, ViewBox, isWBox, notificationStack} from "src/new/internal"
+
+export const DisposedValue = Symbol("DisposedBoxValue")
 
 export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	private subscriptions: Map<ChangeHandler<T, this>, Subscriber<T>> | null = null
-	private internalSubscriptions: Map<DownstreamBoxImpl<any>, Subscriber<T>> | null = null
+	private internalSubscriptions: Map<UpstreamSubscriber, Subscriber<T>> | null = null
 	/** A revision is a counter that is incremented each time the value of the box is changed
 	 *
 	 * This value must never be visible outside of this box.
@@ -22,7 +24,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	/** Must be set right after construction
 	 * It takes much more trouble to set this value in constructor than set it later
 	 * (i.e. you cannot call methods before you have value, but to get value you need to call a method) */
-	protected value!: T
+	value!: T | typeof DisposedValue
 
 	haveSubscribers(): boolean {
 		return !!(this.subscriptions || this.internalSubscriptions)
@@ -43,14 +45,32 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 
 	get(): T {
 		notificationStack.notify(this, this.value)
+		if(this.value === DisposedValue){
+			throw new Error("This box is disposed; no value can be get")
+		}
 		return this.value
+	}
+
+	/** When a box is disposed, it is no longer possible to get or set a value to this box
+	 *
+	 * Use case is situation when some upstream becomes invalid;
+	 * that means setting or getting value of this box is an error
+	 * because it is no longer updated or is able to propagate value to his own upstream
+	 * in this case, every downstream box should also became invalid */
+	dispose(): void {
+		this.value = DisposedValue
+		if(this.internalSubscriptions){
+			for(const downstream of this.internalSubscriptions.keys()){
+				downstream.dispose()
+			}
+		}
 	}
 
 	subscribe(handler: ChangeHandler<T, this>): void {
 		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
 	}
 
-	subscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
+	subscribeInternal(box: UpstreamSubscriber): void {
 		(this.internalSubscriptions ||= new Map()).set(box, {lastKnownValue: this.value})
 	}
 
@@ -65,7 +85,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		}
 	}
 
-	unsubscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
+	unsubscribeInternal(box: UpstreamSubscriber): void {
 		if(!this.internalSubscriptions){
 			return
 		}
@@ -81,14 +101,15 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 
 		if(this.internalSubscriptions){
 			for(const [box, subscriber] of this.internalSubscriptions){
-				if(box === changeSourceBox){
+				// FIXME: cringe. think about better typing all this stuff. maybe throwing away some abstractness?
+				if(box as unknown === changeSourceBox){
 					// that box already knows what value of this box should be
 					subscriber.lastKnownValue = value
 					continue
 				}
 				if(subscriber.lastKnownValue !== value){
 					subscriber.lastKnownValue = value
-					box.calculateAndResubscribe(this)
+					box.onUpstreamChange(this)
 				}
 				if(this.revision !== startingRevision){
 					// some of the subscribers changed value of the box;
@@ -130,4 +151,21 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		return isWBox(this) ? new PropWBox(this, propName) : new PropRBox(this, propName)
 	}
 
+	getArrayContext<E, K>(this: BaseBox<E[]>, getKey: (item: E, index: number) => K): ArrayContextImpl<E, K> {
+		return new ArrayContextImpl(this, getKey)
+	}
+
+	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper?: (item: R, index: number) => E): WBox<R[]> | RBox<R[]> {
+		const context = this.getArrayContext(getIndex) as ArrayContextImpl<E, number> // ew.
+		if(reverseMapper){
+			return context.mapArray(mapper, reverseMapper)
+		} else {
+			return context.mapArray(mapper)
+		}
+	}
+
 }
+
+const getIndex = (_: any, index: number) => index

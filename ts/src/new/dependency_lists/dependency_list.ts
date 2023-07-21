@@ -1,11 +1,11 @@
 import type {DownstreamBox, RBoxInternal} from "src/new/internal"
 
 /** A list of boxes some calculation depends on  */
-export interface DependencyList {
+export interface DependencyList<D = any> {
 	/** Static dependency lists can never change
 	 * This sometimes can lead to optimizations */
 	readonly isStatic: boolean
-	notifyDependencyCall<T>(box: RBoxInternal<T>, value: T): void
+	notifyDependencyCall<T extends D>(box: RBoxInternal<T>, value: T): void
 	/** Called each time right before the calculation */
 	reset(): void
 	/** Goes all the known dependencies and checks if any of those did change */

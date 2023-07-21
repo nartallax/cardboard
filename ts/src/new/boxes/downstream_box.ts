@@ -1,14 +1,19 @@
-import {BaseBox, notificationStack, ChangeHandler, RBoxInternal, DependencyList} from "src/new/internal"
+import {notificationStack, RBoxInternal, DependencyList, FirstSubscriberHandlingBox, WBoxInternal, DisposedValue} from "src/new/internal"
 
-export interface DownstreamBox<T> extends RBoxInternal<T> {
+export interface DownstreamBox<T> extends RBoxInternal<T>, UpstreamSubscriber {
 	calculate(): T
 	readonly dependencyList: DependencyList
+}
+
+export interface UpstreamSubscriber {
+	onUpstreamChange(upstream: WBoxInternal<unknown>): void
+	dispose(): void
 }
 
 /** DownstreamBox is a box that is derived from some other box (or several)
  *
  * Various downstream boxes can form a network of values, propagated through internal subscribers */
-export abstract class DownstreamBoxImpl<T> extends BaseBox<T> {
+export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T> {
 
 	/** Calculate value of this box based on its internal calculation logic */
 	abstract calculate(): T
@@ -42,7 +47,18 @@ export abstract class DownstreamBoxImpl<T> extends BaseBox<T> {
 		}
 	}
 
+	onUpstreamChange(upstream: WBoxInternal<unknown>): void {
+		this.calculateAndResubscribe(upstream)
+	}
+
 	protected shouldRecalculate(justHadFirstSubscriber?: boolean): boolean {
+		if(this.value === DisposedValue){
+			// we should never show disposed value to outside world
+			// also being disposed means that next recalculation will throw
+			// and that's a good thing, because it will notify user of error in his code
+			return true
+		}
+
 		if(!justHadFirstSubscriber && this.haveSubscribers()){
 			// if we have subscribers - we are subscribed to our dependencies
 			// that means we recalculate each time a dependency is changed
@@ -69,46 +85,20 @@ export abstract class DownstreamBoxImpl<T> extends BaseBox<T> {
 		return super.get()
 	}
 
-	subscribe(handler: ChangeHandler<T, this>): void {
-		const hadSubs = this.haveSubscribers()
-		super.subscribe(handler)
-		this.onSubscription(hadSubs)
-	}
-
-	subscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
-		const hadSubs = this.haveSubscribers()
-		super.subscribeInternal(box)
-		this.onSubscription(hadSubs)
-	}
-
-	unsubscribe(handler: ChangeHandler<T, this>): void {
-		super.unsubscribe(handler)
-		this.onUnsubscription()
-	}
-
-	unsubscribeInternal<S>(box: DownstreamBoxImpl<S>): void {
-		super.unsubscribeInternal(box)
-		this.onUnsubscription()
-	}
-
-	private onSubscription(hadSubs: boolean): void {
-		if(!hadSubs){
-			if(this.shouldRecalculate(true)){
-				// something may change while we wasn't subscribed to our dependencies
-				// that's why we should recalculate - so our value is actual
-				this.calculateAndResubscribe(undefined, true)
-			} else {
-				// even if we don't recalculate - we must subscribe to dependencies
-				// (if we recalculate - it will subscribe anyway)
-				this.dependencyList.subscribeToDependencies()
-			}
+	protected override onFirstSubscriber(): void {
+		if(this.shouldRecalculate(true)){
+			// something may change while we wasn't subscribed to our dependencies
+			// that's why we should recalculate - so our value is actual
+			this.calculateAndResubscribe(undefined, true)
+		} else {
+			// even if we don't recalculate - we must subscribe to dependencies
+			// (if we recalculate - it will subscribe anyway)
+			this.dependencyList.subscribeToDependencies()
 		}
 	}
 
-	private onUnsubscription(): void {
-		if(!this.haveSubscribers()){
-			this.dependencyList.unsubscribeFromDependencies()
-		}
+	protected override onLastUnsubscriber(): void {
+		this.dependencyList.unsubscribeFromDependencies()
 	}
 
 }
