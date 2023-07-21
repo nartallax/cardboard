@@ -849,4 +849,70 @@ describe("ArrayItemBox", () => {
 		expect(box2.get().name).to.be.equal("3")
 	})
 
+	test("map array", () => {
+		const arrBox = box([
+			{id: 1, name: "1"},
+			{id: 2, name: "2"},
+			{id: 3, name: "3"}
+		])
+
+		let callCount = 0
+		const mapResult = arrBox.mapArray(x => {
+			callCount++
+			return JSON.stringify(x)
+		}, x => JSON.parse(x))
+		expect(callCount).to.be(3)
+		expect(mapResult.get()[0]!).to.be("{\"id\":1,\"name\":\"1\"}")
+		mapResult.set(["{\"id\":1,\"name\":\"uwu\"}", mapResult.get()[1]!, mapResult.get()[2]!])
+		expect(arrBox.get()[0]).to.eql({id: 1, name: "uwu"})
+		expect(callCount).to.be(3)
+
+		arrBox.set([arrBox.get()[1]!, arrBox.get()[2]!, arrBox.get()[0]!])
+		expect(arrBox.get()[0]).to.eql({id: 2, name: "2"})
+		expect(mapResult.get()[2]!).to.be("{\"id\":1,\"name\":\"uwu\"}")
+		expect(callCount).to.be(3)
+
+		arrBox.set([arrBox.get()[0]!, arrBox.get()[1]!, {...arrBox.get()[2]!, name: "owo"}])
+		expect(mapResult.get()[2]!).to.be("{\"id\":1,\"name\":\"owo\"}")
+		expect(callCount).to.be(4)
+
+	})
+
+	test("readonly array", () => {
+		const roArr: readonly {id: number, name: string}[] = [
+			{id: 1, name: "1"},
+			{id: 2, name: "2"},
+			{id: 3, name: "3"}
+		]
+		const arrBox = box(roArr)
+
+		const mapResult = arrBox.mapArray(x => JSON.stringify(x), x => JSON.parse(x))
+		expect(mapResult.get()[0]!).to.be("{\"id\":1,\"name\":\"1\"}")
+		mapResult.set(["{\"id\":1,\"name\":\"uwu\"}", mapResult.get()[1]!, mapResult.get()[2]!])
+		expect(arrBox.get()[0]).to.eql({id: 1, name: "uwu"})
+	})
+
+	test("maparray box should throw if its value is requested while the value is being recalculated", () => {
+		try {
+			const urls = viewBox(() => ["1", "2", "3"])
+			let maxImageHeight = 0
+			const calcMaxHeight = () => {
+				const imgs = images.get()
+				maxImageHeight = imgs.reduce((a, b) => Math.max(a, b.height), 0)
+			}
+			const images = urls.mapArray(
+				url => {
+					const img = {width: parseInt(url), height: parseInt(url)}
+					calcMaxHeight()
+					return img
+				}
+			)
+			void maxImageHeight
+		} catch(e){
+			// cannot access images before initialization
+			// this test is about synchronous call of callback mapArray
+			expect(e + "").to.match(/images/)
+		}
+	})
+
 })

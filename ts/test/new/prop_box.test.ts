@@ -541,4 +541,109 @@ describe("PropBox", () => {
 		expect(child.haveSubscribers()).to.be.equal(false)
 	})
 
+	test("wbox mapping after prop", () => {
+		const b = box({a: 5})
+		const bb = b.prop("a")
+		const bbb = bb.map(x => x + 1, x => x - 1)
+
+		expect(b.get().a).to.be(5)
+		expect(bb.get()).to.be(5)
+		expect(bbb.get()).to.be(6)
+
+		bbb.set(7)
+		expect(b.get().a).to.be(6)
+		expect(bb.get()).to.be(6)
+		expect(bbb.get()).to.be(7)
+
+		b.set({a: 10})
+		expect(b.get().a).to.be(10)
+		expect(bb.get()).to.be(10)
+		expect(bbb.get()).to.be(11)
+	})
+
+	test("wbox mapping after prop sub", () => {
+		const b = box({a: 5}) as WBoxInternal<{a: number}>
+		const bb = b.prop("a")
+		const bbb = bb.map(x => x + 1, x => x - 1)
+
+		expect(b.haveSubscribers()).to.be(false)
+
+		const counter = makeCallCounter()
+		bbb.subscribe(counter)
+
+		expect(b.haveSubscribers()).to.be(true)
+		expect(b.get().a).to.be(5)
+		expect(bb.get()).to.be(5)
+		expect(bbb.get()).to.be(6)
+		expect(counter.lastCallValue).to.be(null)
+
+		bbb.set(7)
+		expect(b.get().a).to.be(6)
+		expect(bb.get()).to.be(6)
+		expect(bbb.get()).to.be(7)
+		expect(counter.lastCallValue).to.be(7)
+
+		b.set({a: 10})
+		expect(b.get().a).to.be(10)
+		expect(bb.get()).to.be(10)
+		expect(bbb.get()).to.be(11)
+		expect(counter.lastCallValue).to.be(11)
+
+		bbb.unsubscribe(counter)
+		expect(b.haveSubscribers()).to.be(false)
+	})
+
+	test("wbox mapping before prop", () => {
+		const b = box(7)
+		const bb = b.map(x => ({a: x * 2}), x => x.a / 2)
+		const bbb = bb.prop("a")
+
+		expect(b.get()).to.be(7)
+		expect(bb.get().a).to.be(14)
+		expect(bbb.get()).to.be(14)
+
+		b.set(8)
+		expect(b.get()).to.be(8)
+		expect(bb.get().a).to.be(16)
+		expect(bbb.get()).to.be(16)
+
+		bbb.set(4)
+		expect(b.get()).to.be(2)
+		expect(bb.get().a).to.be(4)
+		expect(bbb.get()).to.be(4)
+	})
+
+	test("wbox mapping before prop sub", () => {
+		const b = box(7) as WBoxInternal<number>
+		const bb = b.map(x => ({a: x * 2}), x => x.a / 2)
+		const bbb = bb.prop("a")
+
+		expect(b.haveSubscribers()).to.be(false)
+
+		const counter = makeCallCounter()
+		bbb.subscribe(counter)
+		expect(b.haveSubscribers()).to.be(true)
+
+		expect(b.get()).to.be(7)
+		expect(bb.get().a).to.be(14)
+		expect(bbb.get()).to.be(14)
+		expect(counter.lastCallValue).to.be(null)
+
+		b.set(8)
+		expect(b.get()).to.be(8)
+		expect(bb.get().a).to.be(16)
+		expect(bbb.get()).to.be(16)
+		expect(counter.lastCallValue).to.be(16)
+
+		bbb.set(4)
+		expect(b.get()).to.be(2)
+		expect(bb.get().a).to.be(4)
+		expect(bbb.get()).to.be(4)
+		expect(counter.lastCallValue).to.be(4)
+
+		bbb.unsubscribe(counter)
+		expect(b.haveSubscribers()).to.be(false)
+	})
+
+
 })
