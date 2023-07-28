@@ -30,6 +30,12 @@ export interface RBox<T>{
 	/** Apply mapper to each individual value in the array, getting array with new items
 	 * Will only apply mapper to new/changed items when the source array changes */
 	mapArray<E, R>(this: RBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+
+	// TODO: add more actions with arrays that won't trigger handlers that could not be triggered
+	// like, insert(), or push(), or remove(), or update()
+	// the logic is, they can be implemented via just set()
+	// but they then will trigger check for every single element of the array
+	// and we can avoid that if we know for sure that other elements didn't change
 }
 
 /** Writable box: a box in which you can put value, and get value from. */
