@@ -1,3 +1,4 @@
+import {anythingToString} from "src/common"
 import {SingleDownstreamBox, WBoxInternal} from "src/new/internal"
 
 export class MapBox<T, U> extends SingleDownstreamBox<T, U> {
@@ -8,6 +9,10 @@ export class MapBox<T, U> extends SingleDownstreamBox<T, U> {
 		protected readonly makeUpstreamValue: (value: T) => U) {
 		super(upstream)
 		this.init()
+	}
+
+	toString(): string {
+		return `MapBox(${anythingToString(this.value)})`
 	}
 
 }

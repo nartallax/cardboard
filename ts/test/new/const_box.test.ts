@@ -20,6 +20,10 @@ describe("ConstBox", () => {
 		expect(unbox(constBox(obj))).to.be(obj)
 	})
 
+	test("toString", () => {
+		expect(constBox({uwu: "owo"}) + "").to.be("ConstBox({\"uwu\":\"owo\"})")
+	})
+
 	test("stores value", () => {
 		const b = constBox(5)
 		expect(b.get()).to.be(5)

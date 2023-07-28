@@ -21,6 +21,10 @@ describe("ValueBox", () => {
 		expect(unbox(box(8))).to.be(8)
 	})
 
+	test("toString", () => {
+		expect(box(8) + "").to.be("ValueBox(8)")
+	})
+
 	test("can put value inside and get it out later", () => {
 		const b = box(0)
 		expect(b.get()).to.be(0)

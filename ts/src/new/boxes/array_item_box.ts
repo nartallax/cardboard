@@ -1,3 +1,4 @@
+import {anythingToString} from "src/common"
 import {ArrayContextImpl, DisposedValue, FirstSubscriberHandlingBox, RBoxInternal} from "src/new/internal"
 
 /** A box that contains an array item
@@ -10,6 +11,10 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 
 	constructor(private readonly arrayContext: ArrayContextImpl<T, any>) {
 		super()
+	}
+
+	toString(): string {
+		return `ArrayItemBox(${anythingToString(this.value)})`
 	}
 
 	dispose(): void {

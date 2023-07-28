@@ -28,6 +28,12 @@ describe("ArrayItemBox", () => {
 		expect(unbox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
 	})
 
+	test("toString", () => {
+		expect(box([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
+		expect(viewBox(() => [1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
+		expect(constBox([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ConstBox(1)")
+	})
+
 	test("array items without subscribers", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
 		const parentInternal = parent as unknown as WBoxInternal<readonly {id: number, name: string}[]>

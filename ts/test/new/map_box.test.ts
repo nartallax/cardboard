@@ -34,6 +34,13 @@ describe("MapBox", () => {
 		expect(unbox(constBox(5).map(x => x + 1))).to.be(6)
 	})
 
+	test("toString", () => {
+		expect(box(5).map(x => x + 1, x => x - 1) + "").to.be("MapBox(6)")
+		expect(box(5).map(x => x + 1) + "").to.be("ViewBox(6)")
+		expect(viewBox(() => 5).map(x => x + 1) + "").to.be("ViewBox(6)")
+		expect(constBox(5).map(x => x + 1) + "").to.be("ConstBox(6)")
+	})
+
 	test("propagates value back and forth", () => {
 		const b = box(1)
 		const bb = b.map(x => x * 2, x => x / 2)

@@ -2,7 +2,7 @@ export function anythingToString(x: unknown): string {
 	if(typeof(x) === "symbol"){
 		return x.toString()
 	} else {
-		return x + ""
+		return JSON.stringify(x)
 	}
 }
 

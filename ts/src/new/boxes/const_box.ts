@@ -1,3 +1,4 @@
+import {anythingToString} from "src/common"
 import {ConstArrayContext} from "src/new/array_contexts/const_array_context"
 import {ArrayContext, RBox, WBox, WBoxInternal} from "src/new/internal"
 
@@ -11,6 +12,10 @@ export const constBox = <T>(value: T): RBox<T> => {
 
 export class ConstBox<T> implements WBoxInternal<T> {
 	constructor(private readonly value: T) {}
+
+	toString(): string {
+		return `ConstBox(${anythingToString(this.value)})`
+	}
 
 	get(): T {
 		return this.value

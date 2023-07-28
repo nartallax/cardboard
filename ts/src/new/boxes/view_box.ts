@@ -1,3 +1,4 @@
+import {anythingToString} from "src/common"
 import {DynamicDependencyList, StaticDependencyList, RBox, RBoxInternal, DownstreamBoxImpl, SingleDependencyList} from "src/new/internal"
 
 /** Make new view box, readonly box that calculates its value based on passed function */
@@ -14,6 +15,10 @@ export class ViewBox<T> extends DownstreamBoxImpl<T> {
 				? new SingleDependencyList(this, explicitDependencyList[0]!)
 				: new StaticDependencyList(this, explicitDependencyList)
 			: new DynamicDependencyList(this))
+	}
+
+	toString(): string {
+		return `ViewBox(${anythingToString(this.value)})`
 	}
 
 }

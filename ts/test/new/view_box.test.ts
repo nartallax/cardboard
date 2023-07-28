@@ -22,6 +22,10 @@ describe("ViewBox", () => {
 		expect(unbox(viewBox(() => 5))).to.be(5)
 	})
 
+	test("toString", () => {
+		expect(viewBox(() => 5) + "").to.be("ViewBox(5)")
+	})
+
 	test("calls subscriber when dependency updates and value updates", () => {
 		const a = box(0)
 		const b = viewBox(() => Math.floor(a.get() / 2))

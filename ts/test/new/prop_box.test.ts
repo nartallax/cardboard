@@ -29,6 +29,12 @@ describe("PropBox", () => {
 		expect(unbox(constBox({a: 5}).prop("a"))).to.be(5)
 	})
 
+	test("toString", () => {
+		expect(box({a: 5}).prop("a") + "").to.be("PropBox(5)")
+		expect(viewBox(() => ({a: 5})).prop("a") + "").to.be("PropBox(5)")
+		expect(constBox({a: 5}).prop("a") + "").to.be("ConstBox(5)")
+	})
+
 	test("moves value back and forth", () => {
 		const parent = box({a: 5})
 		const child = parent.prop("a")

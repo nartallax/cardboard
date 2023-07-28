@@ -1,8 +1,7 @@
+import {anythingToString} from "src/common"
 import {SingleDownstreamBox, WBoxInternal} from "src/new/internal"
 
 export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<U[K], U> {
-
-	// TODO: toString, and tests
 
 	constructor(
 		upstream: WBoxInternal<U>,
@@ -10,6 +9,10 @@ export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<
 	) {
 		super(upstream)
 		this.init()
+	}
+
+	toString(): string {
+		return `PropBox(${anythingToString(this.value)})`
 	}
 
 	protected override makeDownstreamValue(upstreamValue: U): U[K] {
