@@ -1,34 +1,19 @@
-import type {ChangeHandler, RBox, RBoxInternal, Subscriber, UpstreamSubscriber, WBox, WBoxInternal} from "src/new/internal"
+import type {ChangeHandler, RBox, RBoxInternal, UpstreamSubscriber, WBox, WBoxInternal} from "src/new/internal"
 import {ArrayContextImpl, MapBox, PropRBox, PropWBox, ViewBox, isWBox, notificationStack} from "src/new/internal"
+import {SubscriberList} from "src/new/subscriber_list"
 
 export const DisposedValue = Symbol("DisposedBoxValue")
 
 export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
-	private subscriptions: Map<ChangeHandler<T, this>, Subscriber<T>> | null = null
-	private internalSubscriptions: Map<UpstreamSubscriber, Subscriber<T>> | null = null
-	/** A revision is a counter that is incremented each time the value of the box is changed
-	 *
-	 * This value must never be visible outside of this box.
-	 * It can only be used to prevent repeated calls of subscribers.
-	 *
-	 * It is very tempting to use revision number to check if value is changed or not
-	 * However, it can go wrong when value does not change until you explicitly check
-	 * For example, consider viewBox that depends on viewBox
-	 * When there is no subscribers, first viewBox will never change, regardless of its sources
-	 * And if you're only relying on revision number to check if it is changed, you'll be wrong
-	 *
-	 * And also value can change back and forth within one calculation, and revision will still be incremented;
-	 * that's why if you rely on revision to check if the value changed you'll get some false-positives */
-	private revision = 1
-
 	/** Must be set right after construction
 	 * It takes much more trouble to set this value in constructor than set it later
 	 * (i.e. you cannot call methods before you have value, but to get value you need to call a method) */
 	// TODO: think about makind DisposedValue be default value for cases like viewboxes, or maybe everything
 	value!: T | typeof DisposedValue
+	private readonly subscriberList = new SubscriberList<T, this>(this)
 
 	haveSubscribers(): boolean {
-		return !!(this.subscriptions || this.internalSubscriptions)
+		return this.subscriberList.haveSubscribers()
 	}
 
 	/** Update the value of the box, calling the subscribers.
@@ -39,7 +24,6 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 			return
 		}
 
-		this.revision++
 		this.value = newValue
 		this.notifyOnValueChange(newValue, changeSourceBox)
 	}
@@ -60,80 +44,27 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	 * in this case, every downstream box should also became invalid */
 	dispose(): void {
 		this.value = DisposedValue
-		if(this.internalSubscriptions){
-			for(const downstream of this.internalSubscriptions.keys()){
-				downstream.dispose()
-			}
-		}
+		this.subscriberList.dispose()
 	}
 
 	subscribe(handler: ChangeHandler<T, this>): void {
-		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue: this.value})
+		this.subscriberList.subscribe(handler, this.value)
 	}
 
 	subscribeInternal(box: UpstreamSubscriber): void {
-		(this.internalSubscriptions ||= new Map()).set(box, {lastKnownValue: this.value})
+		this.subscriberList.subscribeInternal(box, this.value)
 	}
 
 	unsubscribe(handler: ChangeHandler<T, this>): void {
-		if(!this.subscriptions){
-			return
-		}
-
-		this.subscriptions.delete(handler)
-		if(this.subscriptions.size === 0){
-			this.subscriptions = null
-		}
+		this.subscriberList.unsubscribe(handler)
 	}
 
 	unsubscribeInternal(box: UpstreamSubscriber): void {
-		if(!this.internalSubscriptions){
-			return
-		}
-
-		this.internalSubscriptions.delete(box)
-		if(this.internalSubscriptions.size === 0){
-			this.internalSubscriptions = null
-		}
+		this.subscriberList.unsubscribeInternal(box)
 	}
 
 	protected notifyOnValueChange(value: T, changeSourceBox?: RBoxInternal<unknown>): boolean {
-		const startingRevision = this.revision
-
-		if(this.internalSubscriptions){
-			for(const [box, subscriber] of this.internalSubscriptions){
-				// FIXME: cringe. think about better typing all this stuff. maybe throwing away some abstractness?
-				if(box as unknown === changeSourceBox){
-					// that box already knows what value of this box should be
-					subscriber.lastKnownValue = value
-					continue
-				}
-				if(subscriber.lastKnownValue !== value){
-					subscriber.lastKnownValue = value
-					box.onUpstreamChange(this)
-				}
-				if(this.revision !== startingRevision){
-					// some of the subscribers changed value of the box;
-					// it doesn't make sense to proceed further in this round of calls,
-					// because there is another round of calls probably in progress, or maybe even already completed
-					return false
-				}
-			}
-		}
-
-		if(this.subscriptions){
-			for(const [handler, subscriber] of this.subscriptions){
-				if(subscriber.lastKnownValue !== value){
-					subscriber.lastKnownValue = value
-					handler(value, this)
-				}
-				if(this.revision !== startingRevision){
-					return false
-				}
-			}
-		}
-
-		return true
+		return this.subscriberList.callSubscribers(value, changeSourceBox)
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R>
