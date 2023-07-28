@@ -33,6 +33,7 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
 	calculateAndResubscribe(changeSourceBox?: RBoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
+		// TODO: think about not unsubscribing from dependencies that are present after recalc
 		const shouldResubscribe = !this.dependencyList.isStatic && this.haveSubscribers()
 		if(!justHadFirstSubscriber && shouldResubscribe){
 			this.dependencyList.unsubscribeFromDependencies()

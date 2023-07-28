@@ -24,6 +24,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	/** Must be set right after construction
 	 * It takes much more trouble to set this value in constructor than set it later
 	 * (i.e. you cannot call methods before you have value, but to get value you need to call a method) */
+	// TODO: think about makind DisposedValue be default value for cases like viewboxes, or maybe everything
 	value!: T | typeof DisposedValue
 
 	haveSubscribers(): boolean {

@@ -915,4 +915,23 @@ describe("ArrayItemBox", () => {
 		}
 	})
 
+	test("two boxes of the same item", () => {
+		const arrBox = box([{id: 1, name: "one"}])
+		const context = arrBox.getArrayContext(x => x.id)
+		const firstBox = context.getBoxForKey(1)
+		const secondBox = context.getBoxForKey(1)
+
+		firstBox.set({id: 1, name: "two"})
+		expect(secondBox.get().name).to.be("two")
+
+		secondBox.set({id: 1, name: "three"})
+		expect(firstBox.get().name).to.be("three")
+
+		const counter = makeCallCounter()
+		secondBox.subscribe(counter)
+		firstBox.set({id: 1, name: "four"})
+		expect(counter.callCount).to.be(1)
+		expect(counter.lastCallValue).to.eql({id: 1, name: "four"})
+	})
+
 })
