@@ -105,5 +105,5 @@ export interface BoxInternal<T> extends WBox<T> {
 	subscribeInternal(box: UpstreamSubscriber): void
 	unsubscribeInternal(box: UpstreamSubscriber): void
 	haveSubscribers(): boolean
-	set(value: T, box?: BoxInternal<unknown>): void
+	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): void
 }

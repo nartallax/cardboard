@@ -1,7 +1,7 @@
 import {describe, test} from "@nartallax/clamsensor"
 import {BoxInternal, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/internal"
 import expect from "expect.js"
-import {makeCallCounter} from "test/test_utils"
+import {expectExecutionTimeLessThan, makeCallCounter} from "test/test_utils"
 
 describe("ArrayItemBox", () => {
 	test("isRBox", () => {
@@ -875,6 +875,41 @@ describe("ArrayItemBox", () => {
 		const item = context.getBoxForKey(1)
 
 		expect(() => item.set({id: 2, name: "two"})).to.throwError(/changed key/)
+	})
+
+	test("performance: array item update, one context", () => {
+		const size = 1000
+		const repeats = 10
+		const arrBox = box(new Array(size).fill(null).map((_, i) => i))
+		const context = arrBox.getArrayContext((_, i) => i)
+		context.getBoxForKey(0).subscribe(() => {/* noop */})
+		expectExecutionTimeLessThan(20, 100, () => {
+			for(let rep = 0; rep < repeats; rep++){
+				for(let i = 0; i < size; i++){
+					const box = context.getBoxForKey(i)
+					box.set(box.get() * 2)
+				}
+			}
+		})
+	})
+
+	test("performance: array item update, two contexts", () => {
+		const size = 1000
+		const repeats = 10
+		const arrBox = box(new Array(size).fill(null).map((_, i) => i))
+		const firstContext = arrBox.getArrayContext((_, i) => i)
+		const secondContext = arrBox.getArrayContext((_, i) => i)
+		firstContext.getBoxForKey(0).subscribe(() => {/* noop */})
+		secondContext.getBoxForKey(0).subscribe(() => {/* noop */})
+		expectExecutionTimeLessThan(30, 100, () => {
+			for(let rep = 0; rep < repeats; rep++){
+				for(let i = 0; i < size; i++){
+					const cont = i & 1 ? firstContext : secondContext
+					const box = cont.getBoxForKey(i)
+					box.set(box.get() * 2)
+				}
+			}
+		})
 	})
 
 })

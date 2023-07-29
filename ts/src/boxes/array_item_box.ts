@@ -1,4 +1,4 @@
-import {anythingToString, ArrayContextImpl, DisposedValue, FirstSubscriberHandlingBox, BoxInternal} from "src/internal"
+import {anythingToString, ArrayContextImpl, DisposedValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber} from "src/internal"
 
 /** A box that contains an array item
  * This box is managed by array context */
@@ -17,10 +17,10 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 	}
 
 	dispose(): void {
-		super.dispose()
 		if(this.haveSubscribers()){
 			this.arrayContext.onDownstreamUnsubscription()
 		}
+		super.dispose()
 	}
 
 	protected onFirstSubscriber(): void {
@@ -54,8 +54,8 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 		return super.get()
 	}
 
-	protected notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown> | undefined): boolean {
-		if(!super.notifyOnValueChange(value, changeSourceBox) || changeSourceBox === this.arrayContext.upstream){
+	protected notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): boolean {
+		if(!super.notifyOnValueChange(value, changeSourceBox, updateMeta) || changeSourceBox === this.arrayContext.upstream){
 			return false
 		}
 

@@ -6,7 +6,9 @@ export interface DownstreamBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 }
 
 export interface UpstreamSubscriber {
-	onUpstreamChange(upstream: BoxInternal<unknown>): void
+	/** This method will be called when upstream is changed
+	 * @param updateMeta some box-specific data that describes update. Used for optimization. */
+	onUpstreamChange(upstream: BoxInternal<unknown>, updateMeta?: unknown): void
 	dispose(): void
 }
 

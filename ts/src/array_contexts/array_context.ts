@@ -1,5 +1,14 @@
 import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBox, ArrayItemWBox, ArrayContext, RBox, WBox} from "src/internal"
 
+interface ArrayItemUpdateMeta<K> {
+	type: "array_item_update"
+	key: K
+}
+
+function isArrayItemUpdateMeta(updateMeta: unknown): updateMeta is ArrayItemUpdateMeta<unknown> {
+	return !!updateMeta && (updateMeta as ArrayItemUpdateMeta<unknown>).type === "array_item_update"
+}
+
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
  *
@@ -17,18 +26,35 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 	}
 
 	tryUpdate(): void {
+		if(this.childSubCount > 0){
+			// the same logic as in viewbox - if we are being subscribed to, then we are subscribed to upstream
+			// that means our value is up-to-date
+			return
+		}
 		const upstreamArray = notificationStack.getWithoutNotifications(this.upstream)
 		if(upstreamArray !== this.lastKnownUpstreamValue){
-			this.onUpstreamChange(this.upstream, upstreamArray)
+			this.onUpstreamChange(this.upstream, undefined, upstreamArray)
 		}
 	}
 
-	onUpstreamChange(_: BoxInternal<unknown>, upstreamArray?: E[]): void {
-		const outdatedKeys = new Set(this.boxes.keys())
-
+	onUpstreamChange(_: BoxInternal<unknown>, updateMeta?: unknown, upstreamArray?: E[]): void {
 		upstreamArray ??= notificationStack.getWithoutNotifications(this.upstream)
 		this.lastKnownUpstreamValue = upstreamArray
 
+		if(isArrayItemUpdateMeta(updateMeta)){
+			const box = this.boxes.get(updateMeta.key as any)
+			if(!box){
+				throw new Error("Array item for key " + updateMeta.key + " is updated, but there's no box for this key.")
+			}
+			if(upstreamArray.length <= box.index){
+				throw new Error("Cannot update box for key " + updateMeta.key + ": upstream array is not big enough; expected at least " + box.index + " items.")
+			}
+			box.set(upstreamArray[box.index]!, this.upstream)
+			return
+		}
+
+		// full update, worst case
+		const outdatedKeys = new Set(this.boxes.keys())
 		for(let index = 0; index < upstreamArray.length; index++){
 			const item = upstreamArray[index]!
 			const key = this.getKey(item, index)
@@ -71,7 +97,12 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		const oldUpstreamValue = notificationStack.getWithoutNotifications(this.upstream)
 		const newUpstreamValue: E[] = [...oldUpstreamValue]
 		newUpstreamValue[downstreamBox.index] = value
-		this.upstream.set(newUpstreamValue)
+		this.lastKnownUpstreamValue = newUpstreamValue
+		const meta: ArrayItemUpdateMeta<K> = {
+			type: "array_item_update",
+			key: downstreamBox.key
+		}
+		this.upstream.set(newUpstreamValue, this, meta)
 	}
 
 	onDownstreamSubscription(): void {
@@ -84,8 +115,12 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 	onDownstreamUnsubscription(): void {
 		this.childSubCount--
 		if(this.childSubCount === 0){
-			this.upstream.unsubscribeInternal(this)
+			this.unsubscribeFromUpstream()
 		}
+	}
+
+	private unsubscribeFromUpstream(): void {
+		this.upstream.unsubscribeInternal(this)
 	}
 
 	getBoxes(): ArrayItemBox<E, K>[] {
@@ -176,6 +211,9 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 
 	dispose(): void {
 		this.lastKnownUpstreamValue = null // to trigger update next time
+		for(const child of this.boxes.values()){
+			child.dispose()
+		}
 	}
 
 }

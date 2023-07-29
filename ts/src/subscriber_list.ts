@@ -27,21 +27,21 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	}
 
 	/** Call subscribers; returns true if there was no change during subscriber calls */
-	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown>): boolean {
+	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): boolean {
 		const startingRevision = ++this.revision
 
 		if(this.internalSubscriptions){
 			for(const [box, subscriber] of this.internalSubscriptions){
-				// FIXME: cringe. think about better typing all this stuff. maybe throwing away some abstractness?
-				if(box as unknown === changeSourceBox){
+				if(box === changeSourceBox){
 					// that box already knows what value of this box should be
 					subscriber.lastKnownValue = value
 					continue
 				}
 				if(subscriber.lastKnownValue !== value){
 					subscriber.lastKnownValue = value
-					box.onUpstreamChange(this.owner)
+					box.onUpstreamChange(this.owner, updateMeta)
 				}
+				// TODO: think about test when updateMeta is lost/is wrong, because previous update is dropped (is it possible...?)
 				if(this.revision !== startingRevision){
 					// some of the subscribers changed value of the box;
 					// it doesn't make sense to proceed further in this round of calls,
