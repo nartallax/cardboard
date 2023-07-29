@@ -1,6 +1,6 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {isConstBox, isRBox, isWBox, unbox, box, WBoxInternal, constBox, viewBox} from "src/new/internal"
+import {isConstBox, isRBox, isWBox, unbox, box, BoxInternal, constBox, viewBox} from "src/new/internal"
 import {makeCallCounter} from "test/test_utils"
 
 describe("MapBox", () => {
@@ -58,7 +58,7 @@ describe("MapBox", () => {
 	})
 
 	test("calls subscribers and unsubscribes from upstream when unsubscribed from", () => {
-		const b = box(1) as unknown as WBoxInternal<number>
+		const b = box(1) as BoxInternal<number>
 		const bb = b.map(x => x * 2, x => x / 2)
 
 		expect(b.haveSubscribers()).to.be(false)

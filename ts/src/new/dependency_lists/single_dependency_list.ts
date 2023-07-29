@@ -1,4 +1,4 @@
-import {DependencyList, DownstreamBox, RBoxInternal} from "src/new/internal"
+import {DependencyList, DownstreamBox, BoxInternal} from "src/new/internal"
 
 /** A dependency list for cases when you have only one dependency
  *
@@ -10,7 +10,7 @@ export class SingleDependencyList<O, T> implements DependencyList {
 
 	constructor(
 		private readonly ownerBox: DownstreamBox<O>,
-		private readonly dependency: RBoxInternal<T>) {
+		private readonly dependency: BoxInternal<T>) {
 		this.lastKnownDependencyValue = dependency.get()
 	}
 

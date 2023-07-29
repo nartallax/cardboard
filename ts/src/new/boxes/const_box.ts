@@ -1,6 +1,6 @@
 import {anythingToString} from "src/common"
 import {ConstArrayContext} from "src/new/array_contexts/const_array_context"
-import {ArrayContext, RBox, WBox, WBoxInternal} from "src/new/internal"
+import {ArrayContext, RBox, WBox, BoxInternal} from "src/new/internal"
 
 /** Make a new constant box, a readonly box which value never changes
  *
@@ -10,7 +10,7 @@ export const constBox = <T>(value: T): RBox<T> => {
 	return new ConstBox(value)
 }
 
-export class ConstBox<T> implements WBoxInternal<T> {
+export class ConstBox<T> implements BoxInternal<T> {
 	constructor(private readonly value: T) {}
 
 	toString(): string {

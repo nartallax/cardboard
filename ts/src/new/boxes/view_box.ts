@@ -1,14 +1,14 @@
 import {anythingToString} from "src/common"
-import {DynamicDependencyList, StaticDependencyList, RBox, RBoxInternal, DownstreamBoxImpl, SingleDependencyList} from "src/new/internal"
+import {DynamicDependencyList, StaticDependencyList, RBox, BoxInternal, DownstreamBoxImpl, SingleDependencyList} from "src/new/internal"
 
 /** Make new view box, readonly box that calculates its value based on passed function */
 export const viewBox = <T>(calcFunction: () => T, explicitDependencyList?: readonly RBox<unknown>[]): RBox<T> => {
-	return new ViewBox(calcFunction, explicitDependencyList as undefined | readonly RBoxInternal<unknown>[])
+	return new ViewBox(calcFunction, explicitDependencyList as undefined | readonly BoxInternal<unknown>[])
 }
 
 export class ViewBox<T> extends DownstreamBoxImpl<T> {
 
-	constructor(readonly calculate: () => T, explicitDependencyList?: readonly RBoxInternal<unknown>[]) {
+	constructor(readonly calculate: () => T, explicitDependencyList?: readonly BoxInternal<unknown>[]) {
 		super()
 		this.init(explicitDependencyList
 			? explicitDependencyList.length === 1

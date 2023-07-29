@@ -69,17 +69,6 @@ export interface ArrayContext<T, K, B extends RBox<T>>{
 	getBoxForKey(key: K): B
 }
 
-export interface RBoxInternal<T> extends RBox<T>{
-	subscribeInternal(box: UpstreamSubscriber): void
-	unsubscribeInternal(box: UpstreamSubscriber): void
-	// this one is explosed for tests
-	haveSubscribers(): boolean
-}
-
-export interface WBoxInternal<T> extends WBox<T>, Omit<RBoxInternal<T>, "map" | "prop" | "subscribe" | "unsubscribe" | "getArrayContext" | "mapArray">{
-	set(value: T, box?: RBoxInternal<unknown>): void
-}
-
 /** Maybe RBox - RBox or non-boxed value */
 export type MRBox<T> = RBox<T> | T
 
@@ -109,4 +98,12 @@ export interface Subscriber<T> {
 	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
 	 * or to the same value as the box already has; it will only be different within update rounds */
 	lastKnownValue: T
+}
+
+/** In reality all of the boxes are internally WBoxes */
+export interface BoxInternal<T> extends WBox<T> {
+	subscribeInternal(box: UpstreamSubscriber): void
+	unsubscribeInternal(box: UpstreamSubscriber): void
+	haveSubscribers(): boolean
+	set(value: T, box?: BoxInternal<unknown>): void
 }

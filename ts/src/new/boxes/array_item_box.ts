@@ -1,5 +1,5 @@
 import {anythingToString} from "src/common"
-import {ArrayContextImpl, DisposedValue, FirstSubscriberHandlingBox, RBoxInternal} from "src/new/internal"
+import {ArrayContextImpl, DisposedValue, FirstSubscriberHandlingBox, BoxInternal} from "src/new/internal"
 
 /** A box that contains an array item
  * This box is managed by array context */
@@ -42,7 +42,7 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 		}
 	}
 
-	override set(newValue: T, changeSourceBox?: RBoxInternal<unknown>): void {
+	override set(newValue: T, changeSourceBox?: BoxInternal<unknown>): void {
 		this.checkIfStillAttached()
 		super.set(newValue, changeSourceBox)
 	}
@@ -55,7 +55,7 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 		return super.get()
 	}
 
-	protected notifyOnValueChange(value: T, changeSourceBox?: RBoxInternal<unknown> | undefined): boolean {
+	protected notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown> | undefined): boolean {
 		if(!super.notifyOnValueChange(value, changeSourceBox) || changeSourceBox === this.arrayContext.upstream){
 			return false
 		}

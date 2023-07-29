@@ -1,7 +1,7 @@
-import type {ChangeHandler, RBoxInternal, Subscriber, UpstreamSubscriber, WBoxInternal} from "src/new/internal"
+import type {ChangeHandler, BoxInternal, Subscriber, UpstreamSubscriber} from "src/new/internal"
 
 /** Class that manages list of active subscribers to some box */
-export class SubscriberList<T, O extends WBoxInternal<T>> {
+export class SubscriberList<T, O extends BoxInternal<T>> {
 	private subscriptions: Map<ChangeHandler<T, O>, Subscriber<T>> | null = null
 	private internalSubscriptions: Map<UpstreamSubscriber, Subscriber<T>> | null = null
 
@@ -27,7 +27,7 @@ export class SubscriberList<T, O extends WBoxInternal<T>> {
 	}
 
 	/** Call subscribers; returns true if there was no change during subscriber calls */
-	callSubscribers(value: T, changeSourceBox?: RBoxInternal<unknown>): boolean {
+	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown>): boolean {
 		const startingRevision = ++this.revision
 
 		if(this.internalSubscriptions){

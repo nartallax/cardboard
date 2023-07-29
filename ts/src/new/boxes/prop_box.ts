@@ -1,10 +1,10 @@
 import {anythingToString} from "src/common"
-import {SingleDownstreamBox, WBoxInternal} from "src/new/internal"
+import {SingleDownstreamBox, BoxInternal} from "src/new/internal"
 
 export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<U[K], U> {
 
 	constructor(
-		upstream: WBoxInternal<U>,
+		upstream: BoxInternal<U>,
 		private readonly propName: K
 	) {
 		super(upstream)

@@ -1,6 +1,6 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {RBoxInternal, WBoxInternal, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/new/internal"
+import {BoxInternal, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/new/internal"
 import {makeCallCounter} from "test/test_utils"
 
 describe("PropBox", () => {
@@ -369,11 +369,11 @@ describe("PropBox", () => {
 	})
 
 	test("prop of viewbox", () => {
-		const parent = box({a: 5}) as WBoxInternal<{a: number}>
-		const view = viewBox(() => ({...parent.get(), b: parent.get().a * 2})) as RBoxInternal<{a: number, b: number}>
-		const propA1 = view.prop("a") as RBoxInternal<number>
-		const propA2 = view.prop("a") as RBoxInternal<number>
-		const propB = view.prop("b") as RBoxInternal<number>
+		const parent = box({a: 5}) as BoxInternal<{a: number}>
+		const view = viewBox(() => ({...parent.get(), b: parent.get().a * 2})) as BoxInternal<{a: number, b: number}>
+		const propA1 = view.prop("a") as BoxInternal<number>
+		const propA2 = view.prop("a") as BoxInternal<number>
+		const propB = view.prop("b") as BoxInternal<number>
 
 		expect(propA1.get()).to.be.equal(5)
 		expect(propA2.get()).to.be.equal(5)
@@ -423,8 +423,8 @@ describe("PropBox", () => {
 	})
 
 	test("unsubscribing properly", () => {
-		const parent = box({a: 5}) as WBoxInternal<{a: number}>
-		const child = parent.prop("a") as WBoxInternal<number>
+		const parent = box({a: 5}) as BoxInternal<{a: number}>
+		const child = parent.prop("a") as BoxInternal<number>
 
 		expect(parent.haveSubscribers()).to.be.equal(false)
 		expect(child.haveSubscribers()).to.be.equal(false)
@@ -485,9 +485,9 @@ describe("PropBox", () => {
 	})
 
 	test("chain propboxes are unsubscribing properly", () => {
-		const parent = box({a: {b: 5}}) as WBoxInternal<{a: {b: number}}>
-		const middle = parent.prop("a") as WBoxInternal<{b: number}>
-		const child = middle.prop("b") as WBoxInternal<number>
+		const parent = box({a: {b: 5}}) as BoxInternal<{a: {b: number}}>
+		const middle = parent.prop("a") as BoxInternal<{b: number}>
+		const child = middle.prop("b") as BoxInternal<number>
 
 		expect(parent.haveSubscribers()).to.be.equal(false)
 		expect(child.haveSubscribers()).to.be.equal(false)
@@ -568,7 +568,7 @@ describe("PropBox", () => {
 	})
 
 	test("wbox mapping after prop sub", () => {
-		const b = box({a: 5}) as WBoxInternal<{a: number}>
+		const b = box({a: 5}) as BoxInternal<{a: number}>
 		const bb = b.prop("a")
 		const bbb = bb.map(x => x + 1, x => x - 1)
 
@@ -620,7 +620,7 @@ describe("PropBox", () => {
 	})
 
 	test("wbox mapping before prop sub", () => {
-		const b = box(7) as WBoxInternal<number>
+		const b = box(7) as BoxInternal<number>
 		const bb = b.map(x => ({a: x * 2}), x => x.a / 2)
 		const bbb = bb.prop("a")
 

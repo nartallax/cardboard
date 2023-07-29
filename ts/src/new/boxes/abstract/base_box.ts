@@ -1,10 +1,10 @@
-import type {ChangeHandler, RBox, RBoxInternal, UpstreamSubscriber, WBox, WBoxInternal} from "src/new/internal"
+import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox} from "src/new/internal"
 import {ArrayContextImpl, MapBox, PropRBox, PropWBox, ViewBox, isWBox, notificationStack} from "src/new/internal"
 import {SubscriberList} from "src/new/subscriber_list"
 
 export const DisposedValue = Symbol("DisposedBoxValue")
 
-export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
+export abstract class BaseBox<T> implements BoxInternal<T> {
 	/** Must be set right after construction
 	 * It takes much more trouble to set this value in constructor than set it later
 	 * (i.e. you cannot call methods before you have value, but to get value you need to call a method) */
@@ -19,7 +19,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 	/** Update the value of the box, calling the subscribers.
 	 *
 	 * @param changeSourceBox the box that caused the change. Won't be notified of the change happening. */
-	set(newValue: T, changeSourceBox?: RBoxInternal<unknown>): void {
+	set(newValue: T, changeSourceBox?: BoxInternal<unknown>): void {
 		if(this.value === newValue){
 			return
 		}
@@ -63,7 +63,7 @@ export abstract class BaseBox<T> implements WBox<T>, WBoxInternal<T> {
 		this.subscriberList.unsubscribeInternal(box)
 	}
 
-	protected notifyOnValueChange(value: T, changeSourceBox?: RBoxInternal<unknown>): boolean {
+	protected notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown>): boolean {
 		return this.subscriberList.callSubscribers(value, changeSourceBox)
 	}
 

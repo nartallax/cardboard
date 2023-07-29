@@ -1,12 +1,12 @@
-import {notificationStack, RBoxInternal, DependencyList, FirstSubscriberHandlingBox, WBoxInternal, DisposedValue} from "src/new/internal"
+import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, DisposedValue} from "src/new/internal"
 
-export interface DownstreamBox<T> extends RBoxInternal<T>, UpstreamSubscriber {
+export interface DownstreamBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	calculate(): T
 	readonly dependencyList: DependencyList
 }
 
 export interface UpstreamSubscriber {
-	onUpstreamChange(upstream: WBoxInternal<unknown>): void
+	onUpstreamChange(upstream: BoxInternal<unknown>): void
 	dispose(): void
 }
 
@@ -32,7 +32,7 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 	 * This value should be called as handler of internal subscription calls
 	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
-	calculateAndResubscribe(changeSourceBox?: RBoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
+	calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
 		// TODO: think about not unsubscribing from dependencies that are present after recalc
 		const shouldResubscribe = !this.dependencyList.isStatic && this.haveSubscribers()
 		if(!justHadFirstSubscriber && shouldResubscribe){
@@ -48,7 +48,7 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 		}
 	}
 
-	onUpstreamChange(upstream: WBoxInternal<unknown>): void {
+	onUpstreamChange(upstream: BoxInternal<unknown>): void {
 		this.calculateAndResubscribe(upstream)
 	}
 

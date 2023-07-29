@@ -1,4 +1,4 @@
-import {BaseMapDependencyList, DependencyList, RBoxInternal} from "src/new/internal"
+import {BaseMapDependencyList, DependencyList, BoxInternal} from "src/new/internal"
 
 /* FIXME: test for box that changes its value during the call
 like,
@@ -18,7 +18,7 @@ export class DynamicDependencyList<O> extends BaseMapDependencyList<O> implement
 		this.boxes.clear()
 	}
 
-	notifyDependencyCall<T>(box: RBoxInternal<T>, value: T): void {
+	notifyDependencyCall<T>(box: BoxInternal<T>, value: T): void {
 		if(this.boxes.has(box)){
 			const oldValue = this.boxes.get(box)
 			if(oldValue !== value){

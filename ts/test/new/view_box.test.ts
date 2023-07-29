@@ -1,7 +1,7 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 import {box, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/new/cardboard"
-import {RBoxInternal} from "src/new/types"
+import {BoxInternal} from "src/new/types"
 import {makeCallCounter} from "test/test_utils"
 
 describe("ViewBox", () => {
@@ -195,8 +195,8 @@ describe("ViewBox", () => {
 		const b = box(5)
 		const v = viewBox(() => b.get() * 2)
 
-		const rb = b as unknown as RBoxInternal<number>
-		const rv = v as RBoxInternal<number>
+		const rb = b as BoxInternal<number>
+		const rv = v as BoxInternal<number>
 
 		expect(rb.haveSubscribers()).to.be.equal(false)
 		expect(rv.haveSubscribers()).to.be.equal(false)
@@ -228,9 +228,9 @@ describe("ViewBox", () => {
 		const v = viewBox(() => b.get() * 2)
 		const vv = viewBox(() => v.get() - 2)
 
-		const rb = b as unknown as RBoxInternal<number>
-		const rv = v as RBoxInternal<number>
-		const rvv = vv as RBoxInternal<number>
+		const rb = b as BoxInternal<number>
+		const rv = v as BoxInternal<number>
+		const rvv = vv as BoxInternal<number>
 
 		expect(rb.haveSubscribers()).to.be.equal(false)
 		expect(rv.haveSubscribers()).to.be.equal(false)

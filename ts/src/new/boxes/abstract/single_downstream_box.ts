@@ -1,4 +1,4 @@
-import {DownstreamBoxImpl, RBoxInternal, SingleDependencyList, WBoxInternal, notificationStack} from "src/new/internal"
+import {DownstreamBoxImpl, BoxInternal, SingleDependencyList, notificationStack} from "src/new/internal"
 
 /** A downstream box that has only one upstream */
 export abstract class SingleDownstreamBox<T, U> extends DownstreamBoxImpl<T> {
@@ -10,7 +10,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBoxImpl<T> {
 		super.init(new SingleDependencyList(this, this.upstream))
 	}
 
-	constructor(private readonly upstream: WBoxInternal<U>) {
+	constructor(private readonly upstream: BoxInternal<U>) {
 		super()
 	}
 
@@ -22,7 +22,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBoxImpl<T> {
 		return notificationStack.getWithoutNotifications(this.upstream)
 	}
 
-	protected override notifyOnValueChange(value: T, changeSourceBox?: WBoxInternal<unknown>): boolean {
+	protected override notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown>): boolean {
 		if(!super.notifyOnValueChange(value, changeSourceBox) || changeSourceBox === this.upstream){
 			return false
 		}
@@ -31,7 +31,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBoxImpl<T> {
 		return true
 	}
 
-	override calculateAndResubscribe(changeSourceBox?: RBoxInternal<unknown> | undefined, justHadFirstSubscriber?: boolean | undefined): void {
+	override calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown> | undefined, justHadFirstSubscriber?: boolean | undefined): void {
 		if(!changeSourceBox){
 			// the only case when we don't have a source box and need to recalculate
 			// is when we detect that our value is out of date and needs to be updated

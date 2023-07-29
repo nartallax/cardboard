@@ -1,5 +1,5 @@
 import {describe, test} from "@nartallax/clamsensor"
-import {WBoxInternal, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/new/internal"
+import {BoxInternal, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/new/internal"
 import expect from "expect.js"
 import {makeCallCounter} from "test/test_utils"
 
@@ -36,7 +36,7 @@ describe("ArrayItemBox", () => {
 
 	test("array items without subscribers", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-		const parentInternal = parent as unknown as WBoxInternal<readonly {id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<readonly {id: number, name: string}[]>
 		const context = parent.getArrayContext(x => x.id)
 		const box1 = context.getBoxes()[0]!
 		const box2 = context.getBoxes()[1]!
@@ -81,7 +81,7 @@ describe("ArrayItemBox", () => {
 
 	test("array items with subscribers", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-		const parentInternal = parent as unknown as WBoxInternal<readonly {id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<readonly {id: number, name: string}[]>
 		const context = parent.getArrayContext(x => x.id)
 		const box1 = context.getBoxes()[0]!
 		const box2 = context.getBoxes()[1]!
@@ -119,7 +119,7 @@ describe("ArrayItemBox", () => {
 
 	test("chain array items without subscribers", () => {
 		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]])
-		const parentInternal = parent as unknown as WBoxInternal<readonly {id: number, name: string}[][]>
+		const parentInternal = parent as unknown as BoxInternal<readonly {id: number, name: string}[][]>
 		const contextA = parent.getArrayContext(arr => arr.length)
 		const contextB = contextA.getBoxForKey(2).getArrayContext(el => el.id)
 		const box1 = contextB.getBoxForKey(1)
@@ -156,7 +156,7 @@ describe("ArrayItemBox", () => {
 
 	test("chain array items with subscribers", () => {
 		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]])
-		const parentInternal = parent as unknown as WBoxInternal<readonly {id: number, name: string}[][]>
+		const parentInternal = parent as unknown as BoxInternal<readonly {id: number, name: string}[][]>
 		const contextA = parent.getArrayContext(arr => arr.length)
 		const contextB = contextA.getBoxForKey(2).getArrayContext(el => el.id)
 		const box1 = contextB.getBoxForKey(1)
@@ -201,7 +201,7 @@ describe("ArrayItemBox", () => {
 
 	test("chain array items with subscribers throw 1", () => {
 		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]])
-		const parentInternal = parent as unknown as WBoxInternal<readonly {id: number, name: string}[][]>
+		const parentInternal = parent as unknown as BoxInternal<readonly {id: number, name: string}[][]>
 		const contextA = parent.getArrayContext(arr => arr.length)
 		const contextB = contextA.getBoxForKey(2).getArrayContext(el => el.id)
 		const box1 = contextB.getBoxForKey(1)
@@ -243,7 +243,7 @@ describe("ArrayItemBox", () => {
 
 	test("chain array item with subscribers throw 2", () => {
 		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]])
-		const parentInternal = parent as unknown as WBoxInternal<readonly {id: number, name: string}[][]>
+		const parentInternal = parent as unknown as BoxInternal<readonly {id: number, name: string}[][]>
 		const contextA = parent.getArrayContext(arr => arr.length)
 		const contextB = contextA.getBoxForKey(2).getArrayContext(el => el.id)
 		const box1 = contextB.getBoxForKey(1)
@@ -286,7 +286,7 @@ describe("ArrayItemBox", () => {
 
 	test("chain array wraps with subscribers throw 3", () => {
 		const parent = box([[{id: 1, name: "1"}, {id: 2, name: "2"}], [{id: 3, name: "3"}]])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[][]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[][]>
 		const contextA = parent.getArrayContext(arr => arr.length)
 		const contextB = contextA.getBoxForKey(2).getArrayContext(el => el.id)
 		const box1 = contextB.getBoxForKey(1)
@@ -305,7 +305,7 @@ describe("ArrayItemBox", () => {
 
 	test("prop and arraywrap chain with subscribers", () => {
 		const parent = box({a: [{id: 5, name: "5"}, {id: 6, name: "6"}]})
-		const parentInternal = parent as unknown as WBoxInternal<{a: {id: number, name: string}[]}>
+		const parentInternal = parent as unknown as BoxInternal<{a: {id: number, name: string}[]}>
 		const prop = parent.prop("a")
 		const context = prop.getArrayContext(el => el.id)
 		const box6 = context.getBoxes()[1]!
@@ -335,7 +335,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap and prop test chain no sub", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const prop = context.getBoxes()[1]!.prop("name")
 
@@ -363,7 +363,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap and prop test chain with sub", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const prop = context.getBoxes()[1]!.prop("name")
 
@@ -408,7 +408,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap and viewbox chain no sub", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 		const view1 = viewBox(() => box1.get().name + ", nya")
@@ -434,7 +434,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap and viewbox chain with sub", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 		const view1 = viewBox(() => box1.get().name + ", nya")
@@ -470,7 +470,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap and viewbox chain with sub different throw", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 		const view1 = viewBox(() => box1.get().name + ", nya")
@@ -506,7 +506,7 @@ describe("ArrayItemBox", () => {
 
 	test("viewbox and arraywrap chain no sub", () => {
 		const parent = box({a: [{id: 1, name: "1"}]})
-		const parentInternal = parent as unknown as WBoxInternal<{a: {id: number, name: string}[]}>
+		const parentInternal = parent as unknown as BoxInternal<{a: {id: number, name: string}[]}>
 		const view = viewBox(() => parent.get().a)
 		const context = view.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
@@ -532,7 +532,7 @@ describe("ArrayItemBox", () => {
 
 	test("viewbox and arraywrap chain with sub", () => {
 		const parent = box({a: [{id: 1, name: "1"}]})
-		const parentInternal = parent as unknown as WBoxInternal<{a: {id: number, name: string}[]}>
+		const parentInternal = parent as unknown as BoxInternal<{a: {id: number, name: string}[]}>
 		const view = viewBox(() => parent.get().a)
 		const context = view.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
@@ -569,7 +569,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap of viewbox of arraywrap no sub", () => {
 		const parent = box([{a: [{id: 7, name: "1"}], id: 5}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, a: {id: number, name: string}[]}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
 		const view = viewBox(() => firstContextBox.get().a)
@@ -597,7 +597,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap of viewbox of arraywrap with sub", () => {
 		const parent = box([{a: [{id: 7, name: "1"}], id: 5}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, a: {id: number, name: string}[]}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
 		const view = viewBox(() => firstContextBox.get().a)
@@ -634,7 +634,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap of viewbox of arraywrap with sub no throw", () => {
 		const parent = box([{a: [{id: 7, name: "1"}], id: 5}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, a: {id: number, name: string}[]}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
 		const view = viewBox(() => firstContextBox.get().a)
@@ -679,7 +679,7 @@ describe("ArrayItemBox", () => {
 
 	test("view and arraywrap item", () => {
 		const parent = box([{id: 1, name: "1"}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const view = viewBox(() => parent.get()[0]!)
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
@@ -717,7 +717,7 @@ describe("ArrayItemBox", () => {
 
 	test("arraywrap item and view", () => {
 		const parent = box([{id: 1, name: "1"}])
-		const parentInternal = parent as unknown as WBoxInternal<{id: number, name: string}[]>
+		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 		const view = viewBox(() => parent.get()[0]!)

@@ -1,4 +1,4 @@
-import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, WBoxInternal, ArrayItemRBox, ArrayItemWBox, ArrayContext, RBoxInternal, RBox, WBox} from "src/new/internal"
+import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBox, ArrayItemWBox, ArrayContext, RBox, WBox} from "src/new/internal"
 
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
@@ -12,7 +12,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 	private readonly isReadonly: boolean
 	private lastKnownUpstreamValue: E[] | null = null
 
-	constructor(readonly upstream: WBoxInternal<E[]>, private readonly getKey: (element: E, index: number) => K) {
+	constructor(readonly upstream: BoxInternal<E[]>, private readonly getKey: (element: E, index: number) => K) {
 		this.isReadonly = !isWBox(upstream)
 	}
 
@@ -23,7 +23,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		}
 	}
 
-	onUpstreamChange(_: RBoxInternal<unknown>, upstreamArray?: E[]): void {
+	onUpstreamChange(_: BoxInternal<unknown>, upstreamArray?: E[]): void {
 		const outdatedKeys = new Set(this.boxes.keys())
 
 		upstreamArray ??= notificationStack.getWithoutNotifications(this.upstream)
