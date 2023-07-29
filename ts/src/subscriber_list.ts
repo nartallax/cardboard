@@ -41,6 +41,18 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 					subscriber.lastKnownValue = value
 					box.onUpstreamChange(this.owner)
 				}
+				/** This line, right here, is the reason why there's no partial updates.
+				 *
+				 * Partial update should only be dropped if there is a full update over that partial update
+				 * If there is another partial update, both should be delivered... unless they are about same thing
+				 * And also "obsolete-but-not-dropped" partial update should not be delivered to box that could not process partial update
+				 * because then that box will, at best, double-calc (and get wrong value at worst)
+				 *
+				 * It can be partially mitigated by making updates strictly sequental (don't do new update until old update is completed)
+				 * but this will lead to confusing situation when subscriber is called, but value passed is not the same value that box contains
+				 * (also this is not performant and counter-intuitive)
+				 *
+				 * So yeah, partial updates are hard to get right. That's why there are no partial updates. */
 				if(this.revision !== startingRevision){
 					// some of the subscribers changed value of the box;
 					// it doesn't make sense to proceed further in this round of calls,
