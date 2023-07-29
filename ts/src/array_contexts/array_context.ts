@@ -31,6 +31,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 			// that means our value is up-to-date
 			return
 		}
+
 		const upstreamArray = notificationStack.getWithoutNotifications(this.upstream)
 		if(upstreamArray !== this.lastKnownUpstreamValue){
 			this.onUpstreamChange(this.upstream, undefined, upstreamArray)

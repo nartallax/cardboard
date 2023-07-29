@@ -912,4 +912,34 @@ describe("ArrayItemBox", () => {
 		})
 	})
 
+	test("partial updates don't break value updates", () => {
+		const arrayBox = box(["a", "aa"])
+		const firstContext = arrayBox.getArrayContext(x => x.length)
+		const secondContext = arrayBox.getArrayContext(x => x.length)
+		const thirdContext = arrayBox.getArrayContext(x => x.length)
+		const firstItemBox = firstContext.getBoxForKey(1)
+		const secondItemBox = secondContext.getBoxForKey(1)
+		const thirdItemBox = thirdContext.getBoxForKey(1)
+		const thirdItemBoxB = thirdContext.getBoxForKey(2)
+
+		const firstCounter = makeCallCounter()
+		firstItemBox.subscribe(firstCounter)
+
+		const secondCounter = makeCallCounter()
+		secondItemBox.subscribe(secondCounter)
+
+		const thirdCounter = makeCallCounter()
+		thirdItemBox.subscribe(thirdCounter)
+
+		// on box update new partial update will be created
+		// and existing in-progress update may be lost, i.e. not delivered to one of those boxes
+		secondItemBox.subscribe(() => thirdItemBoxB.set("bb"))
+		thirdItemBox.subscribe(() => thirdItemBoxB.set("bb"))
+
+		firstItemBox.set("b")
+
+		expect(secondCounter.lastCallValue).to.be("b")
+		expect(thirdCounter.lastCallValue).to.be("b")
+	})
+
 })
