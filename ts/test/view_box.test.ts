@@ -314,4 +314,17 @@ describe("ViewBox", () => {
 		expect(callCount).to.be(2)
 	})
 
+	test("box that changes value during call", () => {
+		expect(() => {
+			const myBox = box(5)
+			const myViewBox = viewBox(() => {
+				const firstValue = myBox.get()
+				myBox.set(6)
+				const secondValue = myBox.get()
+				return firstValue + secondValue
+			})
+			expect(myViewBox.get()).to.be(11)
+		}).to.throwError(/was called more than once/)
+	})
+
 })

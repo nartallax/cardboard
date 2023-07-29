@@ -82,7 +82,6 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	}
 
 	subscribeInternal(box: UpstreamSubscriber, lastKnownValue: unknown): void {
-		// TODO: don't create object here? it's just one value
 		(this.internalSubscriptions ||= new Map()).set(box, {lastKnownValue})
 	}
 
