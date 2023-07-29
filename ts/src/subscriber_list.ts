@@ -27,7 +27,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	}
 
 	/** Call subscribers; returns true if there was no change during subscriber calls */
-	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): boolean {
+	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
 		const startingRevision = ++this.revision
 
 		if(this.internalSubscriptions){
@@ -39,9 +39,8 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				}
 				if(subscriber.lastKnownValue !== value){
 					subscriber.lastKnownValue = value
-					box.onUpstreamChange(this.owner, updateMeta)
+					box.onUpstreamChange(this.owner)
 				}
-				// TODO: think about test when updateMeta is lost/is wrong, because previous update is dropped (is it possible...?)
 				if(this.revision !== startingRevision){
 					// some of the subscribers changed value of the box;
 					// it doesn't make sense to proceed further in this round of calls,

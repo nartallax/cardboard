@@ -54,8 +54,8 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 		return super.get()
 	}
 
-	protected notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): boolean {
-		if(!super.notifyOnValueChange(value, changeSourceBox, updateMeta) || changeSourceBox === this.arrayContext.upstream){
+	protected notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
+		if(!super.notifyOnValueChange(value, changeSource) || changeSource === this.arrayContext.upstream){
 			return false
 		}
 

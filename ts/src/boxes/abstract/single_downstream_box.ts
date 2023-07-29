@@ -22,8 +22,8 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBoxImpl<T> {
 		return notificationStack.getWithoutNotifications(this.upstream)
 	}
 
-	protected override notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): boolean {
-		if(!super.notifyOnValueChange(value, changeSourceBox, updateMeta) || changeSourceBox === this.upstream){
+	protected override notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
+		if(!super.notifyOnValueChange(value, changeSource) || changeSource === this.upstream){
 			return false
 		}
 

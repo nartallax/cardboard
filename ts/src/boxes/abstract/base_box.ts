@@ -18,14 +18,14 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 
 	/** Update the value of the box, calling the subscribers.
 	 *
-	 * @param changeSourceBox the box that caused the change. Won't be notified of the change happening. */
-	set(newValue: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): void {
+	 * @param changeSource the box that caused the change. Won't be notified of the change happening. */
+	set(newValue: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): void {
 		if(this.value === newValue){
 			return
 		}
 
 		this.value = newValue
-		this.notifyOnValueChange(newValue, changeSourceBox, updateMeta)
+		this.notifyOnValueChange(newValue, changeSource)
 	}
 
 	get(): T {
@@ -63,8 +63,8 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.unsubscribeInternal(box)
 	}
 
-	protected notifyOnValueChange(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: unknown): boolean {
-		return this.subscriberList.callSubscribers(value, changeSourceBox, updateMeta)
+	protected notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
+		return this.subscriberList.callSubscribers(value, changeSource)
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R>
