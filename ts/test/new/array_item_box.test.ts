@@ -55,17 +55,8 @@ describe("ArrayItemBox", () => {
 		expect(box1.get().name).to.be.equal("1")
 		expect(box2.get().name).to.be.equal("222")
 
-		// changing the id within the box
-		box2.set({id: 4, name: "4"})
-		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(box1.get().name).to.be.equal("1")
-		expect(box2.get().name).to.be.equal("4")
-		expect(box2.get().id).to.be.equal(4)
-		expect(parent.get()[2]!).to.be.equal(box2.get())
-
 		parent.set([parent.get()[0]!, parent.get()[2]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(box2.get().name).to.be.equal("4")
 		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 		expect(() => box1.set({id: 5, name: "5"})).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 		expect(parent.get().length).to.be.equal(2)
@@ -85,13 +76,6 @@ describe("ArrayItemBox", () => {
 
 			parent.set([{id: 1, name: "1"}, {id: 1, name: "2"}])
 			expect(() => context.getBoxes()).to.throwError(/key is not unique: 1/i)
-		}
-
-		{
-			const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-			const context = parent.getArrayContext(el => el.id)
-			const box1 = context.getBoxes()[0]!
-			expect(() => box1.set({id: 2, name: "uwu"})).to.throwError(/key is not unique: 2/i)
 		}
 	})
 
@@ -121,19 +105,10 @@ describe("ArrayItemBox", () => {
 		expect(box2.get()).to.be.equal(counter.lastCallValue)
 		expect(counter.callCount).to.be.equal(2)
 
-		// changing the id within the box
-		box2.set({id: 4, name: "4"})
-		expect(box1.get().name).to.be.equal("1")
-		expect(box2.get().name).to.be.equal("4")
-		expect(box2.get().id).to.be.equal(4)
-		expect(parent.get()[2]!).to.be.equal(box2.get())
-		expect(box2.get()).to.be.equal(counter.lastCallValue)
-		expect(counter.callCount).to.be.equal(3)
-
 		parent.set([parent.get()[0]!, parent.get()[2]!])
-		expect(box2.get().name).to.be.equal("4")
+		expect(box2.get().name).to.be.equal("222")
 		expect(box2.get()).to.be.equal(counter.lastCallValue)
-		expect(counter.callCount).to.be.equal(3)
+		expect(counter.callCount).to.be.equal(2)
 		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 		expect(() => box1.set({id: 5, name: "5"})).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 		expect(parent.get().length).to.be.equal(2)
@@ -161,30 +136,22 @@ describe("ArrayItemBox", () => {
 		expect(box1.get().name).to.be.equal("owo")
 		expect(parent.get()[0]![0]!.name).to.be.equal("owo")
 
-		box1.set({id: 5, name: "uwu"})
-		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(parent.get()[0]![0]!.name).to.be.equal("uwu")
-
 		parent.set([parent.get()[1]!, parent.get()[0]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![0]!)
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![1]!, parent.get()[1]![0]!]])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![1]!)
-
-		box1.set({id: 6, name: "ayaya"})
-		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(parent.get()[1]![1]!.name).to.be.equal("ayaya")
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![0]!]])
 		// that's about array
 		expect(() => box1.get()).to.throwError(/key is not unique: 1/i)
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![0]!, {id: 12345, name: "nya"}]])
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 6\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 	})
 
 	test("chain array items with subscribers", () => {
@@ -213,32 +180,21 @@ describe("ArrayItemBox", () => {
 		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
 
-		box1.set({id: 5, name: "uwu"})
-		expect(parent.get()[0]![0]!.name).to.be.equal("uwu")
-		expect(counter.callCount).to.be.equal(3)
-		expect(counter.lastCallValue).to.be.equal(box1.get())
-
 		parent.set([parent.get()[1]!, parent.get()[0]!])
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![0]!)
-		expect(counter.callCount).to.be.equal(3)
+		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![1]!, parent.get()[1]![0]!]])
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![1]!)
-		expect(counter.callCount).to.be.equal(3)
+		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
-
-		box1.set({id: 6, name: "ayaya"})
-		expect(parent.get()[1]![1]!.name).to.be.equal("ayaya")
-		expect(counter.callCount).to.be.equal(4)
-		expect(counter.lastCallValue).to.be.equal(box1.get())
-		expect(counter.lastCallValue).to.be.equal(parent.get()[1]![1]!)
 
 		box1.unsubscribe(counter)
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(box1.get().name).to.be.equal("ayaya")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(counter.lastCallValue).to.be.equal(box1.get())
 		expect(counter.lastCallValue).to.be.equal(parent.get()[1]![1]!)
 	})
@@ -269,28 +225,17 @@ describe("ArrayItemBox", () => {
 		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
 
-		box1.set({id: 5, name: "uwu"})
-		expect(parent.get()[0]![0]!.name).to.be.equal("uwu")
-		expect(counter.callCount).to.be.equal(3)
-		expect(counter.lastCallValue).to.be.equal(box1.get())
-
 		parent.set([parent.get()[1]!, parent.get()[0]!])
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![0]!)
-		expect(counter.callCount).to.be.equal(3)
+		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![1]!, parent.get()[1]![0]!]])
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![1]!)
-		expect(counter.callCount).to.be.equal(3)
+		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
-
-		box1.set({id: 6, name: "ayaya"})
-		expect(parent.get()[1]![1]!.name).to.be.equal("ayaya")
-		expect(counter.callCount).to.be.equal(4)
-		expect(counter.lastCallValue).to.be.equal(box1.get())
-		expect(counter.lastCallValue).to.be.equal(parent.get()[1]![1]!)
 
 		// that's about array
 		expect(() => parent.set([parent.get()[0]!, [parent.get()[1]![0]!]])).to.throwError(/key is not unique: 1/i)
@@ -322,32 +267,21 @@ describe("ArrayItemBox", () => {
 		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
 
-		box1.set({id: 5, name: "uwu"})
-		expect(parent.get()[0]![0]!.name).to.be.equal("uwu")
-		expect(counter.callCount).to.be.equal(3)
-		expect(counter.lastCallValue).to.be.equal(box1.get())
-
 		parent.set([parent.get()[1]!, parent.get()[0]!])
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![0]!)
-		expect(counter.callCount).to.be.equal(3)
+		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![1]!, parent.get()[1]![0]!]])
-		expect(box1.get().name).to.be.equal("uwu")
+		expect(box1.get().name).to.be.equal("owo")
 		expect(box1.get()).to.be.equal(parent.get()[1]![1]!)
-		expect(counter.callCount).to.be.equal(3)
+		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue).to.be.equal(box1.get())
-
-		box1.set({id: 6, name: "ayaya"})
-		expect(parent.get()[1]![1]!.name).to.be.equal("ayaya")
-		expect(counter.callCount).to.be.equal(4)
-		expect(counter.lastCallValue).to.be.equal(box1.get())
-		expect(counter.lastCallValue).to.be.equal(parent.get()[1]![1]!)
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![0]!, {id: 12345, name: "nya"}]])
-		expect(counter.callCount).to.be.equal(4)
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 6\) is no longer attached/i)
+		expect(counter.callCount).to.be.equal(2)
+		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 	})
 
 	test("chain array wraps with subscribers throw 3", () => {
@@ -391,18 +325,9 @@ describe("ArrayItemBox", () => {
 		expect(parent.get().a[1]).to.be.equal(box6.get())
 		expect(counter.callCount).to.be.equal(1)
 
-		box6.set({id: 7, name: "uwu"})
-		expect(box6.get().name).to.be.equal("uwu")
-		expect(parent.get().a[1]).to.be.equal(box6.get())
-		expect(counter.lastCallValue).to.be.equal(box6.get())
-		expect(counter.callCount).to.be.equal(2)
-
 		parent.set({a: [{id: 7, name: "owo"}, {id: 5, name: "uwu"}]})
-		expect(box6.get().name).to.be.equal("owo")
-		expect(box6.get().id).to.be.equal(7)
-		expect(parent.get().a[0]).to.be.equal(box6.get())
-		expect(counter.lastCallValue).to.be.equal(box6.get())
-		expect(counter.callCount).to.be.equal(3)
+		expect(() => box6.get()).to.throwError(/This array item box \(key = 6\) is no longer attached/i)
+		expect(counter.callCount).to.be.equal(1)
 
 		box6.unsubscribe(counter)
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
@@ -785,14 +710,6 @@ describe("ArrayItemBox", () => {
 		expect(boxCounter.callCount).to.be.equal(2)
 		expect(viewCounter.callCount).to.be.equal(2)
 
-		box1.set({id: 2, name: "2"})
-		expect(boxCounter.lastCallValue).to.be.equal(view.get())
-		expect(viewCounter.lastCallValue).to.be.equal(box1.get())
-		expect(box1.get()).to.be.equal(view.get())
-		expect(box1.get().name).to.be.equal("2")
-		expect(boxCounter.callCount).to.be.equal(3)
-		expect(viewCounter.callCount).to.be.equal(3)
-
 		view.unsubscribe(viewCounter)
 		box1.unsubscribe(boxCounter)
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
@@ -830,14 +747,6 @@ describe("ArrayItemBox", () => {
 		expect(box1.get().name).to.be.equal("111")
 		expect(boxCounter.callCount).to.be.equal(2)
 		expect(viewCounter.callCount).to.be.equal(2)
-
-		box1.set({id: 2, name: "2"})
-		expect(boxCounter.lastCallValue).to.be.equal(view.get())
-		expect(viewCounter.lastCallValue).to.be.equal(box1.get())
-		expect(box1.get()).to.be.equal(view.get())
-		expect(box1.get().name).to.be.equal("2")
-		expect(boxCounter.callCount).to.be.equal(3)
-		expect(viewCounter.callCount).to.be.equal(3)
 
 		view.unsubscribe(viewCounter)
 		box1.unsubscribe(boxCounter)
@@ -938,6 +847,34 @@ describe("ArrayItemBox", () => {
 		firstBox.set({id: 1, name: "four"})
 		expect(counter.callCount).to.be(1)
 		expect(counter.lastCallValue).to.eql({id: 1, name: "four"})
+	})
+
+	test("two boxes of the same item from different contexts", () => {
+		const arrBox = box([{id: 1, name: "one"}])
+		const firstContext = arrBox.getArrayContext(x => x.id)
+		const firstBox = firstContext.getBoxForKey(1)
+		const secondContext = arrBox.getArrayContext(x => x.id)
+		const secondBox = secondContext.getBoxForKey(1)
+
+		firstBox.set({id: 1, name: "two"})
+		expect(secondBox.get().name).to.be("two")
+
+		secondBox.set({id: 1, name: "three"})
+		expect(firstBox.get().name).to.be("three")
+
+		const counter = makeCallCounter()
+		secondBox.subscribe(counter)
+		firstBox.set({id: 1, name: "four"})
+		expect(counter.callCount).to.be(1)
+		expect(counter.lastCallValue).to.eql({id: 1, name: "four"})
+	})
+
+	test("changing array item id throws", () => {
+		const arrBox = box([{id: 1, name: "one"}])
+		const context = arrBox.getArrayContext(x => x.id)
+		const item = context.getBoxForKey(1)
+
+		expect(() => item.set({id: 2, name: "two"})).to.throwError(/changed key/)
 	})
 
 })

@@ -59,13 +59,13 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 	onDownstreamChange(downstreamBox: ArrayItemBox<E, K>, value: E): void {
 		const newKey = this.getKey(value, downstreamBox.index)
 		if(newKey !== downstreamBox.key){
-			const existingBox = this.boxes.get(newKey)
-			if(existingBox){
-				throw new Error("Constraint violated, array item key is not unique: " + newKey)
-			}
-			this.boxes.delete(downstreamBox.key)
-			this.boxes.set(newKey, downstreamBox)
-			downstreamBox.key = newKey
+			/* changing keys within one box is not allowed
+			sure, we can handle it... within this context;
+			but there could be more than one context for an array box,
+			and that other context won't be updated, which will increase confusion.
+
+			also changing a key like that is generally confusing idea, not sure why anyone would do that */
+			throw new Error("Array item box changed key, which is not allowed; was: " + downstreamBox.key + ", now " + newKey)
 		}
 
 		const oldUpstreamValue = notificationStack.getWithoutNotifications(this.upstream)
