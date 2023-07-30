@@ -166,4 +166,13 @@ describe("MapBox", () => {
 		expect(lastKnownValue).to.be(3)
 	})
 
+	test("when double-notified, should still propagate value to upstream", () => {
+		const a = box(5)
+		const b = a.map(x => x + 1, x => x - 1)
+		b.subscribe(x => b.set(x | 1))
+
+		b.set(2)
+		expect(a.get()).to.be(2)
+	})
+
 })

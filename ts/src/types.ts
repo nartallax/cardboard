@@ -98,6 +98,7 @@ export interface Subscription<T> {
 /** In reality all of the boxes are internally WBoxes */
 export interface BoxInternal<T> extends WBox<T> {
 	value: T | typeof NoValue
+	getExistingValue(): T
 	subscribeInternal(box: UpstreamSubscriber): void
 	unsubscribeInternal(box: UpstreamSubscriber): void
 	haveSubscribers(): boolean

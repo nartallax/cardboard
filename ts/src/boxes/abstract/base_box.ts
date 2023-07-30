@@ -40,6 +40,13 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return this.value === NoValue ? this.get() : this.value
 	}
 
+	getExistingValue(): T {
+		if(this.value === NoValue){
+			throw new Error("Unexpected absence of value. Not sure how did we get here. Go report a bug.")
+		}
+		return this.value
+	}
+
 	/** When a box is disposed, it is no longer possible to get or set a value to this box
 	 *
 	 * Use case is situation when some upstream becomes invalid;

@@ -23,7 +23,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 			return false
 		}
 
-		this.upstream.set(this.makeUpstreamValue(value), this)
+		this.upstream.set(this.makeUpstreamValue(this.getExistingValue()), this)
 		return true
 	}
 

@@ -23,6 +23,10 @@ export class ConstBox<T> implements BoxInternal<T> {
 		return this.value as T
 	}
 
+	getExistingValue(): T {
+		return this.value as T
+	}
+
 	set(): void {
 		throw new Error("You cannot set anything to constant box")
 	}

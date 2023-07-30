@@ -56,7 +56,7 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 			return false
 		}
 
-		this.arrayContext.onDownstreamChange(this, value)
+		this.arrayContext.onDownstreamChange(this, this.getExistingValue())
 		return true
 	}
 

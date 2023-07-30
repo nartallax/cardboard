@@ -1,4 +1,4 @@
-import {type ChangeHandler, type BoxInternal, type Subscription, type UpstreamSubscriber, NoValue} from "src/internal"
+import {type ChangeHandler, type BoxInternal, type Subscription, type UpstreamSubscriber} from "src/internal"
 
 const enum UpdateFlag {
 	haveOngoing = 1 << 0,
@@ -38,11 +38,15 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		return !!(this.subscriptions || this.internalSubscriptions)
 	}
 
-	/** Call subscribers; returns true if there was no change during subscriber calls */
+	/** Call subscribers with value.
+	 *
+	 * Returns true if all the subscribers were called successfully.
+	 * Returns false if this update happened during another ongoing update;
+	 * that means some (all?) of the subscribers will be called in the future and wasn't called during this call */
 	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
 		if((this.updateStatus & UpdateFlag.haveOngoing) !== 0){
 			this.updateStatus |= UpdateFlag.haveQueued
-			return false // FIXME: why false? why true? why anything? think about not returning anything at all
+			return false
 		}
 		this.updateStatus |= UpdateFlag.haveOngoing
 
@@ -60,8 +64,10 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 			}
 		}
 
-		if(this.tryStartQueuedUpdate()){
-			return false
+		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
+			this.updateStatus = 0
+			this.callSubscribers(this.owner.getExistingValue())
+			return true
 		}
 
 		if(this.subscriptions){
@@ -82,24 +88,13 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 			}
 		}
 
-		if(this.tryStartQueuedUpdate()){
-			return false
+		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
+			this.updateStatus = 0
+			this.callSubscribers(this.owner.getExistingValue())
+			return true
 		}
 
 		this.updateStatus = 0
-		return true
-	}
-
-	// true = update started, ongoing update should be stopped
-	private tryStartQueuedUpdate(): boolean {
-		if((this.updateStatus & UpdateFlag.haveQueued) === 0){
-			return false
-		}
-		this.updateStatus = 0
-		if(this.owner.value === NoValue){
-			throw new Error("Update is queued, but owner does not have a value. Not sure how did we get here. Go report a bug.")
-		}
-		this.callSubscribers(this.owner.value)
 		return true
 	}
 
