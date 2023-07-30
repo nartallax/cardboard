@@ -1,4 +1,3 @@
-import type {UpstreamSubscriber} from "src/internal"
 
 /** Readonly box: a box which contents you can get, but cannot directly put anything into. */
 export interface RBox<T>{
@@ -85,7 +84,8 @@ type TakeNonBoxes<T> = T extends RBox<any> ? never : T
 export type Unboxed<T> = T extends RBox<infer X> ? X : T
 
 export type ChangeHandler<T, B extends RBox<T> = RBox<T>> = (value: T, box: B) => void
-export interface Subscriber<T> {
+
+export interface Subscription<T> {
 	/** Last value with which handler was called.
 	 * Having just a revision number won't do here, because value can go back-and-forth
 	 * within one update session.
@@ -106,4 +106,25 @@ export interface BoxInternal<T> extends WBox<T> {
 	unsubscribeInternal(box: UpstreamSubscriber): void
 	haveSubscribers(): boolean
 	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber): void
+}
+
+/** A box or other entity that could internally subscribe to upstream box */
+export interface UpstreamSubscriber {
+	onUpstreamChange(upstream: BoxInternal<unknown>): void
+	dispose(): void
+}
+
+/** A list of boxes some calculation depends on  */
+export interface DependencyList {
+	/** Called each time right before the calculation */
+	reset(): void
+	/** Goes all the known dependencies and checks if any of those did change */
+	didDependencyListChange(): boolean
+	unsubscribeFromDependencies(owner: UpstreamSubscriber): void
+	subscribeToDependencies(owner: UpstreamSubscriber): void
+}
+
+export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
+	calculate(): T
+	readonly dependencyList: DependencyList
 }

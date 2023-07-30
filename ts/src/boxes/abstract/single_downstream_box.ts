@@ -1,7 +1,7 @@
-import {DownstreamBoxImpl, BoxInternal, SingleDependencyList, notificationStack, UpstreamSubscriber} from "src/internal"
+import {DownstreamBox, BoxInternal, SingleDependencyList, notificationStack, UpstreamSubscriber} from "src/internal"
 
 /** A downstream box that has only one upstream */
-export abstract class SingleDownstreamBox<T, U> extends DownstreamBoxImpl<T> {
+export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 
 	protected abstract makeDownstreamValue(upstreamValue: U): T
 	protected abstract makeUpstreamValue(downstreamValue: T): U

@@ -1,4 +1,4 @@
-import {type DependencyList, type DownstreamBox, type BoxInternal, DynamicDependencyList} from "src/internal"
+import {type DependencyList, type CalculatableBox, type BoxInternal, DynamicDependencyList} from "src/internal"
 
 /** This class allows non-trivial boxes to gather information on which boxes they depend on */
 class NotificationStack {
@@ -6,7 +6,7 @@ class NotificationStack {
 	private stack: (DependencyList | null)[] = []
 	private stackSet: Set<DependencyList> = new Set()
 
-	calculateWithNotifications<T>(box: DownstreamBox<T>): T {
+	calculateWithNotifications<T>(box: CalculatableBox<T>): T {
 		const depList = box.dependencyList
 		if(this.stackSet.has(depList)){
 			throw new Error("Circular dependency detected in box calculations")

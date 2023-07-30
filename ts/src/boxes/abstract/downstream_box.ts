@@ -1,19 +1,10 @@
-import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, DynamicDependencyList} from "src/internal"
-
-export interface DownstreamBox<T> extends BoxInternal<T>, UpstreamSubscriber {
-	calculate(): T
-	readonly dependencyList: DependencyList
-}
-
-export interface UpstreamSubscriber {
-	onUpstreamChange(upstream: BoxInternal<unknown>): void
-	dispose(): void
-}
+import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, DynamicDependencyList, CalculatableBox} from "src/internal"
 
 /** DownstreamBox is a box that is derived from some other box (or several)
+ * Those base boxes are called upstream; so this box is downstream box related to the upstream boxes
  *
  * Various downstream boxes can form a network of values, propagated through internal subscribers */
-export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T> {
+export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> implements CalculatableBox<T> {
 
 	/** Calculate value of this box based on its internal calculation logic */
 	abstract calculate(): T

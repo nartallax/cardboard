@@ -1,9 +1,9 @@
-import type {ChangeHandler, BoxInternal, Subscriber, UpstreamSubscriber} from "src/internal"
+import type {ChangeHandler, BoxInternal, Subscription, UpstreamSubscriber} from "src/internal"
 
 /** Class that manages list of active subscribers to some box */
 export class SubscriberList<T, O extends BoxInternal<T>> {
-	private subscriptions: Map<ChangeHandler<T, O>, Subscriber<T>> | null = null
-	private internalSubscriptions: Map<UpstreamSubscriber, Subscriber<T>> | null = null
+	private subscriptions: Map<ChangeHandler<T, O>, Subscription<T>> | null = null
+	private internalSubscriptions: Map<UpstreamSubscriber, Subscription<T>> | null = null
 
 	/** A revision is a counter that is incremented each time the value of the box is changed
 	 *

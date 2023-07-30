@@ -2,7 +2,7 @@
  * It is only required to resolve circular dependencies */
 
 export * from "src/types"
-export * from "src/dependency_lists/dependency_list"
+export * from "src/dependency_lists/base_map_dependency_list"
 export * from "src/dependency_lists/static_dependency_list"
 export * from "src/dependency_lists/dynamic_dependency_list"
 export * from "src/dependency_lists/single_dependency_list"
