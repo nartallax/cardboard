@@ -1,8 +1,8 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
 import {Boxed, MRBox, RBox, WBox, box, constBoxWrap, isConstBox, isRBox, isWBox, unbox} from "src/cardboard"
-import {Unboxed} from "src/types"
-import {IfTypeEquals} from "test/test_utils"
+import {BoxInternal, Unboxed} from "src/types"
+import {IfTypeEquals, makeCallCounter} from "test/test_utils"
 
 describe("common functions", () => {
 
@@ -126,5 +126,34 @@ describe("common functions", () => {
 			const check: IfTypeEquals<Unboxed<WBox<string> | string>, string> = true
 			expect(check).to.be(true)
 		}
+	})
+
+	test("double subscription/unsubscription does nothing", () => {
+		const b = box(5) as BoxInternal<number>
+		const counter = makeCallCounter()
+		expect(b.haveSubscribers()).to.be(false)
+
+		b.subscribe(counter)
+		b.subscribe(counter)
+		expect(b.haveSubscribers()).to.be(true)
+		expect(counter.callCount).to.be(0)
+
+		b.set(6)
+		expect(counter.callCount).to.be(1)
+		expect(counter.lastCallValue).to.be(6)
+
+		b.unsubscribe(counter)
+		expect(b.haveSubscribers()).to.be(false)
+
+		b.set(7)
+		expect(counter.callCount).to.be(1)
+		expect(counter.lastCallValue).to.be(6)
+
+		b.unsubscribe(counter)
+		expect(b.haveSubscribers()).to.be(false)
+
+		b.set(8)
+		expect(counter.callCount).to.be(1)
+		expect(counter.lastCallValue).to.be(6)
 	})
 })

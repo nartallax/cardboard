@@ -6,7 +6,7 @@ export interface RBox<T>{
 
 	/** Subscribe to receive new value every time it changes.
 	 * One function may only be added once as a handler;
-	 * subscribing second time with the same function does nothing. TODO: write test for this
+	 * subscribing second time with the same function does nothing.
 	 *
 	 * Note that the handler is stored until explicitly unsubscribed;
 	 * this may cause memory leaks in some scenarios. */
