@@ -9,11 +9,9 @@ import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal
 export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<E, K, ArrayItemBox<E, K>> {
 	private readonly boxes = new Map<K, ArrayItemBox<E, K>>()
 	private childSubCount = 0
-	private readonly isReadonly: boolean
 	private lastKnownUpstreamValue: E[] | null = null
 
 	constructor(readonly upstream: BoxInternal<E[]>, private readonly getKey: (element: E, index: number) => K) {
-		this.isReadonly = !isWBox(upstream)
 	}
 
 	tryUpdate(): void {
@@ -31,6 +29,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 	onUpstreamChange(_: BoxInternal<unknown>, upstreamArray?: E[]): void {
 		upstreamArray ??= notificationStack.getWithoutNotifications(this.upstream)
 		this.lastKnownUpstreamValue = upstreamArray
+		const isReadonly = !isWBox(this.upstream)
 
 		const outdatedKeys = new Set(this.boxes.keys())
 		for(let index = 0; index < upstreamArray.length; index++){
@@ -42,13 +41,13 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 					throw new Error("Constraint violated, key is not unique: " + key)
 				}
 				box.set(item, this.upstream)
+				box.index = index
 			} else {
-				box = this.isReadonly ? new ArrayItemRBox<E, K>(this) : new ArrayItemWBox<E, K>(this)
-				box.value = item
-				box.key = key
+				box = isReadonly
+					? new ArrayItemRBox<E, K>(this, item, index, key)
+					: new ArrayItemWBox<E, K>(this, item, index, key)
 				this.boxes.set(key, box)
 			}
-			box.index = index
 
 			outdatedKeys.delete(key)
 		}

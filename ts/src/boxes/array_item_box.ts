@@ -4,12 +4,9 @@ import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox,
  * This box is managed by array context */
 export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 
-	// will be set from array context
-	index!: number
-	key!: K
-
-	constructor(private readonly arrayContext: ArrayContextImpl<T, any>) {
+	constructor(private readonly arrayContext: ArrayContextImpl<T, any>, value: T, public index: number, public key: K) {
 		super()
+		this.value = value
 	}
 
 	toString(): string {
