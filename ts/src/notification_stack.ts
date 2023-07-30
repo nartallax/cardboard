@@ -1,13 +1,12 @@
-import {type DependencyList, type CalculatableBox, type BoxInternal, DynamicDependencyList} from "src/internal"
+import {type CalculatableBox, type BoxInternal, DynamicDependencyList} from "src/internal"
 
 /** This class allows non-trivial boxes to gather information on which boxes they depend on */
 class NotificationStack {
 
-	private stack: (DependencyList | null)[] = []
-	private stackSet: Set<DependencyList> = new Set()
+	private stack: (DynamicDependencyList | null)[] = []
+	private stackSet: Set<DynamicDependencyList> = new Set()
 
-	calculateWithNotifications<T>(box: CalculatableBox<T>): T {
-		const depList = box.dependencyList
+	calculateWithNotifications<T>(box: CalculatableBox<T>, depList: DynamicDependencyList): T {
 		if(this.stackSet.has(depList)){
 			throw new Error("Circular dependency detected in box calculations")
 		}
@@ -17,6 +16,15 @@ class NotificationStack {
 			return box.calculate()
 		} finally {
 			this.stackSet.delete(depList)
+			this.stack.pop()
+		}
+	}
+
+	calculateWithoutNoticiations<T>(box: CalculatableBox<T>): T {
+		this.stack.push(null)
+		try {
+			return box.calculate()
+		} finally {
 			this.stack.pop()
 		}
 	}
@@ -35,7 +43,7 @@ class NotificationStack {
 
 	notify<T>(box: BoxInternal<T>, value: T): void {
 		const stackTop = this.stack[this.stack.length - 1]
-		if(stackTop && stackTop instanceof DynamicDependencyList){
+		if(stackTop){
 			stackTop.notifyDependencyCall(box, value)
 		}
 	}

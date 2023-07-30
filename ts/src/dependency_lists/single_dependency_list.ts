@@ -1,4 +1,4 @@
-import {DependencyList, BoxInternal, UpstreamSubscriber} from "src/internal"
+import {DependencyList, BoxInternal, UpstreamSubscriber, CalculatableBox, notificationStack} from "src/internal"
 
 /** A dependency list for cases when you have only one dependency
  *
@@ -23,8 +23,9 @@ export class SingleDependencyList<T> implements DependencyList {
 		return this.lastKnownDependencyValue !== this.dependency.get()
 	}
 
-	reset(): void {
+	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void {
 		this.lastKnownDependencyValue = this.dependency.get()
+		owner.set(notificationStack.calculateWithoutNoticiations(owner), changeSourceBox)
 	}
 
 }

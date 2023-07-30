@@ -27,7 +27,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 		return true
 	}
 
-	override calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown> | undefined, justHadFirstSubscriber?: boolean | undefined): void {
+	protected override calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown> | undefined): void {
 		if(!changeSourceBox){
 			// the only case when we don't have a source box and need to recalculate
 			// is when we detect that our value is out of date and needs to be updated
@@ -37,6 +37,6 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 			changeSourceBox = this.upstream
 		}
 
-		super.calculateAndResubscribe(changeSourceBox, justHadFirstSubscriber)
+		super.calculateAndResubscribe(changeSourceBox)
 	}
 }

@@ -1,10 +1,7 @@
-import {BaseMapDependencyList, DependencyList, BoxInternal} from "src/internal"
+import {BaseMapDependencyList, DependencyList, BoxInternal, CalculatableBox, notificationStack} from "src/internal"
 
 /** A list of boxes and their values, calculated dynamically at runtime */
 export class DynamicDependencyList extends BaseMapDependencyList implements DependencyList {
-	reset(): void {
-		this.boxes.clear()
-	}
 
 	notifyDependencyCall<T>(box: BoxInternal<T>, value: T): void {
 		if(this.boxes.has(box)){
@@ -18,6 +15,31 @@ export class DynamicDependencyList extends BaseMapDependencyList implements Depe
 			}
 		}
 		this.boxes.set(box, value)
+	}
+
+	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void {
+		this.boxes.clear()
+		owner.set(notificationStack.calculateWithNotifications(owner, this), changeSourceBox)
+	}
+
+	calculateAndUpdateSubscriptions<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void {
+		const oldDependencies = new Set(this.boxes.keys())
+		this.boxes.clear()
+
+		owner.set(notificationStack.calculateWithNotifications(owner, this), changeSourceBox)
+
+		for(const oldDependency of oldDependencies){
+			if(!this.boxes.has(oldDependency)){
+				oldDependency.unsubscribeInternal(owner)
+			}
+		}
+
+		for(const newDependency of this.boxes.keys()){
+			if(!oldDependencies.has(newDependency)){
+				newDependency.subscribeInternal(owner)
+			}
+		}
+
 	}
 
 }

@@ -1,4 +1,4 @@
-import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, DynamicDependencyList, CalculatableBox} from "src/internal"
+import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, CalculatableBox, DynamicDependencyList} from "src/internal"
 
 /** DownstreamBox is a box that is derived from some other box (or several)
  * Those base boxes are called upstream; so this box is downstream box related to the upstream boxes
@@ -19,19 +19,11 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	 * This value should be called as handler of internal subscription calls
 	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
-	calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
-		// TODO: think about not unsubscribing from dependencies that are present after recalc
-		const shouldResubscribe = this.dependencyList instanceof DynamicDependencyList && this.haveSubscribers()
-		if(!justHadFirstSubscriber && shouldResubscribe){
-			this.dependencyList.unsubscribeFromDependencies(this)
-		}
-
-		this.dependencyList.reset()
-		const newValue = notificationStack.calculateWithNotifications(this)
-		this.set(newValue, changeSourceBox)
-
-		if(shouldResubscribe){
-			this.dependencyList.subscribeToDependencies(this)
+	protected calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown>): void {
+		if(this.haveSubscribers() && this.dependencyList instanceof DynamicDependencyList){
+			this.dependencyList.calculateAndUpdateSubscriptions(this, changeSourceBox)
+		} else {
+			this.dependencyList.calculate(this, changeSourceBox)
 		}
 	}
 
@@ -51,6 +43,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 			// if we have subscribers - we are subscribed to our dependencies
 			// that means we recalculate each time a dependency is changed
 			// and that means our value is up-to-date and we don't need to recalculate
+			// (if we just had first subscriber - we maybe should recalculate, because we didn't have a subscriber before and didn't recalculate since then)
 			return false
 		}
 
@@ -77,7 +70,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		if(this.shouldRecalculate(true)){
 			// something may change while we wasn't subscribed to our dependencies
 			// that's why we should recalculate - so our value is actual
-			this.calculateAndResubscribe(undefined, true)
+			this.calculateAndResubscribe(undefined)
 		} else {
 			// even if we don't recalculate - we must subscribe to dependencies
 			// (if we recalculate - it will subscribe anyway)

@@ -110,12 +110,12 @@ export interface UpstreamSubscriber {
 
 /** A list of boxes some calculation depends on  */
 export interface DependencyList {
-	/** Called each time right before the calculation */
-	reset(): void
 	/** Goes all the known dependencies and checks if any of those did change */
 	didDependencyListChange(): boolean
 	unsubscribeFromDependencies(owner: UpstreamSubscriber): void
 	subscribeToDependencies(owner: UpstreamSubscriber): void
+	/** Calculate and .set() value of the owner box */
+	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void
 }
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
