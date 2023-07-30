@@ -6,7 +6,7 @@ export const NoValue = Symbol("AbsentBoxValue")
 
 export abstract class BaseBox<T> implements BoxInternal<T> {
 	value: T | typeof NoValue = NoValue
-	private readonly subscriberList = new SubscriberList<T, this>(this)
+	private readonly subscriberList = new SubscriberList<T, this>()
 
 	haveSubscribers(): boolean {
 		return this.subscriberList.haveSubscribers()
@@ -68,7 +68,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	}
 
 	protected notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
-		return this.subscriberList.callSubscribers(value, changeSource)
+		return this.subscriberList.callSubscribers(value, this, changeSource)
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R>

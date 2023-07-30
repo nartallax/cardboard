@@ -5,8 +5,6 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	private subscriptions: Map<ChangeHandler<T, O>, Subscriber<T>> | null = null
 	private internalSubscriptions: Map<UpstreamSubscriber, Subscriber<T>> | null = null
 
-	constructor(private readonly owner: O) {}
-
 	/** A revision is a counter that is incremented each time the value of the box is changed
 	 *
 	 * This value must never be visible outside of this box.
@@ -27,7 +25,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	}
 
 	/** Call subscribers; returns true if there was no change during subscriber calls */
-	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
+	callSubscribers(value: T, owner: O, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
 		const startingRevision = ++this.revision
 
 		if(this.internalSubscriptions){
@@ -39,7 +37,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				}
 				if(subscriber.lastKnownValue !== value){
 					subscriber.lastKnownValue = value
-					box.onUpstreamChange(this.owner)
+					box.onUpstreamChange(owner)
 				}
 				/** This line, right here, is the reason why there's no partial updates.
 				 *
@@ -66,7 +64,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 			for(const [handler, subscriber] of this.subscriptions){
 				if(subscriber.lastKnownValue !== value){
 					subscriber.lastKnownValue = value
-					handler(value, this.owner)
+					handler(value, owner)
 				}
 				if(this.revision !== startingRevision){
 					return false
