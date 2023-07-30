@@ -1,15 +1,5 @@
 import {BaseMapDependencyList, DependencyList, BoxInternal} from "src/internal"
 
-/* FIXME: test for box that changes its value during the call
-like,
-viewBox(() => {
-	let firstValue = myBox.get()
-	// do something to change value of myBox
-	let secondValue = myBox.get()
-	// and here we could think about what are the implications of this
-})
-*/
-
 /** A list of boxes and their values, calculated dynamically at runtime */
 export class DynamicDependencyList<O> extends BaseMapDependencyList<O> implements DependencyList {
 	readonly isStatic!: boolean

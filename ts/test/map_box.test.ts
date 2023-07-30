@@ -35,10 +35,22 @@ describe("MapBox", () => {
 	})
 
 	test("toString", () => {
-		expect(box(5).map(x => x + 1, x => x - 1) + "").to.be("MapBox(6)")
-		expect(box(5).map(x => x + 1) + "").to.be("ViewBox(6)")
-		expect(viewBox(() => 5).map(x => x + 1) + "").to.be("ViewBox(6)")
-		expect(constBox(5).map(x => x + 1) + "").to.be("ConstBox(6)")
+		const a = box(5).map(x => x + 1, x => x - 1)
+		const b = box(5).map(x => x + 1)
+		const c = viewBox(() => 5).map(x => x + 1)
+		const d = constBox(5).map(x => x + 1)
+		expect(a + "").to.be("MapBox(Symbol(AbsentBoxValue))")
+		expect(b + "").to.be("ViewBox(Symbol(AbsentBoxValue))")
+		expect(c + "").to.be("ViewBox(Symbol(AbsentBoxValue))")
+		expect(d + "").to.be("ConstBox(6)")
+		a.get()
+		b.get()
+		c.get()
+		d.get()
+		expect(a + "").to.be("MapBox(6)")
+		expect(b + "").to.be("ViewBox(6)")
+		expect(c + "").to.be("ViewBox(6)")
+		expect(d + "").to.be("ConstBox(6)")
 	})
 
 	test("propagates value back and forth", () => {
@@ -96,7 +108,7 @@ describe("MapBox", () => {
 			return bVal / 2
 		})
 
-		expect({directCalls}).to.eql({directCalls: 1})
+		expect({directCalls}).to.eql({directCalls: 0})
 		expect({reverseCalls}).to.eql({reverseCalls: 0})
 
 		expect(b.get()).to.be(10)

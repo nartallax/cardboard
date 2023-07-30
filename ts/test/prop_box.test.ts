@@ -30,9 +30,18 @@ describe("PropBox", () => {
 	})
 
 	test("toString", () => {
-		expect(box({a: 5}).prop("a") + "").to.be("PropBox(5)")
-		expect(viewBox(() => ({a: 5})).prop("a") + "").to.be("PropBox(5)")
-		expect(constBox({a: 5}).prop("a") + "").to.be("ConstBox(5)")
+		const a = box({a: 5}).prop("a")
+		const b = viewBox(() => ({a: 5})).prop("a")
+		const c = constBox({a: 5}).prop("a")
+		expect(a + "").to.be("PropBox(Symbol(AbsentBoxValue))")
+		expect(b + "").to.be("PropBox(Symbol(AbsentBoxValue))")
+		expect(c + "").to.be("ConstBox(5)")
+		a.get()
+		b.get()
+		c.get()
+		expect(a + "").to.be("PropBox(5)")
+		expect(b + "").to.be("PropBox(5)")
+		expect(c + "").to.be("ConstBox(5)")
 	})
 
 	test("moves value back and forth", () => {

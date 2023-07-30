@@ -776,7 +776,7 @@ describe("ArrayItemBox", () => {
 			callCount++
 			return JSON.stringify(x)
 		}, x => JSON.parse(x))
-		expect(callCount).to.be(3)
+		expect(callCount).to.be(0)
 		expect(mapResult.get()[0]!).to.be("{\"id\":1,\"name\":\"1\"}")
 		mapResult.set(["{\"id\":1,\"name\":\"uwu\"}", mapResult.get()[1]!, mapResult.get()[2]!])
 		expect(arrBox.get()[0]).to.eql({id: 1, name: "uwu"})

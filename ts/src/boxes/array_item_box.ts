@@ -1,4 +1,4 @@
-import {anythingToString, ArrayContextImpl, DisposedValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber} from "src/internal"
+import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber} from "src/internal"
 
 /** A box that contains an array item
  * This box is managed by array context */
@@ -24,13 +24,13 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 	}
 
 	protected onFirstSubscriber(): void {
-		if(this.value !== DisposedValue){
+		if(this.value !== NoValue){
 			this.arrayContext.onDownstreamSubscription()
 		}
 	}
 
 	protected onLastUnsubscriber(): void {
-		if(this.value !== DisposedValue){
+		if(this.value !== NoValue){
 			this.arrayContext.onDownstreamUnsubscription()
 		}
 	}

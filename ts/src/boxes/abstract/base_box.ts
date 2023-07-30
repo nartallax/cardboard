@@ -2,14 +2,10 @@ import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox} from "s
 import {ArrayContextImpl, MapBox, PropRBox, PropWBox, ViewBox, isWBox, notificationStack} from "src/internal"
 import {SubscriberList} from "src/subscriber_list"
 
-export const DisposedValue = Symbol("DisposedBoxValue")
+export const NoValue = Symbol("AbsentBoxValue")
 
 export abstract class BaseBox<T> implements BoxInternal<T> {
-	/** Must be set right after construction
-	 * It takes much more trouble to set this value in constructor than set it later
-	 * (i.e. you cannot call methods before you have value, but to get value you need to call a method) */
-	// TODO: think about makind DisposedValue be default value for cases like viewboxes, or maybe everything
-	value!: T | typeof DisposedValue
+	value: T | typeof NoValue = NoValue
 	private readonly subscriberList = new SubscriberList<T, this>(this)
 
 	haveSubscribers(): boolean {
@@ -30,10 +26,18 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 
 	get(): T {
 		notificationStack.notify(this, this.value)
-		if(this.value === DisposedValue){
+		if(this.value === NoValue){
 			throw new Error("This box is disposed; no value can be get")
 		}
 		return this.value
+	}
+
+	/** Get the value. Recalculate only if value is absent.
+	 * Result of the call should be used as subscription "initially-known" value
+	 * And we shouldn't use NoValue because it doesn't make sense;
+	 * of course other box didn't get NoValue value, it's never shown to outside world */
+	private getForSubscription(): T {
+		return this.value === NoValue ? this.get() : this.value
 	}
 
 	/** When a box is disposed, it is no longer possible to get or set a value to this box
@@ -43,16 +47,16 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	 * because it is no longer updated or is able to propagate value to his own upstream
 	 * in this case, every downstream box should also became invalid */
 	dispose(): void {
-		this.value = DisposedValue
+		this.value = NoValue
 		this.subscriberList.dispose()
 	}
 
 	subscribe(handler: ChangeHandler<T, this>): void {
-		this.subscriberList.subscribe(handler, this.value)
+		this.subscriberList.subscribe(handler, this.getForSubscription())
 	}
 
 	subscribeInternal(box: UpstreamSubscriber): void {
-		this.subscriberList.subscribeInternal(box, this.value)
+		this.subscriberList.subscribeInternal(box, this.getForSubscription())
 	}
 
 	unsubscribe(handler: ChangeHandler<T, this>): void {

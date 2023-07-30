@@ -1,4 +1,4 @@
-import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, DisposedValue} from "src/internal"
+import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue} from "src/internal"
 
 export interface DownstreamBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	calculate(): T
@@ -23,7 +23,6 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 	/** Set all values that must be set in constructor */
 	protected init(dependencyList: DependencyList): void {
 		this.dependencyList = dependencyList
-		this.value = notificationStack.calculateWithNotifications(this)
 	}
 
 	/** Calculate the value, calling the calculation function, set it to this box,
@@ -53,9 +52,9 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 	}
 
 	protected shouldRecalculate(justHadFirstSubscriber?: boolean): boolean {
-		if(this.value === DisposedValue){
+		if(this.value === NoValue){
 			// we should never show disposed value to outside world
-			// also being disposed means that next recalculation will throw
+			// also NoValue = disposed, and being disposed means that next recalculation will throw
 			// and that's a good thing, because it will notify user of error in his code
 			return true
 		}

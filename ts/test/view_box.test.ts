@@ -23,7 +23,10 @@ describe("ViewBox", () => {
 	})
 
 	test("toString", () => {
-		expect(viewBox(() => 5) + "").to.be("ViewBox(5)")
+		const b = viewBox(() => 5)
+		expect(b + "").to.be("ViewBox(Symbol(AbsentBoxValue))")
+		b.get()
+		expect(b + "").to.be("ViewBox(5)")
 	})
 
 	test("calls subscriber when dependency updates and value updates", () => {
@@ -58,7 +61,7 @@ describe("ViewBox", () => {
 			return b.get() * 2
 		})
 
-		expect(calcCount).to.be.equal(1)
+		expect(calcCount).to.be.equal(0)
 		expect(view.get()).to.be.equal(10)
 		expect(calcCount).to.be.equal(1)
 		expect(view.get()).to.be.equal(10)
@@ -300,7 +303,7 @@ describe("ViewBox", () => {
 			return x + 10
 		})
 
-		expect(callCount).to.be(1)
+		expect(callCount).to.be(0)
 		expect(b.get()).to.be(15)
 		expect(callCount).to.be(1)
 		expect(b.get()).to.be(15)
