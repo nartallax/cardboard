@@ -1,6 +1,6 @@
 import {anythingToString, SingleDownstreamBox, BoxInternal} from "src/internal"
 
-export class MapBox<T, U> extends SingleDownstreamBox<T, U> {
+abstract class MapBox<T, U> extends SingleDownstreamBox<T, U> {
 
 	constructor(
 		upstream: BoxInternal<U>,
@@ -14,3 +14,6 @@ export class MapBox<T, U> extends SingleDownstreamBox<T, U> {
 	}
 
 }
+
+export class MapRBox<T, U> extends MapBox<T, U> {}
+export class MapWBox<T, U> extends MapBox<T, U> {}

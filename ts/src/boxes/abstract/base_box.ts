@@ -1,5 +1,5 @@
 import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox} from "src/internal"
-import {ArrayContextImpl, MapBox, PropRBox, PropWBox, ViewBox, isWBox, notificationStack} from "src/internal"
+import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, notificationStack} from "src/internal"
 import {SubscriberList} from "src/subscriber_list"
 
 export const NoValue = Symbol("AbsentBoxValue")
@@ -75,10 +75,10 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
 	map<R>(mapper: (value: T) => R, reverseMapper?: (value: R) => T): RBox<R> {
 		if(!reverseMapper){
-			// TODO: subclass this? to avoid new function
-			return new ViewBox(() => mapper(this.get()), [this])
+			return new MapRBox(this, mapper, throwOnReverseMapping)
+		} else {
+			return new MapWBox(this, mapper, reverseMapper)
 		}
-		return new MapBox(this, mapper, reverseMapper)
 	}
 
 	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
@@ -105,3 +105,6 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 }
 
 const getIndex = (_: any, index: number) => index
+const throwOnReverseMapping = () => {
+	throw new Error("This box does not support reverse-mapping")
+}

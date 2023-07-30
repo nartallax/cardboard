@@ -1,6 +1,6 @@
 import {anythingToString, SingleDownstreamBox, BoxInternal} from "src/internal"
 
-export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<U[K], U> {
+abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<U[K], U> {
 
 	constructor(
 		upstream: BoxInternal<U>,
@@ -18,8 +18,6 @@ export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<
 	}
 
 	protected override makeUpstreamValue(downstreamValue: U[K]): U {
-		// TODO: check here that upstream prop value isn't the same? if it's testable
-		// TODO: think about not triggering the rest of propboxes on update..?
 		return {
 			...this.getUpstreamValue(),
 			[this.propName]: downstreamValue
