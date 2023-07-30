@@ -1,9 +1,7 @@
 import {BaseMapDependencyList, DependencyList, BoxInternal} from "src/internal"
 
 /** A list of boxes and their values, calculated dynamically at runtime */
-export class DynamicDependencyList<O> extends BaseMapDependencyList<O> implements DependencyList {
-	readonly isStatic!: boolean
-
+export class DynamicDependencyList extends BaseMapDependencyList implements DependencyList {
 	reset(): void {
 		this.boxes.clear()
 	}
@@ -24,7 +22,3 @@ export class DynamicDependencyList<O> extends BaseMapDependencyList<O> implement
 	}
 
 }
-
-// TODO: this should be a decorator, but Parcel doesn't support them at the moment
-// https://github.com/parcel-bundler/parcel/issues/7425
-(DynamicDependencyList.prototype as any).isStatic = false

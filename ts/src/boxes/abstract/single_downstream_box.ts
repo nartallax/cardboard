@@ -6,12 +6,8 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBoxImpl<T> {
 	protected abstract makeDownstreamValue(upstreamValue: U): T
 	protected abstract makeUpstreamValue(downstreamValue: T): U
 
-	protected override init(): void {
-		super.init(new SingleDependencyList(this, this.upstream))
-	}
-
 	constructor(private readonly upstream: BoxInternal<U>) {
-		super()
+		super(new SingleDependencyList(upstream))
 	}
 
 	override calculate(): T {

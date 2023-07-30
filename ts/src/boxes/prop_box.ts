@@ -7,7 +7,6 @@ export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<
 		private readonly propName: K
 	) {
 		super(upstream)
-		this.init()
 	}
 
 	toString(): string {

@@ -8,12 +8,11 @@ export const viewBox = <T>(calcFunction: () => T, explicitDependencyList?: reado
 export class ViewBox<T> extends DownstreamBoxImpl<T> {
 
 	constructor(readonly calculate: () => T, explicitDependencyList?: readonly BoxInternal<unknown>[]) {
-		super()
-		this.init(explicitDependencyList
+		super(explicitDependencyList
 			? explicitDependencyList.length === 1
-				? new SingleDependencyList(this, explicitDependencyList[0]!)
-				: new StaticDependencyList(this, explicitDependencyList)
-			: new DynamicDependencyList(this))
+				? new SingleDependencyList(explicitDependencyList[0]!)
+				: new StaticDependencyList(explicitDependencyList)
+			: new DynamicDependencyList())
 	}
 
 	toString(): string {

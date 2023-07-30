@@ -1,4 +1,4 @@
-import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue} from "src/internal"
+import {notificationStack, DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, DynamicDependencyList} from "src/internal"
 
 export interface DownstreamBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	calculate(): T
@@ -18,11 +18,8 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 	/** Calculate value of this box based on its internal calculation logic */
 	abstract calculate(): T
 
-	dependencyList!: DependencyList
-
-	/** Set all values that must be set in constructor */
-	protected init(dependencyList: DependencyList): void {
-		this.dependencyList = dependencyList
+	constructor(readonly dependencyList: DependencyList) {
+		super()
 	}
 
 	/** Calculate the value, calling the calculation function, set it to this box,
@@ -33,9 +30,9 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
 	calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown>, justHadFirstSubscriber?: boolean): void {
 		// TODO: think about not unsubscribing from dependencies that are present after recalc
-		const shouldResubscribe = !this.dependencyList.isStatic && this.haveSubscribers()
+		const shouldResubscribe = this.dependencyList instanceof DynamicDependencyList && this.haveSubscribers()
 		if(!justHadFirstSubscriber && shouldResubscribe){
-			this.dependencyList.unsubscribeFromDependencies()
+			this.dependencyList.unsubscribeFromDependencies(this)
 		}
 
 		this.dependencyList.reset()
@@ -43,7 +40,7 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 		this.set(newValue, changeSourceBox)
 
 		if(shouldResubscribe){
-			this.dependencyList.subscribeToDependencies()
+			this.dependencyList.subscribeToDependencies(this)
 		}
 	}
 
@@ -93,12 +90,12 @@ export abstract class DownstreamBoxImpl<T> extends FirstSubscriberHandlingBox<T>
 		} else {
 			// even if we don't recalculate - we must subscribe to dependencies
 			// (if we recalculate - it will subscribe anyway)
-			this.dependencyList.subscribeToDependencies()
+			this.dependencyList.subscribeToDependencies(this)
 		}
 	}
 
 	protected override onLastUnsubscriber(): void {
-		this.dependencyList.unsubscribeFromDependencies()
+		this.dependencyList.unsubscribeFromDependencies(this)
 	}
 
 }

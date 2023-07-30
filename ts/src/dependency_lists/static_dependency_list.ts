@@ -1,10 +1,8 @@
-import {BaseMapDependencyList, DependencyList, DownstreamBox, BoxInternal} from "src/internal"
+import {BaseMapDependencyList, DependencyList, BoxInternal} from "src/internal"
 
-export class StaticDependencyList<O> extends BaseMapDependencyList<O> implements DependencyList {
-	readonly isStatic!: boolean
-
-	constructor(ownerBox: DownstreamBox<O>, boxes: readonly BoxInternal<unknown>[]) {
-		super(ownerBox)
+export class StaticDependencyList extends BaseMapDependencyList implements DependencyList {
+	constructor(boxes: readonly BoxInternal<unknown>[]) {
+		super()
 		for(const box of boxes){
 			this.boxes.set(box, box.get())
 		}
@@ -16,12 +14,4 @@ export class StaticDependencyList<O> extends BaseMapDependencyList<O> implements
 		}
 	}
 
-	notifyDependencyCall(): void {
-		throw new Error("This function is not supposed to be called ever")
-	}
-
 }
-
-// TODO: this should be a decorator, but Parcel doesn't support them at the moment
-// https://github.com/parcel-bundler/parcel/issues/7425
-(StaticDependencyList.prototype as any).isStatic = true
