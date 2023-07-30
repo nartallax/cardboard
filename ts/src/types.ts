@@ -1,3 +1,4 @@
+import {NoValue} from "src/internal"
 
 /** Readonly box: a box which contents you can get, but cannot directly put anything into. */
 export interface RBox<T>{
@@ -120,5 +121,6 @@ export interface DependencyList {
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	calculate(): T
+	value: T | typeof NoValue
 	readonly dependencyList: DependencyList
 }

@@ -9,11 +9,10 @@ export class StaticDependencyList extends BaseMapDependencyList implements Depen
 	}
 
 	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void {
+		owner.set(notificationStack.calculateWithoutNoticiations(owner), changeSourceBox)
 		for(const box of this.boxes.keys()){
 			this.boxes.set(box, box.get())
 		}
-
-		owner.set(notificationStack.calculateWithoutNoticiations(owner), changeSourceBox)
 	}
 
 }

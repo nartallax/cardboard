@@ -24,8 +24,8 @@ export class SingleDependencyList<T> implements DependencyList {
 	}
 
 	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void {
-		this.lastKnownDependencyValue = this.dependency.get()
 		owner.set(notificationStack.calculateWithoutNoticiations(owner), changeSourceBox)
+		this.lastKnownDependencyValue = this.dependency.get()
 	}
 
 }

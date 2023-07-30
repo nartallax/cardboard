@@ -1,4 +1,4 @@
-import {BaseMapDependencyList, DependencyList, BoxInternal, CalculatableBox, notificationStack} from "src/internal"
+import {BaseMapDependencyList, DependencyList, BoxInternal, CalculatableBox, notificationStack, NoValue} from "src/internal"
 
 /** A list of boxes and their values, calculated dynamically at runtime */
 export class DynamicDependencyList extends BaseMapDependencyList implements DependencyList {
@@ -26,7 +26,15 @@ export class DynamicDependencyList extends BaseMapDependencyList implements Depe
 		const oldDependencies = new Set(this.boxes.keys())
 		this.boxes.clear()
 
-		owner.set(notificationStack.calculateWithNotifications(owner, this), changeSourceBox)
+		let value: T
+		try {
+			value = notificationStack.calculateWithNotifications(owner, this), changeSourceBox
+		} catch(e){
+			// this way, the box will recalculate its value next time, regardless of anything
+			owner.value = NoValue
+			throw e
+		}
+		owner.set(value)
 
 		for(const oldDependency of oldDependencies){
 			if(!this.boxes.has(oldDependency)){
