@@ -893,4 +893,55 @@ describe("ArrayItemBox", () => {
 		})
 	})
 
+	// test("performance: array item update, two contexts", () => {
+	// 	const size = 1000
+	// 	const repeats = 10
+	// 	const arrBox = box(new Array(size).fill(null).map((_, i) => i))
+	// 	const firstContext = arrBox.getArrayContext((_, i) => i)
+	// 	const secondContext = arrBox.getArrayContext((_, i) => i)
+	// 	firstContext.getBoxForKey(0).subscribe(() => {/* noop */})
+	// 	secondContext.getBoxForKey(0).subscribe(() => {/* noop */})
+	// 	expectExecutionTimeLessThan(30, 100, () => {
+	// 		for(let rep = 0; rep < repeats; rep++){
+	// 			for(let i = 0; i < size; i++){
+	// 				const cont = i & 1 ? firstContext : secondContext
+	// 				const box = cont.getBoxForKey(i)
+	// 				box.set(box.get() * 2)
+	// 			}
+	// 		}
+	// 	})
+	// })
+
+	test("notifications are not dropped on same-context update while previous update is in progress", () => {
+		const arrayBox = box(["a", "aa"])
+		const firstContext = arrayBox.getArrayContext(x => x.length)
+		const secondContext = arrayBox.getArrayContext(x => x.length)
+		const thirdContext = arrayBox.getArrayContext(x => x.length)
+		const firstItemBox = firstContext.getBoxForKey(1)
+		const secondItemBox = secondContext.getBoxForKey(1)
+		const thirdItemBox = thirdContext.getBoxForKey(1)
+		const thirdItemBoxB = thirdContext.getBoxForKey(2)
+
+		const firstCounter = makeCallCounter("first")
+		firstItemBox.subscribe(firstCounter)
+
+		const secondCounter = makeCallCounter("second")
+		secondItemBox.subscribe(secondCounter)
+
+		const thirdCounter = makeCallCounter("third")
+		thirdItemBox.subscribe(thirdCounter)
+
+		// on box update new partial update will be created
+		// and existing in-progress update may be lost, i.e. not delivered to one of those boxes
+		// or notification can be dropped because newer update is started;
+		// that means third subscriber won't get his value at all, because third arraycontext issued new update
+		secondItemBox.subscribe(() => thirdItemBoxB.set("bb"))
+		thirdItemBox.subscribe(() => thirdItemBoxB.set("bb"))
+
+		firstItemBox.set("b")
+
+		expect(secondCounter.lastCallValue).to.be("b")
+		expect(thirdCounter.lastCallValue).to.be("b")
+	})
+
 })

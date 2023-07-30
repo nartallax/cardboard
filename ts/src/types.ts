@@ -97,6 +97,7 @@ export interface Subscription<T> {
 
 /** In reality all of the boxes are internally WBoxes */
 export interface BoxInternal<T> extends WBox<T> {
+	value: T | typeof NoValue
 	subscribeInternal(box: UpstreamSubscriber): void
 	unsubscribeInternal(box: UpstreamSubscriber): void
 	haveSubscribers(): boolean
@@ -121,6 +122,5 @@ export interface DependencyList {
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	calculate(): T
-	value: T | typeof NoValue
 	readonly dependencyList: DependencyList
 }
