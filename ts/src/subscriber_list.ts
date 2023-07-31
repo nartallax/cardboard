@@ -1,14 +1,35 @@
-import {type ChangeHandler, type BoxInternal, type Subscription, type UpstreamSubscriber, UpdateMeta} from "src/internal"
+import {type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox} from "src/internal"
 
 const enum UpdateFlag {
 	haveOngoing = 1 << 0,
 	haveQueued = 1 << 1
 }
 
+interface Subscription<T> {
+	/** Last value with which handler was called.
+	 * Having just a revision number won't do here, because value can go back-and-forth
+	 * within one update session.
+	 *
+	 * This field must always contain value;
+	 * when someone subscribes, it must be initiated with current value of the box.
+	 * This is required to maintain the behaviour that subscriber knows what value the box had
+	 * right before the subscription happens; so the call with the very same value could not happen in the next update.
+	 *
+	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
+	 * or to the same value as the box already has; it will only be different within update rounds */
+	lastKnownValue: T
+}
+
+interface PropSubscription<T> extends Subscription<T> {
+	readonly box: UpstreamSubscriber
+}
+
+
 /** Class that manages list of active subscribers to some box */
 export class SubscriberList<T, O extends BoxInternal<T>> {
 	private subscriptions: Map<ChangeHandler<T, O>, Subscription<T>> | null = null
 	private internalSubscriptions: Map<UpstreamSubscriber, Subscription<T>> | null = null
+	private propBoxInternalSubscriptions: Map<unknown, PropSubscription<T>[]> | null = null
 
 	/** There once was a number field called `revision` here.
 	 * As the library was going ahead with more and more complex calculations and logic, it became obsolete.
@@ -35,7 +56,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	constructor(private readonly owner: O) {}
 
 	haveSubscribers(): boolean {
-		return !!(this.subscriptions || this.internalSubscriptions)
+		return !!(this.subscriptions || this.internalSubscriptions || this.propBoxInternalSubscriptions)
 	}
 
 	/** Call subscribers with value.
@@ -54,19 +75,8 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 		this.updateStatus |= UpdateFlag.haveOngoing
 
-		if(this.internalSubscriptions){
-			for(const [box, subscriber] of this.internalSubscriptions){
-				if(box === changeSourceBox){
-					// that box already knows what value of this box should be
-					subscriber.lastKnownValue = value
-					continue
-				}
-				if(subscriber.lastKnownValue !== value){
-					subscriber.lastKnownValue = value
-					box.onUpstreamChange(this.owner, updateMeta)
-				}
-			}
-		}
+		this.notifyInternalSubscribers(value, changeSourceBox, updateMeta)
+		this.notifyPropSubscribers(value, changeSourceBox, updateMeta)
 
 		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
 			this.updateStatus = 0
@@ -80,23 +90,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 			return true
 		}
 
-		if(this.subscriptions){
-			for(const [handler, subscription] of this.subscriptions){
-				if(subscription.lastKnownValue !== value){
-					subscription.lastKnownValue = value
-					handler(value, this.owner)
-				}
-				if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
-					/* one of the external subscribers have changed the value of the owner box
-					that means we must stop notifying external subscribers, as `value` is not up-to-date,
-					and starts queued update immediately
-
-					we don't do it for internal subscribers, because internal subscribers could never generate such circular update
-					and checking this for internal subscriber can sometimes drop a meaningful update entirely, which could be a bug */
-					break
-				}
-			}
-		}
+		this.notifyExternalSubscribers(value)
 
 		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
 			this.updateStatus = 0
@@ -108,11 +102,94 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		return true
 	}
 
+	private notifyInternalSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		if(!this.internalSubscriptions){
+			return
+		}
+
+		for(const [box, subscription] of this.internalSubscriptions){
+			if(box === changeSourceBox){
+				// that box already knows what value of this box should be
+				subscription.lastKnownValue = value
+				continue
+			}
+			if(subscription.lastKnownValue !== value){
+				subscription.lastKnownValue = value
+				box.onUpstreamChange(this.owner, updateMeta)
+			}
+		}
+	}
+
+	private notifyPropSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		if(!this.propBoxInternalSubscriptions){
+			return
+		}
+
+		if(updateMeta && updateMeta.type === "property_update"){
+			const propSubscriptionArray = this.propBoxInternalSubscriptions.get(updateMeta.propName)
+			if(propSubscriptionArray){
+				this.notifyPropSubscriptionArray(propSubscriptionArray, value, changeSourceBox, updateMeta)
+			}
+			return
+		}
+
+		for(const propSubscriptionArray of this.propBoxInternalSubscriptions.values()){
+			this.notifyPropSubscriptionArray(propSubscriptionArray, value, changeSourceBox, updateMeta)
+		}
+	}
+
+	private notifyPropSubscriptionArray(arr: PropSubscription<T>[], value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		for(let i = 0; i < arr.length; i++){
+			const subscription = arr[i]!
+			if(subscription.box === changeSourceBox){
+				subscription.lastKnownValue = value
+				continue
+			}
+			if(subscription.lastKnownValue !== value){
+				subscription.lastKnownValue = value
+				subscription.box.onUpstreamChange(this.owner, updateMeta)
+			}
+		}
+	}
+
+	private notifyExternalSubscribers(value: T): void {
+		if(!this.subscriptions){
+			return
+		}
+
+		for(const [handler, subscription] of this.subscriptions){
+			if(subscription.lastKnownValue !== value){
+				subscription.lastKnownValue = value
+				handler(value, this.owner)
+			}
+			if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
+				/* one of the external subscribers have changed the value of the owner box
+				that means we must stop notifying external subscribers, as `value` is not up-to-date,
+				and starts queued update immediately
+
+				we don't do it for internal subscribers, because internal subscribers could never generate such circular update
+				and checking this for internal subscriber can sometimes drop a meaningful update entirely, which could be a bug */
+				break
+			}
+		}
+	}
+
 	subscribe(handler: ChangeHandler<T, O>, lastKnownValue: unknown): void {
 		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue})
 	}
 
 	subscribeInternal(box: UpstreamSubscriber, lastKnownValue: unknown): void {
+		if(box instanceof PropBox){
+			const map = this.propBoxInternalSubscriptions ||= new Map()
+			let arr = map.get(box.propName)
+			if(!arr){
+				arr = []
+				map.set(box.propName, arr)
+			}
+			arr.push({lastKnownValue, box})
+			return
+		}
+
 		(this.internalSubscriptions ||= new Map()).set(box, {lastKnownValue})
 	}
 
@@ -128,6 +205,27 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	}
 
 	unsubscribeInternal(box: UpstreamSubscriber): void {
+		if(box instanceof PropBox){
+			if(!this.propBoxInternalSubscriptions){
+				return
+			}
+
+			let arr = this.propBoxInternalSubscriptions.get(box.propName)
+			if(!arr){
+				return
+			}
+
+			arr = arr.filter(sub => sub.box !== box)
+			if(arr.length === 0){
+				this.propBoxInternalSubscriptions.delete(box.propName)
+				if(this.propBoxInternalSubscriptions.size === 0){
+					this.propBoxInternalSubscriptions = null
+				}
+			} else {
+				this.propBoxInternalSubscriptions.set(box.propName, arr)
+			}
+		}
+
 		if(!this.internalSubscriptions){
 			return
 		}

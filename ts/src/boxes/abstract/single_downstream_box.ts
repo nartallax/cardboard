@@ -4,9 +4,9 @@ import {DownstreamBox, BoxInternal, SingleDependencyList, notificationStack, Ups
 export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 
 	protected abstract makeDownstreamValue(upstreamValue: U): T
-	protected abstract makeUpstreamValue(downstreamValue: T): U
+	protected abstract updateUpstreamWith(downstreamValue: T): void
 
-	constructor(private readonly upstream: BoxInternal<U>) {
+	constructor(protected readonly upstream: BoxInternal<U>) {
 		super(new SingleDependencyList(upstream))
 	}
 
@@ -23,7 +23,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 			return false
 		}
 
-		this.upstream.set(this.makeUpstreamValue(this.getExistingValue()), this)
+		this.updateUpstreamWith(this.getExistingValue())
 		return true
 	}
 

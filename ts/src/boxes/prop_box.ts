@@ -1,10 +1,10 @@
 import {anythingToString, SingleDownstreamBox, BoxInternal} from "src/internal"
 
-abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<U[K], U> {
+export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<U[K], U> {
 
 	constructor(
 		upstream: BoxInternal<U>,
-		private readonly propName: K
+		readonly propName: K
 	) {
 		super(upstream)
 	}
@@ -17,11 +17,12 @@ abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<U[K], U
 		return upstreamValue[this.propName]
 	}
 
-	protected override makeUpstreamValue(downstreamValue: U[K]): U {
-		return {
+	protected override updateUpstreamWith(downstreamValue: U[K]): void {
+		const value: U = {
 			...this.getUpstreamValue(),
 			[this.propName]: downstreamValue
 		}
+		this.upstream.set(value, this, {type: "property_update", propName: this.propName})
 	}
 
 }

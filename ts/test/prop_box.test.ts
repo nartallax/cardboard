@@ -1,7 +1,7 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {BoxInternal, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/internal"
-import {makeCallCounter} from "test/test_utils"
+import {BoxInternal, WBox, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/internal"
+import {expectExecutionTimeLessThan, makeCallCounter} from "test/test_utils"
 
 describe("PropBox", () => {
 
@@ -658,6 +658,35 @@ describe("PropBox", () => {
 
 		bbb.unsubscribe(counter)
 		expect(b.haveSubscribers()).to.be(false)
+	})
+
+	test("performance: update of property box does not check for update of other property boxes", () => {
+		const fieldCount = 100
+		const cycles = 1000
+
+		const obj: Record<string, number> = {}
+		for(let i = 0; i < fieldCount; i++){
+			obj["_" + i] = i
+		}
+
+		const counter = makeCallCounter()
+		const sourceBox = box(obj)
+		const propBoxes: WBox<number>[] = []
+		for(let i = 0; i < fieldCount; i++){
+			const propBox = sourceBox.prop("_" + i)
+			propBox.subscribe(counter)
+			propBoxes.push(propBox)
+		}
+
+		// not very robust... on some machines this could pass just because the machine is fast
+		expectExecutionTimeLessThan(400, 600, () => {
+			for(let cycle = 0; cycle < cycles; cycle++){
+				for(const propBox of propBoxes){
+					const newValue = propBox.get() + 1
+					propBox.set(newValue)
+				}
+			}
+		})
 	})
 
 

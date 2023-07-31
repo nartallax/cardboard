@@ -13,6 +13,10 @@ abstract class MapBox<T, U> extends SingleDownstreamBox<T, U> {
 		return `MapBox(${anythingToString(this.value)})`
 	}
 
+	protected updateUpstreamWith(downstreamValue: T): void {
+		this.upstream.set(this.makeUpstreamValue(downstreamValue), this)
+	}
+
 }
 
 export class MapRBox<T, U> extends MapBox<T, U> {}
