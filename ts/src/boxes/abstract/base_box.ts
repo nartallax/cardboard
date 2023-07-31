@@ -1,4 +1,4 @@
-import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox} from "src/internal"
+import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, UpdateMeta} from "src/internal"
 import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, notificationStack} from "src/internal"
 import {SubscriberList} from "src/subscriber_list"
 
@@ -15,13 +15,13 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	/** Update the value of the box, calling the subscribers.
 	 *
 	 * @param changeSource the box that caused the change. Won't be notified of the change happening. */
-	set(newValue: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): void {
+	set(newValue: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		if(this.value === newValue){
 			return
 		}
 
 		this.value = newValue
-		this.notifyOnValueChange(newValue, changeSource)
+		this.notifyOnValueChange(newValue, changeSource, updateMeta)
 	}
 
 	get(): T {
@@ -74,8 +74,8 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.unsubscribeInternal(box)
 	}
 
-	protected notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
-		return this.subscriberList.callSubscribers(value, changeSource)
+	protected notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
+		return this.subscriberList.callSubscribers(value, changeSource, updateMeta)
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R>

@@ -1,4 +1,4 @@
-import {NoValue} from "src/internal"
+import {NoValue, UpdateMeta} from "src/internal"
 
 /** Readonly box: a box which contents you can get, but cannot directly put anything into. */
 export interface RBox<T>{
@@ -102,12 +102,12 @@ export interface BoxInternal<T> extends WBox<T> {
 	subscribeInternal(box: UpstreamSubscriber): void
 	unsubscribeInternal(box: UpstreamSubscriber): void
 	haveSubscribers(): boolean
-	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber): void
+	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void
 }
 
 /** A box or other entity that could internally subscribe to upstream box */
 export interface UpstreamSubscriber {
-	onUpstreamChange(upstream: BoxInternal<unknown>): void
+	onUpstreamChange(upstream: BoxInternal<unknown>, updateMeta?: UpdateMeta): void
 	dispose(): void
 }
 

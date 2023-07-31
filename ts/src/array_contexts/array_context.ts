@@ -1,4 +1,4 @@
-import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBox, ArrayItemWBox, ArrayContext, RBox, WBox} from "src/internal"
+import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBox, ArrayItemWBox, ArrayContext, RBox, WBox, UpdateMeta} from "src/internal"
 
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
@@ -22,15 +22,26 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		}
 		const upstreamArray = notificationStack.getWithoutNotifications(this.upstream)
 		if(upstreamArray !== this.lastKnownUpstreamValue){
-			this.onUpstreamChange(this.upstream, upstreamArray)
+			this.onUpstreamChange(this.upstream, undefined, upstreamArray)
 		}
 	}
 
-	onUpstreamChange(_: BoxInternal<unknown>, upstreamArray?: E[]): void {
+	onUpstreamChange(_: BoxInternal<unknown>, updateMeta?: UpdateMeta, upstreamArray?: E[]): void {
 		upstreamArray ??= notificationStack.getWithoutNotifications(this.upstream)
 		this.lastKnownUpstreamValue = upstreamArray
-		const isReadonly = !isWBox(this.upstream)
 
+		if(updateMeta && updateMeta.type === "array_item_update"){
+			const upstreamItemValue = upstreamArray[updateMeta.index]!
+			const key = this.getKey(upstreamItemValue, updateMeta.index)
+			const box = this.boxes.get(key)
+			if(!box){
+				throw new Error(`Update meta points to update of array item at index ${updateMeta.index}; the key for this index is ${key}, but there's no box for this key. Either key generation logic is flawed, or there's bug in the library.`)
+			}
+			box.set(upstreamItemValue, this.upstream)
+			return
+		}
+
+		const isReadonly = !isWBox(this.upstream)
 		const outdatedKeys = new Set(this.boxes.keys())
 		for(let index = 0; index < upstreamArray.length; index++){
 			const item = upstreamArray[index]!
@@ -75,7 +86,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		const newUpstreamValue: E[] = [...oldUpstreamValue]
 		newUpstreamValue[downstreamBox.index] = value
 		this.lastKnownUpstreamValue = newUpstreamValue
-		this.upstream.set(newUpstreamValue, this)
+		this.upstream.set(newUpstreamValue, this, {type: "array_item_update", index: downstreamBox.index})
 	}
 
 	onDownstreamSubscription(): void {

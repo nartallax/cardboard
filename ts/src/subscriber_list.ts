@@ -1,4 +1,4 @@
-import {type ChangeHandler, type BoxInternal, type Subscription, type UpstreamSubscriber} from "src/internal"
+import {type ChangeHandler, type BoxInternal, type Subscription, type UpstreamSubscriber, UpdateMeta} from "src/internal"
 
 const enum UpdateFlag {
 	haveOngoing = 1 << 0,
@@ -47,7 +47,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	 * That also means that somewhere is ongoing notification call, which will be finished after this call
 	 * And if a box needs to do something strictly after all notification calls are finished -
 	 * then this box should wait for `true` to be returned */
-	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
+	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
 		if((this.updateStatus & UpdateFlag.haveOngoing) !== 0){
 			this.updateStatus |= UpdateFlag.haveQueued
 			return false
@@ -63,13 +63,19 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				}
 				if(subscriber.lastKnownValue !== value){
 					subscriber.lastKnownValue = value
-					box.onUpstreamChange(this.owner)
+					box.onUpstreamChange(this.owner, updateMeta)
 				}
 			}
 		}
 
 		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
 			this.updateStatus = 0
+			/* on nested (double) subscriber notification we explicitly do not pass source box or update meta
+			because we don't store neither update source nor meta for the last update
+			and if we pass what we have - we'll be wrong, because they are not the source of the latest change.
+
+			also, we need to trigger full update and not partial update,
+			otherwise there could be situations when update just never arrives */
 			this.callSubscribers(this.owner.getExistingValue())
 			return true
 		}

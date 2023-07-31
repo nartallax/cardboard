@@ -893,24 +893,24 @@ describe("ArrayItemBox", () => {
 		})
 	})
 
-	// test("performance: array item update, two contexts", () => {
-	// 	const size = 1000
-	// 	const repeats = 10
-	// 	const arrBox = box(new Array(size).fill(null).map((_, i) => i))
-	// 	const firstContext = arrBox.getArrayContext((_, i) => i)
-	// 	const secondContext = arrBox.getArrayContext((_, i) => i)
-	// 	firstContext.getBoxForKey(0).subscribe(() => {/* noop */})
-	// 	secondContext.getBoxForKey(0).subscribe(() => {/* noop */})
-	// 	expectExecutionTimeLessThan(30, 100, () => {
-	// 		for(let rep = 0; rep < repeats; rep++){
-	// 			for(let i = 0; i < size; i++){
-	// 				const cont = i & 1 ? firstContext : secondContext
-	// 				const box = cont.getBoxForKey(i)
-	// 				box.set(box.get() * 2)
-	// 			}
-	// 		}
-	// 	})
-	// })
+	test("performance: array item update, two contexts", () => {
+		const size = 1000
+		const repeats = 10
+		const arrBox = box(new Array(size).fill(null).map((_, i) => i))
+		const firstContext = arrBox.getArrayContext((_, i) => i)
+		const secondContext = arrBox.getArrayContext((_, i) => i)
+		firstContext.getBoxForKey(0).subscribe(() => {/* noop */})
+		secondContext.getBoxForKey(0).subscribe(() => {/* noop */})
+		expectExecutionTimeLessThan(30, 100, () => {
+			for(let rep = 0; rep < repeats; rep++){
+				for(let i = 0; i < size; i++){
+					const cont = i & 1 ? firstContext : secondContext
+					const box = cont.getBoxForKey(i)
+					box.set(box.get() * 2)
+				}
+			}
+		})
+	})
 
 	test("notifications are not dropped on same-context update while previous update is in progress", () => {
 		const arrayBox = box(["a", "aa"])
