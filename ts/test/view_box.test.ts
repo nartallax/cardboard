@@ -330,4 +330,29 @@ describe("ViewBox", () => {
 		}).to.throwError(/was called more than once/)
 	})
 
+	test("dynamic subscription update", () => {
+		const boxA = box(false) as BoxInternal<boolean>
+		const boxB = box(10) as BoxInternal<number>
+		const b = viewBox(() => boxA.get() ? 5 : boxB.get())
+
+		const counter = makeCallCounter()
+		b.subscribe(counter)
+
+		expect(boxA.haveSubscribers()).to.be(true)
+		expect(boxB.haveSubscribers()).to.be(true)
+
+		boxA.set(true)
+		expect(boxA.haveSubscribers()).to.be(true)
+		expect(boxB.haveSubscribers()).to.be(false)
+		expect(counter.callCount).to.be(1)
+
+		boxB.set(11)
+		expect(counter.callCount).to.be(1)
+
+		boxA.set(false)
+		expect(boxA.haveSubscribers()).to.be(true)
+		expect(boxB.haveSubscribers()).to.be(true)
+		expect(counter.callCount).to.be(2)
+	})
+
 })

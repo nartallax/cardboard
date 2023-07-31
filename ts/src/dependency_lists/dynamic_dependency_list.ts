@@ -36,7 +36,6 @@ export class DynamicDependencyList extends BaseMapDependencyList implements Depe
 		}
 		owner.set(value)
 
-		// TODO: test dynamic update of subscription; like, `viewBox(() => boxA.get()? 5: boxB.get())`
 		for(const oldDependency of oldDependencies){
 			if(!this.boxes.has(oldDependency)){
 				oldDependency.unsubscribeInternal(owner)

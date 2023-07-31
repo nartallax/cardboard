@@ -42,7 +42,11 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	 *
 	 * Returns true if all the subscribers were called successfully.
 	 * Returns false if this update happened during another ongoing update;
-	 * that means some (all?) of the subscribers will be called in the future and wasn't called during this call */
+	 * that means some (all?) of the subscribers will be called in the future and wasn't called during this call
+	 *
+	 * That also means that somewhere is ongoing notification call, which will be finished after this call
+	 * And if a box needs to do something strictly after all notification calls are finished -
+	 * then this box should wait for `true` to be returned */
 	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
 		if((this.updateStatus & UpdateFlag.haveOngoing) !== 0){
 			this.updateStatus |= UpdateFlag.haveQueued
