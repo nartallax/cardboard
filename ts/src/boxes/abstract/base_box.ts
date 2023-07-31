@@ -21,7 +21,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		}
 
 		this.value = newValue
-		this.notifyOnValueChange(newValue, changeSource, updateMeta)
+		this.notifyOnValueChange(changeSource, updateMeta)
 	}
 
 	get(): T {
@@ -74,8 +74,8 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.unsubscribeInternal(box)
 	}
 
-	protected notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
-		return this.subscriberList.callSubscribers(value, changeSource, updateMeta)
+	protected notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
+		return this.subscriberList.callSubscribers(changeSource, updateMeta)
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R>

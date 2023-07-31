@@ -1,4 +1,4 @@
-import {DownstreamBox, BoxInternal, SingleDependencyList, notificationStack, UpstreamSubscriber} from "src/internal"
+import {DownstreamBox, BoxInternal, SingleDependencyList, notificationStack, UpstreamSubscriber, UpdateMeta} from "src/internal"
 
 /** A downstream box that has only one upstream */
 export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
@@ -18,8 +18,8 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 		return notificationStack.getWithoutNotifications(this.upstream)
 	}
 
-	protected override notifyOnValueChange(value: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber): boolean {
-		if(!super.notifyOnValueChange(value, changeSource) || changeSource === this.upstream){
+	protected override notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
+		if(!super.notifyOnValueChange(changeSource, updateMeta) || changeSource === this.upstream){
 			return false
 		}
 

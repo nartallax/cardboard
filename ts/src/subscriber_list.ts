@@ -68,15 +68,15 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	 * That also means that somewhere is ongoing notification call, which will be finished after this call
 	 * And if a box needs to do something strictly after all notification calls are finished -
 	 * then this box should wait for `true` to be returned */
-	callSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
+	callSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
 		if((this.updateStatus & UpdateFlag.haveOngoing) !== 0){
 			this.updateStatus |= UpdateFlag.haveQueued
 			return false
 		}
 		this.updateStatus |= UpdateFlag.haveOngoing
 
-		this.notifyInternalSubscribers(value, changeSourceBox, updateMeta)
-		this.notifyPropSubscribers(value, changeSourceBox, updateMeta)
+		this.notifyInternalSubscribers(changeSourceBox, updateMeta)
+		this.notifyPropSubscribers(changeSourceBox, updateMeta)
 
 		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
 			this.updateStatus = 0
@@ -86,15 +86,15 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 
 			also, we need to trigger full update and not partial update,
 			otherwise there could be situations when update just never arrives */
-			this.callSubscribers(this.owner.getExistingValue())
+			this.callSubscribers()
 			return true
 		}
 
-		this.notifyExternalSubscribers(value)
+		this.notifyExternalSubscribers()
 
 		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
 			this.updateStatus = 0
-			this.callSubscribers(this.owner.getExistingValue())
+			this.callSubscribers()
 			return true
 		}
 
@@ -102,12 +102,19 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		return true
 	}
 
-	private notifyInternalSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyInternalSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		if(!this.internalSubscriptions){
 			return
 		}
 
 		for(const [box, subscription] of this.internalSubscriptions){
+			/* we get value each time here to avoid scenario when subscriber gets outdated value
+			while it's not bad on its own (because subscriber will eventually get most up-to-date-value),
+			it can confuse users of the library, if outdated value is passed into some kind of user handler
+			it can lead to questions like "why box.get() is not equal to value passed into handler", which is fair
+
+			it is only possible in case of double-changes; most of the time value will be the same */
+			const value = this.owner.getExistingValue()
 			if(box === changeSourceBox){
 				// that box already knows what value of this box should be
 				subscription.lastKnownValue = value
@@ -120,7 +127,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyPropSubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		if(!this.propBoxInternalSubscriptions){
 			return
 		}
@@ -128,18 +135,19 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		if(updateMeta && updateMeta.type === "property_update"){
 			const propSubscriptionArray = this.propBoxInternalSubscriptions.get(updateMeta.propName)
 			if(propSubscriptionArray){
-				this.notifyPropSubscriptionArray(propSubscriptionArray, value, changeSourceBox, updateMeta)
+				this.notifyPropSubscriptionArray(propSubscriptionArray, changeSourceBox, updateMeta)
 			}
 			return
 		}
 
 		for(const propSubscriptionArray of this.propBoxInternalSubscriptions.values()){
-			this.notifyPropSubscriptionArray(propSubscriptionArray, value, changeSourceBox, updateMeta)
+			this.notifyPropSubscriptionArray(propSubscriptionArray, changeSourceBox, updateMeta)
 		}
 	}
 
-	private notifyPropSubscriptionArray(arr: PropSubscription<T>[], value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscriptionArray(arr: PropSubscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		for(let i = 0; i < arr.length; i++){
+			const value = this.owner.getExistingValue()
 			const subscription = arr[i]!
 			if(subscription.box === changeSourceBox){
 				subscription.lastKnownValue = value
@@ -152,24 +160,16 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyExternalSubscribers(value: T): void {
+	private notifyExternalSubscribers(): void {
 		if(!this.subscriptions){
 			return
 		}
 
 		for(const [handler, subscription] of this.subscriptions){
+			const value = this.owner.getExistingValue()
 			if(subscription.lastKnownValue !== value){
 				subscription.lastKnownValue = value
 				handler(value, this.owner)
-			}
-			if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
-				/* one of the external subscribers have changed the value of the owner box
-				that means we must stop notifying external subscribers, as `value` is not up-to-date,
-				and starts queued update immediately
-
-				we don't do it for internal subscribers, because internal subscribers could never generate such circular update
-				and checking this for internal subscriber can sometimes drop a meaningful update entirely, which could be a bug */
-				break
 			}
 		}
 	}
