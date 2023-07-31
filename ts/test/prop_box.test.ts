@@ -712,5 +712,4 @@ describe("PropBox", () => {
 		expect(childCounter.lastCallValue).to.be(6)
 	})
 
-
 })

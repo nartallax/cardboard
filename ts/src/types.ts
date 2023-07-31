@@ -60,6 +60,10 @@ export interface WBox<T> extends RBox<T> {
 	 * It's more optimal to do it that way instead of `.set({...value, [propName]: propValue})`,
 	 * but otherwise will work the same */
 	setProp<const K extends (keyof T) & (string | symbol)>(propName: K, propValue: T[K]): void
+
+	/** Set array element value at specified index
+	 * It's more optimal to do instead of copy, update and set, but otherwise will work the same. */
+	setElementByIndex<E>(this: WBox<readonly E[]>, index: number, value: E): void
 }
 
 /** An object that helps to manage boxes that wrap individual items of an array box */

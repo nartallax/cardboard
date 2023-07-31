@@ -117,6 +117,16 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.set({...oldValue, [propName]: propValue}, undefined, {type: "property_update", propName})
 	}
 
+	setElementByIndex<E>(this: BaseBox<readonly E[]>, index: number, value: E): void {
+		const oldValue = this.get()
+		if(oldValue[index] === value){
+			return
+		}
+		const newValue = [...oldValue]
+		newValue[index] = value
+		this.set(newValue, undefined, {type: "array_item_update", index})
+	}
+
 }
 
 const getIndex = (_: any, index: number) => index

@@ -944,4 +944,27 @@ describe("ArrayItemBox", () => {
 		expect(thirdCounter.lastCallValue).to.be("b")
 	})
 
+	test("setElementByIndex method", () => {
+		const parent = box([1, 2, 3])
+		const context = parent.getArrayContext((_, i) => i)
+		const child = context.getBoxForKey(1)
+
+		const parentCounter = makeCallCounter()
+		parent.subscribe(parentCounter)
+
+		const childCounter = makeCallCounter()
+		child.subscribe(childCounter)
+
+		parent.setElementByIndex(0, 5)
+		expect(parentCounter.callCount).to.be(1)
+		expect(parentCounter.lastCallValue).to.eql([5, 2, 3])
+		expect(childCounter.callCount).to.be(0)
+
+		parent.setElementByIndex(1, 10)
+		expect(parentCounter.callCount).to.be(2)
+		expect(parentCounter.lastCallValue).to.eql([5, 10, 3])
+		expect(childCounter.callCount).to.be(1)
+		expect(childCounter.lastCallValue).to.be(10)
+	})
+
 })

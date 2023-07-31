@@ -72,4 +72,8 @@ export class ConstBox<T> implements BoxInternal<T> {
 	setProp(): void {
 		throw new Error("You can't set anything on const box")
 	}
+
+	setElementByIndex(): void {
+		throw new Error("You can't set anything on const box")
+	}
 }
