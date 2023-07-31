@@ -68,4 +68,8 @@ export class ConstBox<T> implements BoxInternal<T> {
 	mapArray<E, R>(this: ConstBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]> | WBox<R[]> {
 		return new ConstBox((this.value as E[]).map((item, index) => mapper(item, index)))
 	}
+
+	setProp(): void {
+		throw new Error("You can't set anything on const box")
+	}
 }

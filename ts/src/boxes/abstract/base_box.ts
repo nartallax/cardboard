@@ -109,6 +109,14 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		}
 	}
 
+	setProp<K extends keyof T>(propName: K, propValue: T[K]): void {
+		const oldValue = this.get()
+		if(oldValue[propName] === propValue){
+			return
+		}
+		this.set({...oldValue, [propName]: propValue}, undefined, {type: "property_update", propName})
+	}
+
 }
 
 const getIndex = (_: any, index: number) => index

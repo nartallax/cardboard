@@ -22,7 +22,7 @@ export interface RBox<T>{
 	map<R>(mapper: (value: T) => R): RBox<R>
 
 	/** Create another box which holds value of a property under that name */
-	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
+	prop<const K extends (keyof T) & (string | symbol)>(this: RBox<T>, propName: K): RBox<T[K]>
 
 	/** If this box contains an array - this will create an array context for it */
 	getArrayContext<E, K>(this: RBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, RBox<E>>
@@ -45,8 +45,8 @@ export interface WBox<T> extends RBox<T> {
 	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
 
 	/** Create another box which holds value of a property under that name */
-	prop<K extends keyof T>(this: WBox<T>, propName: K): WBox<T[K]>
-	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>
+	prop<const K extends (keyof T) & (string | symbol)>(this: WBox<T>, propName: K): WBox<T[K]>
+	prop<const K extends (keyof T) & (string | symbol)>(this: RBox<T>, propName: K): RBox<T[K]>
 
 	/** If this box contains an array - this will create an array context for it */
 	getArrayContext<E, K>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, WBox<E>>
@@ -55,6 +55,11 @@ export interface WBox<T> extends RBox<T> {
 	 * Will only apply mapper to new/changed items when the source array changes */
 	mapArray<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
 	mapArray<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+
+	/** This will set value of a property if there's an object inside the box
+	 * It's more optimal to do it that way instead of `.set({...value, [propName]: propValue})`,
+	 * but otherwise will work the same */
+	setProp<const K extends (keyof T) & (string | symbol)>(propName: K, propValue: T[K]): void
 }
 
 /** An object that helps to manage boxes that wrap individual items of an array box */

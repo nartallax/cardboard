@@ -689,5 +689,28 @@ describe("PropBox", () => {
 		})
 	})
 
+	test("setProp method", () => {
+		const b = box({a: 5})
+		const bb = b.prop("a")
+
+		const parentCounter = makeCallCounter()
+		b.subscribe(parentCounter)
+
+		const childCounter = makeCallCounter()
+		bb.subscribe(childCounter)
+
+		b.setProp("a", 6)
+		expect(parentCounter.callCount).to.be(1)
+		expect(parentCounter.lastCallValue).to.eql({a: 6})
+		expect(childCounter.callCount).to.be(1)
+		expect(childCounter.lastCallValue).to.be(6)
+
+		b.setProp("a", 6)
+		expect(parentCounter.callCount).to.be(1)
+		expect(parentCounter.lastCallValue).to.eql({a: 6})
+		expect(childCounter.callCount).to.be(1)
+		expect(childCounter.lastCallValue).to.be(6)
+	})
+
 
 })
