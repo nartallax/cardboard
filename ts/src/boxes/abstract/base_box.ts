@@ -141,6 +141,14 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	}
 
 	deleteElements<E>(this: BaseBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void {
+		this.deleteElementsInternal(predicate, false)
+	}
+
+	deleteElement<E>(this: BaseBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void {
+		this.deleteElementsInternal(predicate, true)
+	}
+
+	private deleteElementsInternal<E>(this: BaseBox<readonly E[]>, predicate: (item: E, index: number) => boolean, stopAfterFirst: boolean): void {
 		const oldValue = this.get()
 		const deletedPairs: {index: number, value: unknown}[] = []
 		const newValue: E[] = []
@@ -150,6 +158,10 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 				newValue.push(itemValue)
 			} else {
 				deletedPairs.push({value: itemValue, index: i})
+				if(stopAfterFirst){
+					newValue.push(...oldValue.slice(i + 1))
+					break
+				}
 			}
 		}
 		if(deletedPairs.length === 0){

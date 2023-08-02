@@ -84,7 +84,12 @@ export interface WBox<T> extends RBox<T> {
 	 * Works like .filter() method of native array, just updates value inside the box instead of creating new box. */
 	deleteElements<E>(this: WBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void
 
-	// TODO: deleteElement, clear, append, prepend, insert multiple...?
+	/** Like .deleteElement(), just stops after first element to delete is found.
+	 * Useful in cases when you are sure that there's only one element that matches the predicate. */
+	deleteElement<E>(this: WBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void
+
+	// TODO: clear, append, prepend, insert multiple...?
+	// TODO: delete method on array item box
 }
 
 /** An object that helps to manage boxes that wrap individual items of an array box */
