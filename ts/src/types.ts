@@ -87,7 +87,8 @@ export interface WBox<T> extends RBox<T> {
 	deleteElements<E>(this: WBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void
 
 	/** Like .deleteElement(), just stops after first element to delete is found.
-	 * Useful in cases when you are sure that there's only one element that matches the predicate. */
+	 * Useful in cases when you are sure that there's only one element that matches the predicate.
+	 * Will throw if that single element is not found. */
 	deleteElement<E>(this: WBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void
 
 	// TODO: clear, append, prepend, insert multiple...?

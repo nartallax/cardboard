@@ -315,5 +315,7 @@ describe("Array container", () => {
 		expect(() => box1.get()).to.throwError(/no longer attached/)
 		expect(box2.get()).to.eql({id: 2, name: "2"})
 		expect(box3.get()).to.eql({id: 3, name: "3"})
+
+		expect(() => parent.deleteElement(() => true)).to.throwError(/found none/)
 	})
 })

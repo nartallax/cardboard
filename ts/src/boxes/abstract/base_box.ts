@@ -139,10 +139,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	}
 
 	insertElementAtIndex<E>(this: BaseBox<readonly E[]>, index: number, value: E): void {
-		const oldValue = this.get()
-		this.checkInsertIndex(oldValue, index)
-		const newValue = [...oldValue.slice(0, index), value, ...oldValue.slice(index)]
-		this.set(newValue, undefined, {type: "array_items_insert", index, count: 1})
+		this.insertElementsAtIndex(index, [value])
 	}
 
 	private checkInsertIndex(elements: readonly unknown[], index: number): void {
@@ -183,11 +180,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	}
 
 	deleteElementAtIndex<E>(this: BaseBox<readonly E[]>, index: number): void {
-		const oldValue = this.get()
-		this.checkDeleteIndex(oldValue, index)
-		const itemValue = oldValue[index]
-		const newValue = [...oldValue.slice(0, index), ...oldValue.slice(index + 1)]
-		this.set(newValue, undefined, {type: "array_items_delete", indexValuePairs: [{value: itemValue, index}]})
+		this.deleteElementsAtIndex(index, 1)
 	}
 
 	private checkDeleteIndex(elements: readonly unknown[], index: number): void {
@@ -225,6 +218,9 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 			}
 		}
 		if(deletedPairs.length === 0){
+			if(stopAfterFirst){
+				throw new Error("Expected to find exactly one element to delete, but found none (predicate = " + predicate + ")")
+			}
 			return
 		}
 		this.set(newValue, undefined, {type: "array_items_delete", indexValuePairs: deletedPairs})
