@@ -137,7 +137,25 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		const oldValue = this.get()
 		const itemValue = oldValue[index]
 		const newValue = [...oldValue.slice(0, index), ...oldValue.slice(index + 1)]
-		this.set(newValue, undefined, {type: "array_item_delete", index, value: itemValue})
+		this.set(newValue, undefined, {type: "array_items_delete", indexValuePairs: [{value: itemValue, index}]})
+	}
+
+	deleteElements<E>(this: BaseBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void {
+		const oldValue = this.get()
+		const deletedPairs: {index: number, value: unknown}[] = []
+		const newValue: E[] = []
+		for(let i = 0; i < oldValue.length; i++){
+			const itemValue = oldValue[i]!
+			if(predicate(itemValue, i)){
+				newValue.push(itemValue)
+			} else {
+				deletedPairs.push({value: itemValue, index: i})
+			}
+		}
+		if(deletedPairs.length === 0){
+			return
+		}
+		this.set(newValue, undefined, {type: "array_items_delete", indexValuePairs: deletedPairs})
 	}
 
 }

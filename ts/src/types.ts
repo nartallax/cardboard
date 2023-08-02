@@ -48,7 +48,16 @@ export interface WBox<T> extends RBox<T> {
 	prop<const K extends (keyof T) & (string | symbol)>(this: WBox<T>, propName: K): WBox<T[K]>
 	prop<const K extends (keyof T) & (string | symbol)>(this: RBox<T>, propName: K): RBox<T[K]>
 
-	/** If this box contains an array - this will create an array context for it */
+	/** If this box contains an array - this will create an array context for it
+	 * Array context is a way to wrap individual elements of the array into their respective boxes,
+	 * and that includes a lot of operation you may want to do on array, like sorting, inserting, removing, updating values in place etc.
+	 *
+	 * getKey function exists to make a link between array item and a box that contains that array item.
+	 * It is expected that key will always be the same for item that is logically the same item.
+	 * For example, if you have an array of pizza orders, you should return ID of the order from getKey function.
+	 *
+	 * You can use index, but it's only really usable in cases when no changes to the array order/size will be made.
+	 * Otherwise all kinds of strange bugs may occur, like non-delivered updates. */
 	getArrayContext<E, K>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, WBox<E>>
 
 	/** Apply mapper to each individual value in the array, getting array with new items
@@ -70,6 +79,12 @@ export interface WBox<T> extends RBox<T> {
 
 	/** Remove element at specified index from value array. Other elements will be shifted. */
 	deleteElementAtIndex<E>(this: WBox<readonly E[]>, index: number): void
+
+	/** Throw away every item from value array for which predicate returns false.
+	 * Works like .filter() method of native array, just updates value inside the box instead of creating new box. */
+	deleteElements<E>(this: WBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void
+
+	// TODO: deleteElement, clear, append, prepend, insert multiple...?
 }
 
 /** An object that helps to manage boxes that wrap individual items of an array box */

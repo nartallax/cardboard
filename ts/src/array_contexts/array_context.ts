@@ -57,14 +57,16 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 				return
 			}
 
-			if(updateMeta.type === "array_item_delete"){
-				const key = this.getKey(updateMeta.value as E, updateMeta.index)
-				const box = this.boxes.get(key)
-				if(!box){
-					throw new Error("Tried to delete item at key " + key + ", but there's no item for that key.")
+			if(updateMeta.type === "array_items_delete"){
+				for(const {index, value} of updateMeta.indexValuePairs){
+					const key = this.getKey(value as E, index)
+					const box = this.boxes.get(key)
+					if(!box){
+						throw new Error("Tried to delete item at key " + key + ", but there's no item for that key.")
+					}
+					box.dispose()
+					this.boxes.delete(key)
 				}
-				box.dispose()
-				this.boxes.delete(key)
 				return
 			}
 		}

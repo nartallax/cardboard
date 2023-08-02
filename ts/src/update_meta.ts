@@ -7,16 +7,18 @@
  *
  * Sending no meta when there is meta won't lead to catastrophe, but sending wrong meta can. */
 export type UpdateMeta = {
-	type: "property_update"
-	propName: unknown
+	readonly type: "property_update"
+	readonly propName: unknown
 } | {
-	type: "array_item_update"
-	index: number
+	readonly type: "array_item_update"
+	readonly index: number
 } | {
-	type: "array_item_insert"
-	index: number
+	readonly type: "array_item_insert"
+	readonly index: number
 } | {
-	type: "array_item_delete"
-	index: number
-	value: unknown
+	readonly type: "array_items_delete"
+	readonly indexValuePairs: readonly {
+		readonly index: number
+		readonly value: unknown
+	}[]
 }

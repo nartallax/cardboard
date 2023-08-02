@@ -999,4 +999,16 @@ describe("ArrayItemBox", () => {
 		expect(() => box1.get()).to.throwError(/no longer attached/)
 	})
 
+	test("deleteElements", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
+		const context = parent.getArrayContext(x => x.id)
+		const box1 = context.getBoxForKey(1)
+		const box2 = context.getBoxForKey(2)
+
+		parent.deleteElements(box => (box.id % 2) === 0)
+		expect(parent.get()).to.eql([{id: 2, name: "2"}])
+		expect(box2.get()).to.eql({id: 2, name: "2"})
+		expect(() => box1.get()).to.throwError(/no longer attached/)
+	})
+
 })
