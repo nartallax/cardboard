@@ -1,4 +1,4 @@
-import {ConstArrayContext, anythingToString, ArrayContext, RBox, WBox, BoxInternal, NoValue} from "src/internal"
+import {ConstArrayContext, anythingToString, ArrayContext, RBox, WBox, BoxInternal, NoValue, ArrayItemWBox} from "src/internal"
 
 /** Make a new constant box, a readonly box which value never changes
  *
@@ -8,7 +8,7 @@ export const constBox = <T>(value: T): RBox<T> => {
 	return new ConstBox(value)
 }
 
-export class ConstBox<T> implements BoxInternal<T> {
+export class ConstBox<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 	constructor(readonly value: T | typeof NoValue) {
 		if(value === NoValue){
 			throw new Error("ConstBox must always have a value")
@@ -55,7 +55,7 @@ export class ConstBox<T> implements BoxInternal<T> {
 		return new ConstBox((this.value as T)[propName])
 	}
 
-	getArrayContext<E, K>(this: ConstBox<E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, WBox<E>> {
+	getArrayContext<E, K>(this: ConstBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, ConstBox<E>> {
 		return new ConstArrayContext<E, K>(this, getKey)
 	}
 
@@ -118,6 +118,10 @@ export class ConstBox<T> implements BoxInternal<T> {
 	}
 
 	deleteAllElements(): void {
+		throwOnChange()
+	}
+
+	deleteArrayElement(): void {
 		throwOnChange()
 	}
 }

@@ -1,8 +1,8 @@
-import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber, UpdateMeta} from "src/internal"
+import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber, UpdateMeta, ArrayItemWBox} from "src/internal"
 
 /** A box that contains an array item
  * This box is managed by array context */
-export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
+export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> implements ArrayItemWBox<T> {
 
 	constructor(private readonly arrayContext: ArrayContextImpl<T, any>, value: T, public index: number, public key: K) {
 		super()
@@ -60,7 +60,11 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> {
 		return true
 	}
 
+	deleteArrayElement(): void {
+		this.arrayContext.upstream.deleteElementAtIndex(this.index)
+	}
+
 }
 
-export class ArrayItemRBox<T, K> extends ArrayItemBox<T, K> {}
-export class ArrayItemWBox<T, K> extends ArrayItemBox<T, K> {}
+export class ArrayItemRBoxImpl<T, K> extends ArrayItemBox<T, K> {}
+export class ArrayItemWBoxImpl<T, K> extends ArrayItemBox<T, K> {}

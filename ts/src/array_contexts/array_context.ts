@@ -1,4 +1,4 @@
-import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBox, ArrayItemWBox, ArrayContext, RBox, WBox, UpdateMeta} from "src/internal"
+import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, RBox, WBox, UpdateMeta} from "src/internal"
 
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
@@ -53,8 +53,8 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 						// it doesn't make much sense for upstream to be readonly when it is updated by item insert
 						// but let's check anyway
 						const box = !isWBox(this.upstream)
-							? new ArrayItemRBox<E, K>(this, item, index, key)
-							: new ArrayItemWBox<E, K>(this, item, index, key)
+							? new ArrayItemRBoxImpl<E, K>(this, item, index, key)
+							: new ArrayItemWBoxImpl<E, K>(this, item, index, key)
 						this.boxes.set(key, box)
 					}
 					return
@@ -98,8 +98,8 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 				box.index = index
 			} else {
 				box = isReadonly
-					? new ArrayItemRBox<E, K>(this, item, index, key)
-					: new ArrayItemWBox<E, K>(this, item, index, key)
+					? new ArrayItemRBoxImpl<E, K>(this, item, index, key)
+					: new ArrayItemWBoxImpl<E, K>(this, item, index, key)
 				this.boxes.set(key, box)
 			}
 

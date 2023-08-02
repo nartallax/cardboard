@@ -58,7 +58,7 @@ export interface WBox<T> extends RBox<T> {
 	 *
 	 * You can use index, but it's only really usable in cases when no changes to the array order/size will be made.
 	 * Otherwise all kinds of strange bugs may occur, like non-delivered updates. */
-	getArrayContext<E, K>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, WBox<E>>
+	getArrayContext<E, K>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, ArrayItemWBox<E>>
 
 	/** Apply mapper to each individual value in the array, getting array with new items
 	 * Will only apply mapper to new/changed items when the source array changes */
@@ -98,6 +98,16 @@ export interface WBox<T> extends RBox<T> {
 	/** Clears array. Sets box to empty array. */
 	deleteAllElements<E>(this: WBox<readonly E[]>): void
 	// TODO: delete method on array item box
+}
+
+/** This is box that is part of some other box.
+ * This box contains array item; upstream box contains whole array.  */
+export interface ArrayItemWBox<T> extends WBox<T> {
+	/** Remove this element from upstream box.
+	 * After calling this method this box will become detached, and any attempts to interact with it will result in throw.
+	 *
+	 * (just like when you remove this box from upstream array via other ways) */
+	deleteArrayElement(): void
 }
 
 /** An object that helps to manage boxes that wrap individual items of an array box */

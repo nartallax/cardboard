@@ -1,4 +1,4 @@
-import {ConstBox, constBox, WBox, RBox, Boxed, Unboxed, ValueBox, ViewBox, PropRBox, PropWBox, ArrayItemRBox, ArrayItemWBox, MapRBox, MapWBox} from "src/internal"
+import {ConstBox, constBox, WBox, RBox, Boxed, Unboxed, ValueBox, ViewBox, PropRBox, PropWBox, ArrayItemRBoxImpl, ArrayItemWBoxImpl, MapRBox, MapWBox} from "src/internal"
 
 /** Wrap a value in a const box, if the value is not a box; otherwise return that box as is */
 export const constBoxWrap = <T>(boxOrValue: T): Boxed<T> => {
@@ -15,12 +15,12 @@ export const unbox = <T>(boxOrValue: T): Unboxed<T> => {
  * Note that every box supplied by this library is an RBox;
  * every WBox is an RBox, every const box is an RBox, etc */
 export const isRBox = (value: unknown): value is RBox<unknown> => {
-	return isWBox(value) || isConstBox(value) || value instanceof ViewBox || value instanceof PropRBox || value instanceof ArrayItemRBox || value instanceof MapRBox
+	return isWBox(value) || isConstBox(value) || value instanceof ViewBox || value instanceof PropRBox || value instanceof ArrayItemRBoxImpl || value instanceof MapRBox
 }
 
 /** Checks if the value is a writable box */
 export const isWBox = (value: unknown): value is WBox<unknown> => {
-	return value instanceof ValueBox || value instanceof MapWBox || value instanceof PropWBox || value instanceof ArrayItemWBox
+	return value instanceof ValueBox || value instanceof MapWBox || value instanceof PropWBox || value instanceof ArrayItemWBoxImpl
 }
 
 /** Checks if the value is a constant box.

@@ -764,4 +764,14 @@ describe("ArrayItemBox", () => {
 		expect(box2.get().name).to.be.equal("3")
 	})
 
+	test("deleteArrayElement method", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
+		const context = parent.getArrayContext(el => el.id)
+		const box1 = context.getBoxForKey(1)
+
+		box1.deleteArrayElement()
+		expect(parent.get()).to.eql([{id: 2, name: "2"}])
+		expect(() => box1.get()).to.throwError(/no longer attached/)
+	})
+
 })
