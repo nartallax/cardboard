@@ -97,7 +97,6 @@ export interface WBox<T> extends RBox<T> {
 
 	/** Clears array. Sets box to empty array. */
 	deleteAllElements<E>(this: WBox<readonly E[]>): void
-	// TODO: delete method on array item box
 }
 
 /** This is box that is part of some other box.

@@ -38,7 +38,7 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> i
 		}
 	}
 
-	override set(newValue: T, changeSourceBox?: BoxInternal<unknown>): void {
+	override set(newValue: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): void {
 		this.checkIfStillAttached()
 		super.set(newValue, changeSourceBox)
 	}
@@ -52,7 +52,7 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> i
 	}
 
 	protected notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
-		if(!super.notifyOnValueChange(changeSource, updateMeta) || changeSource === this.arrayContext.upstream){
+		if(!super.notifyOnValueChange(changeSource, updateMeta) || changeSource === this.arrayContext){
 			return false
 		}
 

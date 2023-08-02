@@ -39,7 +39,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 					if(!box){
 						throw new Error(`Update meta points to update of array item at index ${updateMeta.index}; the key for this index is ${key}, but there's no box for this key. Either key generation logic is flawed, or there's bug in the library.`)
 					}
-					box.set(item, this.upstream)
+					box.set(item, this)
 					return
 				}
 				case "array_items_insert": {
@@ -94,7 +94,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 				if(!outdatedKeys.has(key)){
 					throw new Error("Constraint violated, key is not unique: " + key)
 				}
-				box.set(item, this.upstream)
+				box.set(item, this)
 				box.index = index
 			} else {
 				box = isReadonly
@@ -241,6 +241,10 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		for(const child of this.boxes.values()){
 			child.dispose()
 		}
+	}
+
+	toString(): string {
+		return `ArrayContext(${this.getKey})`
 	}
 
 }
