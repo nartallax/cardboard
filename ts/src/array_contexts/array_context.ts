@@ -31,46 +31,56 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		this.lastKnownUpstreamValue = upstreamArray
 
 		if(updateMeta){
-			if(updateMeta.type === "array_item_update"){
-				const item = upstreamArray[updateMeta.index]!
-				const key = this.getKey(item, updateMeta.index)
-				const box = this.boxes.get(key)
-				if(!box){
-					throw new Error(`Update meta points to update of array item at index ${updateMeta.index}; the key for this index is ${key}, but there's no box for this key. Either key generation logic is flawed, or there's bug in the library.`)
-				}
-				box.set(item, this.upstream)
-				return
-			}
-
-			if(updateMeta.type === "array_items_insert"){
-				for(let offset = 0; offset < updateMeta.count; offset++){
-					const index = updateMeta.index + offset
-					const item = upstreamArray[index]!
-					const key = this.getKey(item, index)
-					if(this.boxes.get(key)){
-						throw new Error("Duplicate key: " + key)
-					}
-					// it doesn't make much sense for upstream to be readonly when it is updated by item insert
-					// but let's check anyway
-					const box = !isWBox(this.upstream)
-						? new ArrayItemRBox<E, K>(this, item, index, key)
-						: new ArrayItemWBox<E, K>(this, item, index, key)
-					this.boxes.set(key, box)
-				}
-				return
-			}
-
-			if(updateMeta.type === "array_items_delete"){
-				for(const {index, value} of updateMeta.indexValuePairs){
-					const key = this.getKey(value as E, index)
+			switch(updateMeta.type){
+				case "array_item_update": {
+					const item = upstreamArray[updateMeta.index]!
+					const key = this.getKey(item, updateMeta.index)
 					const box = this.boxes.get(key)
 					if(!box){
-						throw new Error("Tried to delete item at key " + key + ", but there's no item for that key.")
+						throw new Error(`Update meta points to update of array item at index ${updateMeta.index}; the key for this index is ${key}, but there's no box for this key. Either key generation logic is flawed, or there's bug in the library.`)
 					}
-					box.dispose()
-					this.boxes.delete(key)
+					box.set(item, this.upstream)
+					return
 				}
-				return
+				case "array_items_insert": {
+					for(let offset = 0; offset < updateMeta.count; offset++){
+						const index = updateMeta.index + offset
+						const item = upstreamArray[index]!
+						const key = this.getKey(item, index)
+						if(this.boxes.get(key)){
+							throw new Error("Duplicate key: " + key)
+						}
+						// it doesn't make much sense for upstream to be readonly when it is updated by item insert
+						// but let's check anyway
+						const box = !isWBox(this.upstream)
+							? new ArrayItemRBox<E, K>(this, item, index, key)
+							: new ArrayItemWBox<E, K>(this, item, index, key)
+						this.boxes.set(key, box)
+					}
+					return
+				}
+
+				case "array_items_delete": {
+					for(const {index, value} of updateMeta.indexValuePairs){
+						const key = this.getKey(value as E, index)
+						const box = this.boxes.get(key)
+						if(!box){
+							throw new Error("Tried to delete item at key " + key + ", but there's no item for that key.")
+						}
+						box.dispose()
+						this.boxes.delete(key)
+					}
+					return
+				}
+
+				case "array_items_delete_all": {
+					for(const box of this.boxes.values()){
+						box.dispose()
+					}
+					this.boxes.clear()
+					return
+				}
+
 			}
 		}
 

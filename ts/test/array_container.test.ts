@@ -248,7 +248,7 @@ describe("Array container", () => {
 		expect(() => parent.insertElementAtIndex(-1, {id: 6, name: "6"})).to.throwError(/negative index/)
 	})
 
-	test("insert shorthands", () => {
+	test("insert shorthand methods", () => {
 		const parent = box([1])
 
 		parent.appendElement(2)
@@ -264,7 +264,7 @@ describe("Array container", () => {
 		expect(parent.get()).to.eql([7, 8, 9, 3, 1, 2, 4, 5, 6])
 	})
 
-	test("deleteElementsAtIndex", () => {
+	test("deleteElementsAtIndex method", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}, {id: 4, name: "4"}])
 		const context = parent.getArrayContext(x => x.id)
 		const box4 = context.getBoxForKey(4)
@@ -287,7 +287,7 @@ describe("Array container", () => {
 		expect(() => parent.deleteElementsAtIndex(5, 1)).to.throwError(/beyond array length/)
 	})
 
-	test("deleteElementAtIndex", () => {
+	test("deleteElementAtIndex method", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
 		const context = parent.getArrayContext(x => x.id)
 		const box1 = context.getBoxForKey(1)
@@ -307,7 +307,7 @@ describe("Array container", () => {
 		expect(() => parent.deleteElementAtIndex(5)).to.throwError(/beyond array length/)
 	})
 
-	test("deleteElements", () => {
+	test("deleteElements method", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
 		const context = parent.getArrayContext(x => x.id)
 		const box1 = context.getBoxForKey(1)
@@ -319,7 +319,7 @@ describe("Array container", () => {
 		expect(() => box1.get()).to.throwError(/no longer attached/)
 	})
 
-	test("deleteElement", () => {
+	test("deleteElement method", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
 		const context = parent.getArrayContext(x => x.id)
 		const box1 = context.getBoxForKey(1)
@@ -333,5 +333,15 @@ describe("Array container", () => {
 		expect(box3.get()).to.eql({id: 3, name: "3"})
 
 		expect(() => parent.deleteElement(() => true)).to.throwError(/found none/)
+	})
+
+	test("deleteAllElements method", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
+		const context = parent.getArrayContext(x => x.id)
+		const box1 = context.getBoxForKey(1)
+
+		parent.deleteAllElements()
+		expect(parent.get()).to.eql([])
+		expect(() => box1.get()).to.throwError(/no longer attached/)
 	})
 })

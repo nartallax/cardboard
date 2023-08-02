@@ -242,6 +242,10 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.set(newValue, undefined, {type: "array_items_delete", indexValuePairs: deletedPairs})
 	}
 
+	deleteAllElements<E>(this: BaseBox<readonly E[]>): void {
+		this.set([], undefined, {type: "array_items_delete_all"})
+	}
+
 }
 
 const getIndex = (_: any, index: number) => index

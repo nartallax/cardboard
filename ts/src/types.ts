@@ -95,7 +95,8 @@ export interface WBox<T> extends RBox<T> {
 	 * Will throw if that single element is not found. */
 	deleteElement<E>(this: WBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void
 
-	// TODO: clear, append, prepend, insert multiple...?
+	/** Clears array. Sets box to empty array. */
+	deleteAllElements<E>(this: WBox<readonly E[]>): void
 	// TODO: delete method on array item box
 }
 

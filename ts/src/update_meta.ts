@@ -22,4 +22,6 @@ export type UpdateMeta = {
 		readonly index: number
 		readonly value: unknown
 	}[]
+} | {
+	readonly type: "array_items_delete_all"
 }

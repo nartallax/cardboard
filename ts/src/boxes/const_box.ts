@@ -116,6 +116,10 @@ export class ConstBox<T> implements BoxInternal<T> {
 	deleteElement(): void {
 		throwOnChange()
 	}
+
+	deleteAllElements(): void {
+		throwOnChange()
+	}
 }
 
 function throwOnChange(): never {
