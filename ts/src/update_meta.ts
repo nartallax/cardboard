@@ -13,8 +13,9 @@ export type UpdateMeta = {
 	readonly type: "array_item_update"
 	readonly index: number
 } | {
-	readonly type: "array_item_insert"
+	readonly type: "array_items_insert"
 	readonly index: number
+	readonly count: number
 } | {
 	readonly type: "array_items_delete"
 	readonly indexValuePairs: readonly {

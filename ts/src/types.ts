@@ -74,10 +74,12 @@ export interface WBox<T> extends RBox<T> {
 	 * It's more optimal to do instead of copy, update and set, but otherwise will work the same. */
 	setElementAtIndex<E>(this: WBox<readonly E[]>, index: number, value: E): void
 
-	/** Insert new element into value array so it has that index. Other elements will be shifted. */
+	/** Insert new elements into value array so it has that index. Other elements will be shifted. */
+	insertElementsAtIndex<E>(this: WBox<readonly E[]>, index: number, values: readonly E[]): void
 	insertElementAtIndex<E>(this: WBox<readonly E[]>, index: number, value: E): void
 
-	/** Remove element at specified index from value array. Other elements will be shifted. */
+	/** Remove elements at specified index from value array. Other elements will be shifted. */
+	deleteElementsAtIndex<E>(this: WBox<readonly E[]>, index: number, count: number): void
 	deleteElementAtIndex<E>(this: WBox<readonly E[]>, index: number): void
 
 	/** Throw away every item from value array for which predicate returns false.

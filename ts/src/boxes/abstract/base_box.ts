@@ -127,17 +127,77 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.set(newValue, undefined, {type: "array_item_update", index})
 	}
 
+	insertElementsAtIndex<E>(this: BaseBox<readonly E[]>, index: number, values: readonly E[]): void {
+		if(values.length === 0){
+			return
+		}
+
+		const oldValue = this.get()
+		this.checkInsertIndex(oldValue, index)
+		const newValue = [...oldValue.slice(0, index), ...values, ...oldValue.slice(index)]
+		this.set(newValue, undefined, {type: "array_items_insert", index, count: values.length})
+	}
+
 	insertElementAtIndex<E>(this: BaseBox<readonly E[]>, index: number, value: E): void {
 		const oldValue = this.get()
+		this.checkInsertIndex(oldValue, index)
 		const newValue = [...oldValue.slice(0, index), value, ...oldValue.slice(index)]
-		this.set(newValue, undefined, {type: "array_item_insert", index})
+		this.set(newValue, undefined, {type: "array_items_insert", index, count: 1})
+	}
+
+	private checkInsertIndex(elements: readonly unknown[], index: number): void {
+		if(index < 0){
+			throw new Error(`Cannot insert anything in negative index (passed index = ${index})`)
+		}
+
+		if(index > elements.length){
+			throw new Error(`Cannot insert anything in index beyond array length (passed index = ${index}, array length = ${elements.length}); this will create sparse array, which is bad in multiple ways and should always be avoided.`)
+		}
+	}
+
+	deleteElementsAtIndex<E>(this: BaseBox<readonly E[]>, index: number, count: number): void {
+		if(count < 1){
+			return
+		}
+
+		const oldValue = this.get()
+		this.checkDeleteIndex(oldValue, index)
+
+		count = Math.min(count, oldValue.length - index)
+		if(count < 1){
+			// yes, we are double-checking
+			// previous check is useful for the case of user passing zero, and helps us to avoid calling .get()
+			// which can be costly, depending on type of the box
+			return
+		}
+
+		const deletedPairs: {index: number, value: unknown}[] = []
+		for(let offset = 0; offset < count; offset++){
+			const itemIndex = index + offset
+			const itemValue = oldValue[itemIndex]
+			deletedPairs.push({value: itemValue, index: itemIndex})
+		}
+
+		const newValue = [...oldValue.slice(0, index), ...oldValue.slice(index + count)]
+		this.set(newValue, undefined, {type: "array_items_delete", indexValuePairs: deletedPairs})
 	}
 
 	deleteElementAtIndex<E>(this: BaseBox<readonly E[]>, index: number): void {
 		const oldValue = this.get()
+		this.checkDeleteIndex(oldValue, index)
 		const itemValue = oldValue[index]
 		const newValue = [...oldValue.slice(0, index), ...oldValue.slice(index + 1)]
 		this.set(newValue, undefined, {type: "array_items_delete", indexValuePairs: [{value: itemValue, index}]})
+	}
+
+	private checkDeleteIndex(elements: readonly unknown[], index: number): void {
+		if(index < 0){
+			throw new Error(`Cannot delete element at negative index (passed index = ${index})`)
+		}
+
+		if(index > elements.length - 1){
+			throw new Error(`Cannot delete anything starting from beyond array length (passed index = ${index}, array length = ${elements.length})`)
+		}
 	}
 
 	deleteElements<E>(this: BaseBox<readonly E[]>, predicate: (item: E, index: number) => boolean): void {

@@ -42,18 +42,21 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 				return
 			}
 
-			if(updateMeta.type === "array_item_insert"){
-				const item = upstreamArray[updateMeta.index]!
-				const key = this.getKey(item, updateMeta.index)
-				if(this.boxes.get(key)){
-					throw new Error("Duplicate key: " + key)
+			if(updateMeta.type === "array_items_insert"){
+				for(let offset = 0; offset < updateMeta.count; offset++){
+					const index = updateMeta.index + offset
+					const item = upstreamArray[index]!
+					const key = this.getKey(item, index)
+					if(this.boxes.get(key)){
+						throw new Error("Duplicate key: " + key)
+					}
+					// it doesn't make much sense for upstream to be readonly when it is updated by item insert
+					// but let's check anyway
+					const box = !isWBox(this.upstream)
+						? new ArrayItemRBox<E, K>(this, item, index, key)
+						: new ArrayItemWBox<E, K>(this, item, index, key)
+					this.boxes.set(key, box)
 				}
-				// it doesn't make much sense for upstream to be readonly when it is updated by item insert
-				// but let's check anyway
-				const box = !isWBox(this.upstream)
-					? new ArrayItemRBox<E, K>(this, item, updateMeta.index, key)
-					: new ArrayItemWBox<E, K>(this, item, updateMeta.index, key)
-				this.boxes.set(key, box)
 				return
 			}
 

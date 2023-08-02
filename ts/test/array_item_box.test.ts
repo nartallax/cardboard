@@ -967,6 +967,29 @@ describe("ArrayItemBox", () => {
 		expect(childCounter.lastCallValue).to.be(10)
 	})
 
+	test("insertElementsAtIndex method", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
+		const context = parent.getArrayContext(x => x.id)
+		const box1 = context.getBoxForKey(1)
+		const box3 = context.getBoxForKey(3)
+
+		parent.insertElementsAtIndex(1, [{id: 4, name: "4"}, {id: 5, name: "5"}])
+		expect(box1.get().name).to.be("1")
+		expect(box3.get().name).to.be("3")
+		expect(parent.get()).to.eql([{id: 1, name: "1"}, {id: 4, name: "4"}, {id: 5, name: "5"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
+
+		const box5 = context.getBoxForKey(5)
+		expect(box5.get().name).to.be("5")
+
+		expect(() => parent.insertElementsAtIndex(10, [{id: 6, name: "6"}])).to.throwError(/beyond array length/)
+		expect(() => parent.insertElementsAtIndex(-1, [{id: 6, name: "6"}])).to.throwError(/negative index/)
+
+		// should be fine. array won't be changed either way, so why panic?
+		// this can happen in cases of some user calculations related to index that depends on inserted array length
+		parent.insertElementsAtIndex(10, [])
+		parent.insertElementsAtIndex(-1, [])
+	})
+
 	test("insertElementAtIndex method", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
 		const context = parent.getArrayContext(x => x.id)
@@ -980,6 +1003,32 @@ describe("ArrayItemBox", () => {
 
 		const box4 = context.getBoxForKey(4)
 		expect(box4.get().name).to.be("4")
+
+		expect(() => parent.insertElementAtIndex(10, {id: 6, name: "6"})).to.throwError(/beyond array length/)
+		expect(() => parent.insertElementAtIndex(-1, {id: 6, name: "6"})).to.throwError(/negative index/)
+	})
+
+	test("deleteElementsAtIndex", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}, {id: 4, name: "4"}])
+		const context = parent.getArrayContext(x => x.id)
+		const box4 = context.getBoxForKey(4)
+		const box3 = context.getBoxForKey(3)
+
+		parent.deleteElementsAtIndex(1, 0)
+		expect(parent.get()).to.eql([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}, {id: 4, name: "4"}])
+
+		parent.deleteElementsAtIndex(1, 2)
+		expect(parent.get()).to.eql([{id: 1, name: "1"}, {id: 4, name: "4"}])
+		expect(box4.get()).to.eql({id: 4, name: "4"})
+		expect(() => box3.get()).to.throwError(/no longer attached/)
+
+		parent.deleteElementsAtIndex(1, 2)
+		expect(parent.get()).to.eql([{id: 1, name: "1"}])
+		expect(() => box4.get()).to.throwError(/no longer attached/)
+		expect(() => box3.get()).to.throwError(/no longer attached/)
+
+		expect(() => parent.deleteElementsAtIndex(-1, 1)).to.throwError(/negative index/)
+		expect(() => parent.deleteElementsAtIndex(5, 1)).to.throwError(/beyond array length/)
 	})
 
 	test("deleteElementAtIndex", () => {
@@ -997,6 +1046,9 @@ describe("ArrayItemBox", () => {
 		expect(parent.get()).to.eql([{id: 3, name: "3"}])
 		expect(box3.get()).to.eql({id: 3, name: "3"})
 		expect(() => box1.get()).to.throwError(/no longer attached/)
+
+		expect(() => parent.deleteElementAtIndex(-1)).to.throwError(/negative index/)
+		expect(() => parent.deleteElementAtIndex(5)).to.throwError(/beyond array length/)
 	})
 
 	test("deleteElements", () => {
