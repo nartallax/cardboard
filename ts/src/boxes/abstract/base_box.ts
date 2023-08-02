@@ -117,7 +117,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.set({...oldValue, [propName]: propValue}, undefined, {type: "property_update", propName})
 	}
 
-	setElementByIndex<E>(this: BaseBox<readonly E[]>, index: number, value: E): void {
+	setElementAtIndex<E>(this: BaseBox<readonly E[]>, index: number, value: E): void {
 		const oldValue = this.get()
 		if(oldValue[index] === value){
 			return
@@ -131,6 +131,13 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		const oldValue = this.get()
 		const newValue = [...oldValue.slice(0, index), value, ...oldValue.slice(index)]
 		this.set(newValue, undefined, {type: "array_item_insert", index})
+	}
+
+	deleteElementAtIndex<E>(this: BaseBox<readonly E[]>, index: number): void {
+		const oldValue = this.get()
+		const itemValue = oldValue[index]
+		const newValue = [...oldValue.slice(0, index), ...oldValue.slice(index + 1)]
+		this.set(newValue, undefined, {type: "array_item_delete", index, value: itemValue})
 	}
 
 }

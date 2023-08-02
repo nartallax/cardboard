@@ -73,11 +73,15 @@ export class ConstBox<T> implements BoxInternal<T> {
 		throwOnChange()
 	}
 
-	setElementByIndex(): void {
+	setElementAtIndex(): void {
 		throwOnChange()
 	}
 
 	insertElementAtIndex(): void {
+		throwOnChange()
+	}
+
+	deleteElementAtIndex(): void {
 		throwOnChange()
 	}
 }

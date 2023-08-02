@@ -944,7 +944,7 @@ describe("ArrayItemBox", () => {
 		expect(thirdCounter.lastCallValue).to.be("b")
 	})
 
-	test("setElementByIndex method", () => {
+	test("setElementAtIndex method", () => {
 		const parent = box([1, 2, 3])
 		const context = parent.getArrayContext((_, i) => i)
 		const child = context.getBoxForKey(1)
@@ -955,12 +955,12 @@ describe("ArrayItemBox", () => {
 		const childCounter = makeCallCounter()
 		child.subscribe(childCounter)
 
-		parent.setElementByIndex(0, 5)
+		parent.setElementAtIndex(0, 5)
 		expect(parentCounter.callCount).to.be(1)
 		expect(parentCounter.lastCallValue).to.eql([5, 2, 3])
 		expect(childCounter.callCount).to.be(0)
 
-		parent.setElementByIndex(1, 10)
+		parent.setElementAtIndex(1, 10)
 		expect(parentCounter.callCount).to.be(2)
 		expect(parentCounter.lastCallValue).to.eql([5, 10, 3])
 		expect(childCounter.callCount).to.be(1)
@@ -980,6 +980,23 @@ describe("ArrayItemBox", () => {
 
 		const box4 = context.getBoxForKey(4)
 		expect(box4.get().name).to.be("4")
+	})
+
+	test("deleteElementAtIndex", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
+		const context = parent.getArrayContext(x => x.id)
+		const box1 = context.getBoxForKey(1)
+		const box3 = context.getBoxForKey(3)
+
+		parent.deleteElementAtIndex(1)
+		expect(parent.get()).to.eql([{id: 1, name: "1"}, {id: 3, name: "3"}])
+		expect(box1.get()).to.eql({id: 1, name: "1"})
+		expect(box3.get()).to.eql({id: 3, name: "3"})
+
+		parent.deleteElementAtIndex(0)
+		expect(parent.get()).to.eql([{id: 3, name: "3"}])
+		expect(box3.get()).to.eql({id: 3, name: "3"})
+		expect(() => box1.get()).to.throwError(/no longer attached/)
 	})
 
 })
