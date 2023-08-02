@@ -248,6 +248,22 @@ describe("Array container", () => {
 		expect(() => parent.insertElementAtIndex(-1, {id: 6, name: "6"})).to.throwError(/negative index/)
 	})
 
+	test("insert shorthands", () => {
+		const parent = box([1])
+
+		parent.appendElement(2)
+		expect(parent.get()).to.eql([1, 2])
+
+		parent.prependElement(3)
+		expect(parent.get()).to.eql([3, 1, 2])
+
+		parent.appendElements([4, 5, 6])
+		expect(parent.get()).to.eql([3, 1, 2, 4, 5, 6])
+
+		parent.prependElements([7, 8, 9])
+		expect(parent.get()).to.eql([7, 8, 9, 3, 1, 2, 4, 5, 6])
+	})
+
 	test("deleteElementsAtIndex", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}, {id: 4, name: "4"}])
 		const context = parent.getArrayContext(x => x.id)

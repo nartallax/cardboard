@@ -142,6 +142,22 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.insertElementsAtIndex(index, [value])
 	}
 
+	appendElement<E>(this: WBox<readonly E[]>, value: E): void {
+		this.insertElementsAtIndex(this.get().length, [value])
+	}
+
+	appendElements<E>(this: WBox<readonly E[]>, values: readonly E[]): void {
+		this.insertElementsAtIndex(this.get().length, values)
+	}
+
+	prependElement<E>(this: WBox<readonly E[]>, value: E): void {
+		this.insertElementsAtIndex(0, [value])
+	}
+
+	prependElements<E>(this: WBox<readonly E[]>, values: readonly E[]): void {
+		this.insertElementsAtIndex(0, values)
+	}
+
 	private checkInsertIndex(elements: readonly unknown[], index: number): void {
 		if(index < 0){
 			throw new Error(`Cannot insert anything in negative index (passed index = ${index})`)

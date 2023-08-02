@@ -77,6 +77,10 @@ export interface WBox<T> extends RBox<T> {
 	/** Insert new elements into value array so it has that index. Other elements will be shifted. */
 	insertElementsAtIndex<E>(this: WBox<readonly E[]>, index: number, values: readonly E[]): void
 	insertElementAtIndex<E>(this: WBox<readonly E[]>, index: number, value: E): void
+	appendElement<E>(this: WBox<readonly E[]>, value: E): void
+	appendElements<E>(this: WBox<readonly E[]>, values: readonly E[]): void
+	prependElement<E>(this: WBox<readonly E[]>, value: E): void
+	prependElements<E>(this: WBox<readonly E[]>, values: readonly E[]): void
 
 	/** Remove elements at specified index from value array. Other elements will be shifted. */
 	deleteElementsAtIndex<E>(this: WBox<readonly E[]>, index: number, count: number): void
