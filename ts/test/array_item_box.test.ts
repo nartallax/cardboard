@@ -967,4 +967,19 @@ describe("ArrayItemBox", () => {
 		expect(childCounter.lastCallValue).to.be(10)
 	})
 
+	test("insertElementAtIndex method", () => {
+		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
+		const context = parent.getArrayContext(x => x.id)
+		const box1 = context.getBoxForKey(1)
+		const box3 = context.getBoxForKey(3)
+
+		parent.insertElementAtIndex(1, {id: 4, name: "4"})
+		expect(box1.get().name).to.be("1")
+		expect(box3.get().name).to.be("3")
+		expect(parent.get()).to.eql([{id: 1, name: "1"}, {id: 4, name: "4"}, {id: 2, name: "2"}, {id: 3, name: "3"}])
+
+		const box4 = context.getBoxForKey(4)
+		expect(box4.get().name).to.be("4")
+	})
+
 })

@@ -27,10 +27,6 @@ export class ConstBox<T> implements BoxInternal<T> {
 		return this.value as T
 	}
 
-	set(): void {
-		throw new Error("You cannot set anything to constant box")
-	}
-
 	subscribe(): void {
 		// nothing. handler will never be called anyway
 	}
@@ -69,11 +65,23 @@ export class ConstBox<T> implements BoxInternal<T> {
 		return new ConstBox((this.value as E[]).map((item, index) => mapper(item, index)))
 	}
 
+	set(): void {
+		throwOnChange()
+	}
+
 	setProp(): void {
-		throw new Error("You can't set anything on const box")
+		throwOnChange()
 	}
 
 	setElementByIndex(): void {
-		throw new Error("You can't set anything on const box")
+		throwOnChange()
 	}
+
+	insertElementAtIndex(): void {
+		throwOnChange()
+	}
+}
+
+function throwOnChange(): never {
+	throw new Error("You can't change anything about value of const box")
 }

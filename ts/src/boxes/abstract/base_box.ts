@@ -127,6 +127,12 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.set(newValue, undefined, {type: "array_item_update", index})
 	}
 
+	insertElementAtIndex<E>(this: BaseBox<readonly E[]>, index: number, value: E): void {
+		const oldValue = this.get()
+		const newValue = [...oldValue.slice(0, index), value, ...oldValue.slice(index)]
+		this.set(newValue, undefined, {type: "array_item_insert", index})
+	}
+
 }
 
 const getIndex = (_: any, index: number) => index

@@ -12,4 +12,7 @@ export type UpdateMeta = {
 } | {
 	type: "property_update"
 	propName: unknown
+} | {
+	type: "array_item_insert"
+	index: number
 }

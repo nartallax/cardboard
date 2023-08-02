@@ -64,6 +64,9 @@ export interface WBox<T> extends RBox<T> {
 	/** Set array element value at specified index
 	 * It's more optimal to do instead of copy, update and set, but otherwise will work the same. */
 	setElementByIndex<E>(this: WBox<readonly E[]>, index: number, value: E): void
+
+	/** Insert new element into value array so it has that index. Other elements will be shifted. */
+	insertElementAtIndex<E>(this: WBox<readonly E[]>, index: number, value: E): void
 }
 
 /** An object that helps to manage boxes that wrap individual items of an array box */

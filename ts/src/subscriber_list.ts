@@ -69,6 +69,8 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	 * And if a box needs to do something strictly after all notification calls are finished -
 	 * then this box should wait for `true` to be returned */
 	callSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
+		// TODO: think about manipulating updates in more explicit way, with queues
+		// this can mitigate problems when external subscribers were invoked before internal ones
 		if((this.updateStatus & UpdateFlag.haveOngoing) !== 0){
 			this.updateStatus |= UpdateFlag.haveQueued
 			return false

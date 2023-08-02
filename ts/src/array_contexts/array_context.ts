@@ -30,15 +30,32 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		upstreamArray ??= notificationStack.getWithoutNotifications(this.upstream)
 		this.lastKnownUpstreamValue = upstreamArray
 
-		if(updateMeta && updateMeta.type === "array_item_update"){
-			const upstreamItemValue = upstreamArray[updateMeta.index]!
-			const key = this.getKey(upstreamItemValue, updateMeta.index)
-			const box = this.boxes.get(key)
-			if(!box){
-				throw new Error(`Update meta points to update of array item at index ${updateMeta.index}; the key for this index is ${key}, but there's no box for this key. Either key generation logic is flawed, or there's bug in the library.`)
+		if(updateMeta){
+			if(updateMeta.type === "array_item_update"){
+				const item = upstreamArray[updateMeta.index]!
+				const key = this.getKey(item, updateMeta.index)
+				const box = this.boxes.get(key)
+				if(!box){
+					throw new Error(`Update meta points to update of array item at index ${updateMeta.index}; the key for this index is ${key}, but there's no box for this key. Either key generation logic is flawed, or there's bug in the library.`)
+				}
+				box.set(item, this.upstream)
+				return
 			}
-			box.set(upstreamItemValue, this.upstream)
-			return
+
+			if(updateMeta.type === "array_item_insert"){
+				const item = upstreamArray[updateMeta.index]!
+				const key = this.getKey(item, updateMeta.index)
+				if(this.boxes.get(key)){
+					throw new Error("Duplicate key: " + key)
+				}
+				// it doesn't make much sense for upstream to be readonly when it is updated by item insert
+				// but let's check anyway
+				const box = !isWBox(this.upstream)
+					? new ArrayItemRBox<E, K>(this, item, updateMeta.index, key)
+					: new ArrayItemWBox<E, K>(this, item, updateMeta.index, key)
+				this.boxes.set(key, box)
+				return
+			}
 		}
 
 		const isReadonly = !isWBox(this.upstream)
