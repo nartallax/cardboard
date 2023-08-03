@@ -31,24 +31,24 @@ type MyInputProps = {
 let myInput = (props: MyInputProps) => {
 	// for sake of simplicity we will omit all the implementation details around DOM manipulation
 
-	// to get value of the box we just call it without arguments
-	let currentValue = props.value()
+	// to get value of the box we can use .get() method:
+	let currentValue = props.value.get()
 
 	setTimeout(() => {
 		// here we emulate user input.
 		// in real world it will be an event handler, but this is simplified example
-		// when we want to update value of the box - we call it with some value
-		props.value(currentValue + " is changed")
+		// when we want to update value of the box - we call .set() method on it:
+		props.value.set(currentValue + " is changed")
 	}, 1000)
 
 	// here we subscribe to changes in the value,
 	// because we want to update value of our input each time its value is changed
-	let unsubscribe = props.value.subscribe(newValue => {
+	props.value.subscribe(newValue => {
 		// in real life you probably want to set input's value or something like that
 		console.log("The value is updated! Now it is " + newValue)
 	})
 	
-	// note that you need to call `unsubscribe` when input is destroyed
+	// note that you need to call .unsubscribe() when input is destroyed
 	// if you don't - input will live as long as the box lives, which is a memory leak
 	// how exactly would you do this - is up to you and is not covered by this library
 }
@@ -64,12 +64,12 @@ inputValue.subscribe(newValue => {
 })
 ```
 
-And that's the basic idea of that library. Real-life use-cases can be more advanced, which is covered by following sections.  
+And that's the basic idea of that library. Real-life use-cases can be more advanced, which is covered by following sections of this document.  
 
 Note that boxes optimize their updates by comparing their old and new value with `===` operator. That means two things:  
 
-1. You cannot trigger update by `myBox(myBox())`.
-2. If your box contains an object - box won't be updated when the object is modified inplace. If you need to trigger an update - you need to create a new object with your new values. You should keep old object's property values though, as it will help `.prop` boxes to not update too much (see below)
+1. You cannot trigger update by `myBox.set(myBox.get())`.
+2. If your box contains an object - box won't be updated when the object is modified in-place. If you need to trigger an update - you need to create a new object with your new values. You should only modify fields of old object that needs to be modified; keeping values of old fields help other boxes to not trigger more updates than needed, see below.  
 
 ## Basic RBox usage
 
@@ -81,11 +81,13 @@ import {box, RBox} from "@nartallax/cardboard"
 
 let myBox: RBox<number> = box(12345)
 
-console.log(myBox()) // 12345
-myBox(333) // Typescript's syntax error
+console.log(myBox.get()) // 12345
+myBox.set(333) // Typescript's syntax error: no such method
 ```
 
-So if, for example, your component won't ever need to push updates to the value and only need to observe changes of the value, you can type its property as `RBox` and pass `WBox` to it.
+So if, for example, your component won't ever need to push updates to the value and only need to observe changes of the value, you can type its property as `RBox` and pass `WBox` to it.  
+
+By the way, internally all boxes in this library have all the methods `WBox` have, but calling them on boxes that are not `WBox` (i.e. `isWBox(x) === false`) could result in various bugs. Library expects you to rely on type-checking and not invoke methods that TypeScript won't let you invoke.  
 
 ## RBox views
 
@@ -96,18 +98,21 @@ import {box, viewBox} from "@nartallax/cardboard"
 
 let a = box(5)
 let b = box(10)
-let sumOfAB = viewBox(() => a() + b())
+let sumOfAB = viewBox(() => a.get() + b.get())
 
-console.log(sumOfAB()) // 15
+console.log(sumOfAB.get()) // 15
+
+a.set(4)
+console.log(sumOfAB.get()) // 14
 ```
 
-In this example we create a `viewBox`; it's an `RBox` that depends on other box values. Each time any box it depends on updates - the value of `viewBox` is also updated.  
+In this example we create a `viewBox`; it's an `RBox` that depends on other box values. Each time any box it depends on updates - the value of `viewBox` is also updated (and subscribers are called, of course).  
 (disclaimer: implementation is more complex than that, but for outside world it looks like it is; you can assume that it does update each time)  
 
-## map method
+## .map() method
 
-Now you should be ready to understand how `.map` method of the boxes works.  
-`.map` with one argument is present on both `RBox` and `WBox`; it creates a `viewBox` which only depends on that one box you created it off:  
+Now you should be ready to understand how `.map()` method of the boxes works.  
+`.map()` with one argument is present on both `RBox` and `WBox`; it creates a `viewBox` which only depends on that one box you created it off:  
 
 ```typescript
 import {box} from "@nartallax/cardboard"
@@ -115,13 +120,13 @@ import {box} from "@nartallax/cardboard"
 let b = box(10)
 let bb = box.map(value => value + 5)
 
-console.log(bb()) // 15
+console.log(bb.get()) // 15
 
 // above code is equivalent of
-let bb = viewBox(() => b() + 5)
+let bb = viewBox(() => b.get() + 5)
 ```
 
-`.map` with two arguments is only present on `WBox`; it creates another `WBox` which synchronises its value with base box:
+`.map()` with two arguments is only present on `WBox`; it creates another `WBox` which synchronises its value with base box:
 
 ```typescript
 import {box} from "@nartallax/cardboard"
@@ -132,15 +137,15 @@ let doubleB = box.map(
 	value => value / 2  // get value of b from new box's value
 )
 
-console.log(doubleB()) // 20
+console.log(doubleB.get()) // 20
 
 doubleB(8)
-console.log(b()) // 4
+console.log(b.get()) // 4
 ```
 
-## prop method
+## .prop() method
 
-`.prop` method is simplified (and optimized) version of `.map` method, intended to use when you need to edit/display a complex object.  
+`.prop()` method is simplified (and optimized) version of `.map()` method, intended to use when you need to edit/display a complex object.  
 It creates a `WBox` or `RBox` (depending on what kind of box it's invoked on) which hold a value of a property in the original box's value. For example:  
 
 ```typescript
@@ -149,74 +154,72 @@ import {box} from "@nartallax/cardboard"
 let coords = box({x: 5, y: 10})
 let xCoord = coords.prop("x")
 
-console.log(xCoord()) // 5
+console.log(xCoord.get()) // 5
 
 // if source box is WBox, you should be able to put a new value in this property
 // this value will be propagated upstream
-xCoord(7)
+xCoord.set(7)
 console.log(coords) // {x: 7, y: 10}
 ```
 
-## wrapElements method
+## Working with arrays
 
-This method only exists for boxes that contain arrays.  
-As you can see in example above, you can create "downstream" boxes of objects which will be synchronised with "upstream" boxes, which is great; but arrays are a little different than objects. When you have object - you can reasonably assume that each field of that object contains its own value that can't suddenly become other field value; with arrays, you can freely reorder elements, add or remove them.  
-So, to properly support arrays, `.wrapElements` method exists. It wraps each element inside the array in its own box; then it creates a new `RBox` which holds boxes of individual elements. To allow for element boxes to be updated properly, user is expected to provide a function that extracts ID of each element; IDs assumed to be unique within an array:
+Arrays, as most collections, are a bit harder to work with than more simple kinds of data.  
+You can do much more with arrays - they can be sorted, new elements can be added, old elements can be removed; elements can be updated in place.  
+
+To account for those cases, array context exists:
 
 ```typescript
 import {box} from "@nartallax/cardboard"
 
 const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
-const wrapper = parent.wrapElements(x => x.id)
-const [box1, box2] = wrapper()
 
-console.log(box1, box2) // {id: 1, name: "1"}, {id: 2, name: "2"}
+// here we create an array context based on parent box.
+// this context manages a set of boxes that wrap individual elements of the array.
+// context knows how to properly dispatch updates to elements by getKey callback
+// this callback is supposed to create some stable key of an element of the array
+// those keys are assumed to be unique within single array
+const context = parent.getArrayContext(element => element.id)
 
-// you can change the value of array's elements, and change will be propagated upstream:
-box1({id: 1, name: "new name"})
-console.log(parent()) // [{id: 1, name: "new name"}, {id: 2, name: "2"}]
+// here we can get boxes for keys
+// by the way, if parent is a RBox - those child boxes will also be RBoxes
+const box1 = context.getBoxForKey(1)
+const box2 = context.getBoxForKey(2)
 
-{
-	// you can reorder values in the source array
-	let [a, b] = parent()
-	parent([b, a])
+// and those boxes are linked to parent array
+box1.set({id: 1, name: "5"})
+console.log(parent.get()) // [{id: 1, name: "5"}, {id: 2, name: "2"}]
 
-	// same box instances retain same values, bound by ID
-	console.log(box1, box2) // {id: 1, name: "new name"}, {id: 2, name: "2"}
+// you cannot change key from inside the box, though
+box1.set({id: 3, name: "5"}) // error! key changed
 
-	// wrapper array has box instances reordered
-	console.log(wrapper()[0] === box2, wrapper()[1] === box1) // true, true
-}
+// also, if array is updated and no longer includes element that corresponds to the key of the element box,
+// the element box will become detached, and all attempts to interact with it will result in error:
+parent.set([{id: 2, name: "2"}])
+console.log(box1.get()) // error! element detached
+
+// array element boxes have a method to delete this specific element from parent array:
+box2.deleteArrayElement()
+console.log(parent.get()) // []
 ```
 
-There's a catch to using this method: when a value leaves array, the box it is bound to is orphaned. That means changes to its value won't be propagated to upstream array, because there's nowhere to propagate. Even if later a value with the same ID appears in source array again - a new box will be created for that value, and old box will still be orphaned.  
-To help you notice such situations easier, orphaned boxes will throw an error when a value is set to them.  
+## .mapArray() method
 
-## mapArray
-
-`.mapArray` is a better way to use `.wrapElements`.  
-`.mapArray` creates an `RBox` that contains a result of applying mapper function to each source elements wrapped in individual box.  
-Original order is preserved; mapper is not called twice for the same element.  
+If you don't need to work with individual boxes of the array - you can use `.mapArray()` method.  
+This method will do to array pretty much the same thing `.map()` does to regular boxes; two differences are that callback is invoked for each element of the array individually, and result of mapping is cached; that means mapper won't be invoked twice for same exact element:  
 
 ```typescript
-import {box} from "@nartallax/cardboard"
-
-const arrBox = box([
-	{id: 1, name: "1"},
-	{id: 2, name: "2"},
-	{id: 3, name: "3"}
-])
-const mapResult = arrBox.mapArray(item => item.id, itemBox => itemBox.map(x => JSON.stringify(x), x => JSON.parse(x)))
-const firstBox = mapResult()[0]!
-console.log(firstBox()) // {"id":1,"name":"1"}
-firstBox("{\"id\":1,\"name\":\"uwu\"}")
-console.log(arrBox()[0]) // {id: 1, name: "uwu"}
+const singleArr = box([1, 2, 3])
+const doubleArr = singleArr.mapArray(
+	sourceElement => sourceElement * 2,
+	doubledElement => doubledElement / 2
+)
 ```
 
 ## constBox
 
 `constBox` is a type of `RBox` that never changes its value.  
-You can think of it as a `viewBox(() => someConstant)`, but more optimal.  
+You can think of it as a `viewBox(() => someConstant)`, but more optimized.  
 This box exists because it's sometimes convenient to only write code in assumption that you will receive box and not a plain value.  
 `constBoxWrap` is a way to use this convenience - if its argument is a `RBox`, then it will return the box; otherwise it will create a const box with argument as value.  
 
@@ -224,13 +227,31 @@ This box exists because it's sometimes convenient to only write code in assumpti
 import {constBox, constBoxWrap} from "@nartallax/cardboard"
 
 const b = constBox(5)
-console.log(b()) // 5
+console.log(b.get()) // 5
 
 const bb = constBoxWrap(viewBox(() => 12345))
-console.log(bb()) // 12345
+console.log(bb.get()) // 12345
 
 ```
 
+## Partial update methods
+
+There are other methods that exist on writable boxes, like `.setProp()`, `.setElementAtIndex()`, `.appendElements()`, `.deleteElements()` and many more. Calling one of those methods are usually more optimal way of doing the update; i.e. `b.setProp("x", 5)` is more optimal than `b.set({...b.get(), x: 5})`.  
+
+The reason for that is partial updates.  
+Partial update happens when boxes know what part exactly changed in a composite value, like object or array. This includes changing just one element of the array, or one property of the object. When box knows what exactly changed, it may skip delivering updates to other boxes that are certain to not react to them; if only one property of an object is changed - it is guaranteed that other properties of an object are not changed, which means that boxes that are result of a `.prop()` method for different property do not need to receive new value.  
+
+In most cases it's fine to not use methods that cause partial updates. Boxes will figure out what's changed on their own. But if you can, and if you have a lot of data in boxes (thousands of elements in array, for example) - it's a good idea to use them.  
+
+## Antipatterns
+
+There are some ways of using this library that will result in worse performance or other weird bugs.
+
+1. Avoid putting boxes inside boxes. Boxes exist to manipulate data, and putting something as complex as another box won't end well; sometimes it means that `viewBox` will get attached to wrong box, which will trigger recalculations when they are not required, which is bad performance. Also you generally should avoid putting mutable data and class instances inside boxes, but sometimes it can be fine if you know what you're doing and comfortable enough with the library.  
+2. Avoid getting value of other boxes from callback of `.map()` method. Those other boxes won't be included in the dependency list and won't trigger recalculation. Also sometimes this could mean getting outdated value from that other box.  
+3. Avoid setting value of any box from inside callback of `.map()` or `viewBox()`. This means that a box will be updated out-of-order during update, and this will trigger double-update, that is, update within update; this will make library drop partial updates, and this will lead to decreased performance. Other than that it will probably be fine; it's okay to do that on a small scale, if you're trying to organize some smart calculation system consisting of several variables.  
+4. Avoid having big chains of downstream boxes (`viewBox()`, `.map()`-boxes, `.prop()`-boxes, array element boxes) without subscribers. This will lead to reduced performance. When a downstream box without subscribers is accessed, it needs to check if new value needs to be calculated; to do that, it accesses its upstream boxes; if those boxes don't have subscribers either - they access their upstreams, and so on; (when a box is subscribed to, it can safely assume that its value is up-to-date on access, because it receives updates and can update its own value, so it won't try to access its upstreams). Only one box at the end of the chain needs to be subscribed to remedy this problem, because it will lead to other boxes also subscribing to their upstreams.
+
 ## Naming
 
-Boxes are usually made of cardboard. Cardboard is also warm, flexible and generally pleasant material.  
+Boxes are sometimes made of cardboard. Cardboard is also warm, flexible and generally pleasant material.  
