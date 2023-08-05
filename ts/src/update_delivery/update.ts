@@ -4,8 +4,7 @@ import {UpdateMeta} from "src/update_delivery/update_meta"
 
 /** Update is a single act of notifying a subscriber about change
  *
- * This class holds information about one update, to be executed when the time is right.
- */
+ * This class holds information about one update, to be executed when the time is right. */
 export class Update<T> {
 	constructor(
 		readonly subscription: Subscription<T>,
@@ -14,7 +13,7 @@ export class Update<T> {
 		public meta: UpdateMeta | undefined
 	) {
 		if(subscription.receiver instanceof ViewBox){
-			/** This is all it takes to deliver update to ViewBox
+			/** This is all it takes to deliver update to ViewBox (and .get() later)
 			 * We don't need to deliver meta, because no ViewBox can do anything meaningful with meta
 			 * We don't need to deliver provider, because ViewBox is readonly and therefore won't notify upstream of self updates
 			 *
@@ -30,11 +29,11 @@ export class Update<T> {
 		const receiver = this.subscription.receiver
 		if(receiver instanceof ViewBox){
 			if(receiver.forcedShouldRecalculate){
+				// it could be called before us, if there are other boxes depending on this viewbox
 				receiver.get()
 			}
 		} else if(typeof(receiver) === "function"){
-			// TODO: think about passing update meta to external subs
-			receiver(this.value, this.provider)
+			receiver(this.value, this.provider, this.meta)
 		} else {
 			receiver.onUpstreamChange(this.provider, this.meta)
 		}

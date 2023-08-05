@@ -130,7 +130,7 @@ type TakeNonBoxes<T> = T extends RBox<any> ? never : T
  * Does the same to types that unbox() does to values */
 export type Unboxed<T> = T extends RBox<infer X> ? X : T
 
-export type ChangeHandler<T> = (value: T, box: RBox<T>) => void
+export type ChangeHandler<T> = (value: T, box: RBox<T>, meta: UpdateMeta | undefined) => void
 
 /** In reality all of the boxes are internally WBoxes */
 export interface BoxInternal<T> extends WBox<T> {
