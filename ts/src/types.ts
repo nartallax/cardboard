@@ -136,9 +136,9 @@ export type ChangeHandler<T, B extends RBox<T> = RBox<T>> = (value: T, box: B) =
 export interface BoxInternal<T> extends WBox<T> {
 	value: T | typeof NoValue
 	getExistingValue(): T
-	subscribeInternal(box: UpstreamSubscriber): void
-	unsubscribeInternal(box: UpstreamSubscriber): void
 	haveSubscribers(): boolean
+	subscribe(handler: ChangeHandler<T, this> | UpstreamSubscriber): void
+	unsubscribe(handler: ChangeHandler<T, this> | UpstreamSubscriber): void
 	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void
 }
 
@@ -163,9 +163,10 @@ export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	readonly dependencyList: DependencyList
 }
 
-export type UpdateReceiver<T> = ChangeHandler<T> | UpstreamSubscriber
+export type UpdateReceiver<T, O extends RBox<T>> = ChangeHandler<T, O> | UpstreamSubscriber
 
-export interface Subscription<T> {
+// TODO: think about reducing amount of generics in those types, we really don't need that much
+export interface Subscription<T, O extends RBox<T>> {
 	/** Last value with which handler was called.
 	 * Having just a revision number won't do here, because value can go back-and-forth
 	 * within one update session.
@@ -178,5 +179,5 @@ export interface Subscription<T> {
 	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
 	 * or to the same value as the box already has; it will only be different within update rounds */
 	lastKnownValue: T
-	readonly receiver: UpdateReceiver<T>
+	readonly receiver: UpdateReceiver<T, O>
 }

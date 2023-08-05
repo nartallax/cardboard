@@ -12,11 +12,11 @@ export class SingleDependencyList<T> implements DependencyList {
 	}
 
 	subscribeToDependencies(owner: UpstreamSubscriber): void {
-		this.dependency.subscribeInternal(owner)
+		this.dependency.subscribe(owner)
 	}
 
 	unsubscribeFromDependencies(owner: UpstreamSubscriber): void {
-		this.dependency.unsubscribeInternal(owner)
+		this.dependency.unsubscribe(owner)
 	}
 
 	didDependencyListChange(): boolean {

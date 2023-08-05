@@ -135,7 +135,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 	onDownstreamSubscription(): void {
 		this.childSubCount++
 		if(this.childSubCount === 1){
-			this.upstream.subscribeInternal(this)
+			this.upstream.subscribe(this)
 		}
 	}
 
@@ -147,7 +147,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 	}
 
 	private unsubscribeFromUpstream(): void {
-		this.upstream.unsubscribeInternal(this)
+		this.upstream.unsubscribe(this)
 	}
 
 	getBoxes(): ArrayItemBox<E, K>[] {

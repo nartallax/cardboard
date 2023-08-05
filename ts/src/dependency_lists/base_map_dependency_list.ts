@@ -6,13 +6,13 @@ export abstract class BaseMapDependencyList {
 
 	subscribeToDependencies(owner: UpstreamSubscriber): void {
 		for(const dependency of this.boxes.keys()){
-			dependency.subscribeInternal(owner)
+			dependency.subscribe(owner)
 		}
 	}
 
 	unsubscribeFromDependencies(owner: UpstreamSubscriber): void {
 		for(const dependency of this.boxes.keys()){
-			dependency.unsubscribeInternal(owner)
+			dependency.unsubscribe(owner)
 		}
 	}
 

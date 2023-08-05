@@ -38,13 +38,13 @@ export class DynamicDependencyList extends BaseMapDependencyList implements Depe
 
 		for(const oldDependency of oldDependencies){
 			if(!this.boxes.has(oldDependency)){
-				oldDependency.unsubscribeInternal(owner)
+				oldDependency.unsubscribe(owner)
 			}
 		}
 
 		for(const newDependency of this.boxes.keys()){
 			if(!oldDependencies.has(newDependency)){
-				newDependency.subscribeInternal(owner)
+				newDependency.subscribe(owner)
 			}
 		}
 

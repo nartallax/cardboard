@@ -1,10 +1,9 @@
-import {updateQueue, type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox, Subscription, Update} from "src/internal"
+import {updateQueue, type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox, Subscription, Update, RBox} from "src/internal"
 
 /** Class that manages list of active subscribers to some box */
 export class SubscriberList<T, O extends BoxInternal<T>> {
-	private subscriptions: Map<ChangeHandler<T, O>, Subscription<T>> | null = null
-	private internalSubscriptions: Map<UpstreamSubscriber, Subscription<T>> | null = null
-	private propBoxInternalSubscriptions: Map<unknown, Subscription<T>[]> | null = null
+	private subscriptions: Map<ChangeHandler<T, O> | UpstreamSubscriber, Subscription<T, O>> | null = null
+	private propBoxInternalSubscriptions: Map<unknown, Subscription<T, O>[]> | null = null
 
 	/** There once was a number field called `revision` here.
 	 * As the library was going ahead with more and more complex calculations and logic, it became obsolete.
@@ -30,22 +29,21 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	constructor(private readonly owner: O) {}
 
 	haveSubscribers(): boolean {
-		return !!(this.subscriptions || this.internalSubscriptions || this.propBoxInternalSubscriptions)
+		return !!(this.subscriptions || this.propBoxInternalSubscriptions)
 	}
 
 	callSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
-		this.notifyInternalSubscribers(changeSourceBox, updateMeta)
 		this.notifyPropSubscribers(changeSourceBox, updateMeta)
-		this.notifyExternalSubscribers()
+		this.notifySubscribers(changeSourceBox, updateMeta)
 		updateQueue.run()
 	}
 
-	private notifyInternalSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
-		if(!this.internalSubscriptions){
+	private notifySubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		if(!this.subscriptions){
 			return
 		}
 
-		for(const [box, subscription] of this.internalSubscriptions){
+		for(const subscription of this.subscriptions.values()){
 			/* we get value each time here to avoid scenario when subscriber gets outdated value
 			while it's not bad on its own (because subscriber will eventually get most up-to-date-value),
 			it can confuse users of the library, if outdated value is passed into some kind of user handler
@@ -53,12 +51,14 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 
 			it is only possible in case of double-changes; most of the time value will be the same */
 			const value = this.owner.getExistingValue() // TODO: remove
-			if(box === changeSourceBox){
+			if(subscription.receiver === changeSourceBox){
 				// that box already knows what value of this box should be
+				// TODO: think about in which situation this can backfire and how to fix it
+				// maybe we need to remove update from queue? but how this situation even possible?
 				subscription.lastKnownValue = value
 				continue
 			}
-			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
+			updateQueue.enqueueUpdate(new Update<unknown, RBox<unknown>>(subscription as Subscription<unknown, RBox<unknown>>, value, this.owner, updateMeta))
 		}
 	}
 
@@ -80,98 +80,60 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyPropSubscriptionArray(arr: Subscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscriptionArray(arr: Subscription<T, O>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		for(let i = 0; i < arr.length; i++){
 			const value = this.owner.getExistingValue()
 			const subscription = arr[i]!
 			if(subscription.receiver === changeSourceBox){
-				// TODO: think about in which situation this can backfire and how to fix it
-				// maybe we need to remove update from queue? but how this situation even possible?
 				subscription.lastKnownValue = value
 				continue
 			}
-			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
+			updateQueue.enqueueUpdate(new Update<unknown, RBox<unknown>>(subscription as Subscription<unknown, RBox<unknown>>, value, this.owner, updateMeta))
 		}
 	}
 
-	private notifyExternalSubscribers(): void {
-		if(!this.subscriptions){
-			return
-		}
-
-		for(const subscription of this.subscriptions.values()){
-			const value = this.owner.getExistingValue()
-			// TODO: think about passing update meta to external subs
-			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, undefined))
-		}
-	}
-
-	subscribe(handler: ChangeHandler<T, O>, lastKnownValue: unknown): void {
-		const map = this.subscriptions ||= new Map()
-		if(!map.has(handler)){
-			/** It's important to avoid creating new subscription objects if there are old ones
-			 * Because update queue may hold reference to old object to update lastKnownValue
-			 * and if new object is created for same handler/downstream, this update will be lost, which is bad */
-			const sub: Subscription<unknown> = {lastKnownValue, receiver: handler as ChangeHandler<unknown>}
-			map.set(handler, sub)
-		}
-	}
-
-	subscribeInternal(box: UpstreamSubscriber, lastKnownValue: unknown): void {
-		const sub: Subscription<unknown> = {lastKnownValue, receiver: box}
-		if(box instanceof PropBox){
+	subscribe(handler: ChangeHandler<T, O> | UpstreamSubscriber, lastKnownValue: T): void {
+		const sub: Subscription<T, O> = {lastKnownValue, receiver: handler}
+		if(handler instanceof PropBox){
 			const map = this.propBoxInternalSubscriptions ||= new Map()
-			if(map.has(box)){
+			if(map.has(handler)){ // TODO: ?????
 				return
 			}
 
-			let arr = map.get(box.propName)
+			let arr = map.get(handler.propName)
 			if(!arr){
 				arr = []
-				map.set(box.propName, arr)
+				map.set(handler.propName, arr)
 			}
 			arr.push(sub)
 			return
 		}
 
-		const map = this.internalSubscriptions ||= new Map()
-		if(map.has(box)){
+		const map = this.subscriptions ||= new Map()
+		if(map.has(handler)){
+			/** It's important to avoid creating new subscription objects if there are old ones
+			 * Because update queue may hold reference to old object to update lastKnownValue
+			 * and if new object is created for same handler/downstream, this update will be lost, which is bad */
 			return
 		}
-		map.set(box, sub)
+		map.set(handler, sub)
 	}
 
-	unsubscribe(handler: ChangeHandler<T, O>): void {
-		if(!this.subscriptions){
-			return
-		}
-
-		const sub = this.subscriptions.get(handler)
-		if(sub){
-			updateQueue.deleteUpdate(sub)
-		}
-
-		this.subscriptions.delete(handler)
-		if(this.subscriptions.size === 0){
-			this.subscriptions = null
-		}
-	}
-
-	unsubscribeInternal(box: UpstreamSubscriber): void {
-		if(box instanceof PropBox){
+	unsubscribe(handler: ChangeHandler<T, O> | UpstreamSubscriber): void {
+		if(handler instanceof PropBox){
 			if(!this.propBoxInternalSubscriptions){
 				return
 			}
 
-			let arr = this.propBoxInternalSubscriptions.get(box.propName)
+			let arr = this.propBoxInternalSubscriptions.get(handler.propName)
 			if(!arr){
 				return
 			}
 
-			let sub: Subscription<T> | null = null
+			let sub: Subscription<T, O> | null = null
 
 			arr = arr.filter(x => {
-				if(x.receiver === box){
+				if(x.receiver === handler){
 					sub = x
 					return false
 				}
@@ -183,29 +145,31 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 			}
 
 			if(arr.length === 0){
-				this.propBoxInternalSubscriptions.delete(box.propName)
+				this.propBoxInternalSubscriptions.delete(handler.propName)
 				if(this.propBoxInternalSubscriptions.size === 0){
 					this.propBoxInternalSubscriptions = null
 				}
 			} else {
-				this.propBoxInternalSubscriptions.set(box.propName, arr)
+				this.propBoxInternalSubscriptions.set(handler.propName, arr)
 			}
 		}
 
-		if(!this.internalSubscriptions){
+		if(!this.subscriptions){
 			return
 		}
 
-		this.internalSubscriptions.delete(box)
-		if(this.internalSubscriptions.size === 0){
-			this.internalSubscriptions = null
+		this.subscriptions.delete(handler)
+		if(this.subscriptions.size === 0){
+			this.subscriptions = null
 		}
 	}
 
 	dispose(): void {
-		if(this.internalSubscriptions){
-			for(const downstream of this.internalSubscriptions.keys()){
-				downstream.dispose()
+		if(this.subscriptions){
+			for(const downstream of this.subscriptions.keys()){
+				if(typeof(downstream) !== "function"){
+					downstream.dispose()
+				}
 			}
 		}
 	}

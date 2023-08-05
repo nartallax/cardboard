@@ -31,16 +31,8 @@ export class ConstBox<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 		// nothing. handler will never be called anyway
 	}
 
-	subscribeInternal(): void {
-		// nothing
-	}
-
 	unsubscribe(): void {
 		// nothing. we don't do anything on subscription and might as well do nothing on unsubscription
-	}
-
-	unsubscribeInternal(): void {
-		// nothing
 	}
 
 	haveSubscribers(): boolean {
@@ -122,6 +114,10 @@ export class ConstBox<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 	}
 
 	deleteArrayElement(): void {
+		throwOnChange()
+	}
+
+	dispose(): void {
 		throwOnChange()
 	}
 }

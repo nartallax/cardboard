@@ -1,14 +1,14 @@
 import {ViewBox} from "src/internal"
-import {BoxInternal, Subscription} from "src/types"
+import {BoxInternal, RBox, Subscription} from "src/types"
 import {UpdateMeta} from "src/update_delivery/update_meta"
 
 /** Update is a single act of notifying a subscriber about change
  *
  * This class holds information about one update, to be executed when the time is right.
  */
-export class Update<T> {
+export class Update<T, O extends RBox<T>> {
 	constructor(
-		readonly subscription: Subscription<T>,
+		readonly subscription: Subscription<T, O>,
 		readonly value: T,
 		readonly provider: BoxInternal<T>,
 		public meta: UpdateMeta | undefined
@@ -33,7 +33,8 @@ export class Update<T> {
 				receiver.get()
 			}
 		} else if(typeof(receiver) === "function"){
-			receiver(this.value, this.provider)
+			// TODO: think about passing update meta to external subs
+			receiver(this.value, this.provider as any) // TODO: fml
 		} else {
 			receiver.onUpstreamChange(this.provider, this.meta)
 		}

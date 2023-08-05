@@ -58,20 +58,12 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.dispose()
 	}
 
-	subscribe(handler: ChangeHandler<T, this>): void {
+	subscribe(handler: UpstreamSubscriber | ChangeHandler<T, this>): void {
 		this.subscriberList.subscribe(handler, this.getForSubscription())
 	}
 
-	subscribeInternal(box: UpstreamSubscriber): void {
-		this.subscriberList.subscribeInternal(box, this.getForSubscription())
-	}
-
-	unsubscribe(handler: ChangeHandler<T, this>): void {
+	unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T, this>): void {
 		this.subscriberList.unsubscribe(handler)
-	}
-
-	unsubscribeInternal(box: UpstreamSubscriber): void {
-		this.subscriberList.unsubscribeInternal(box)
 	}
 
 	protected notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
