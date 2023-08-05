@@ -1,4 +1,4 @@
-import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, RBox, WBox, UpdateMeta} from "src/internal"
+import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, UpdateMeta} from "src/internal"
 
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
@@ -174,64 +174,6 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 			throw new Error("No box for key " + key)
 		}
 		return box
-	}
-
-	// TODO: think about moving it into base_box
-	// we really don't need it here, it makes no sense
-	mapArray<R>(mapper: (item: E, index: number) => R): RBox<R[]>
-	mapArray<R>(mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
-	mapArray<R>(mapper: (item: E, index: number) => R, reverseMapper?: (item: R, index: number) => E): RBox<R[]> | WBox<R[]> {
-		const forwardCache = new Map<E, R>()
-		const backwardCache: Map<R, E> | null = !reverseMapper ? null : new Map()
-
-		const forwardMap = (upstreamValues: E[]) => {
-			const outdatedUpstreamItems = new Set(forwardCache.keys())
-			const result = upstreamValues.map((upstreamItem, index) => {
-				outdatedUpstreamItems.delete(upstreamItem)
-				let downstreamItem = forwardCache.get(upstreamItem)
-				if(!downstreamItem){
-					downstreamItem = mapper(upstreamItem, index)
-					forwardCache.set(upstreamItem, downstreamItem)
-					if(backwardCache){
-						backwardCache.set(downstreamItem, upstreamItem)
-					}
-				}
-				return downstreamItem
-			})
-			if(backwardCache){
-				for(const outdatedItem of outdatedUpstreamItems){
-					backwardCache.delete(forwardCache.get(outdatedItem)!)
-				}
-			}
-			for(const outdatedItem of outdatedUpstreamItems){
-				forwardCache.delete(outdatedItem)
-			}
-			return result
-		}
-
-		if(!backwardCache || !reverseMapper){
-			return this.upstream.map(forwardMap)
-		}
-
-		const backwardMap = (downstreamValues: R[]) => {
-			const outdatedDownstreamItems = new Set(backwardCache.keys())
-			const result = downstreamValues.map((downstreamItem, index) => {
-				outdatedDownstreamItems.delete(downstreamItem)
-				let upstreamItem = backwardCache.get(downstreamItem)
-				if(!upstreamItem){
-					upstreamItem = reverseMapper(downstreamItem, index)
-					forwardCache.set(upstreamItem, downstreamItem)
-					backwardCache.set(downstreamItem, upstreamItem)
-				}
-				return upstreamItem
-			})
-			for(const outdatedItem of outdatedDownstreamItems){
-				forwardCache.delete(backwardCache.get(outdatedItem)!)
-				backwardCache.delete(outdatedItem)
-			}
-			return result
-		}
-		return this.upstream.map(forwardMap, backwardMap)
 	}
 
 	isItemBoxAttached(itemBox: ArrayItemBox<E, K>): boolean {

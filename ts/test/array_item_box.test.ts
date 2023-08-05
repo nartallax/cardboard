@@ -1,5 +1,5 @@
 import {describe, test} from "@nartallax/clamsensor"
-import {BoxInternal, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/internal"
+import {BoxInternal, box, constBox, isArrayItemWBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/internal"
 import expect from "expect.js"
 import {makeCallCounter} from "test/test_utils"
 
@@ -20,6 +20,15 @@ describe("ArrayItemBox", () => {
 		expect(isConstBox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 		expect(isConstBox(viewBox(() => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 		expect(isConstBox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
+	})
+
+	test("isArrayItemWBox", () => {
+		expect(isArrayItemWBox(box(1))).to.be(false)
+		expect(isArrayItemWBox(viewBox(() => 1))).to.be(false)
+		expect(isArrayItemWBox(constBox(1))).to.be(false)
+		expect(isArrayItemWBox(box({a: 1}).prop("a"))).to.be(false)
+		expect(isArrayItemWBox(box({a: 1}).map(x => x.a))).to.be(false)
+		expect(isArrayItemWBox(box([1]).getArrayContext(x => x).getBoxForKey(1))).to.be(true)
 	})
 
 	test("unbox", () => {

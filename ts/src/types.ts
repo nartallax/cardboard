@@ -164,7 +164,6 @@ export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 
 export type UpdateReceiver<T> = ChangeHandler<T> | UpstreamSubscriber
 
-// TODO: think about reducing amount of generics in those types, we really don't need that much
 export interface Subscription<T> {
 	/** Last value with which handler was called.
 	 * Having just a revision number won't do here, because value can go back-and-forth

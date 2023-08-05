@@ -1,5 +1,5 @@
 import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, UpdateMeta} from "src/internal"
-import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, notificationStack} from "src/internal"
+import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArray, notificationStack} from "src/internal"
 import {SubscriberList} from "src/subscriber_list"
 
 export const NoValue = Symbol("AbsentBoxValue")
@@ -83,15 +83,10 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return new ArrayContextImpl(this, getKey)
 	}
 
-	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
-	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
-	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper?: (item: R, index: number) => E): WBox<R[]> | RBox<R[]> {
-		const context = this.getArrayContext(getIndex) as ArrayContextImpl<E, number> // ew.
-		if(reverseMapper){
-			return context.mapArray(mapper, reverseMapper)
-		} else {
-			return context.mapArray(mapper)
-		}
+	mapArray<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArray<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+	mapArray<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper?: (item: R, index: number) => E): WBox<R[]> | RBox<R[]> {
+		return mapArray(this, mapper, reverseMapper)
 	}
 
 	setProp<K extends keyof T>(propName: K, propValue: T[K]): void {
@@ -233,7 +228,6 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 
 }
 
-const getIndex = (_: any, index: number) => index
 const throwOnReverseMapping = () => {
 	throw new Error("This box does not support reverse-mapping")
 }
