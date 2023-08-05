@@ -95,21 +95,26 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	subscribe(handler: ChangeHandler<T> | UpstreamSubscriber, lastKnownValue: T): void {
 		const sub: Subscription<T> = {lastKnownValue, receiver: handler}
 		if(handler instanceof PropBox){
-			const map = this.propBoxInternalSubscriptions ||= new Map()
-			if(map.has(handler)){ // TODO: ?????
-				return
-			}
+			const map: typeof this.propBoxInternalSubscriptions = this.propBoxInternalSubscriptions ||= new Map()
 
 			let arr = map.get(handler.propName)
 			if(!arr){
-				arr = []
+				arr = [sub]
 				map.set(handler.propName, arr)
+				return
 			}
+
+			for(let i = 0; i < arr.length; i++){
+				if(arr[i]!.receiver === handler){
+					return
+				}
+			}
+
 			arr.push(sub)
 			return
 		}
 
-		const map = this.subscriptions ||= new Map()
+		const map: typeof this.subscriptions = this.subscriptions ||= new Map()
 		if(map.has(handler)){
 			/** It's important to avoid creating new subscription objects if there are old ones
 			 * Because update queue may hold reference to old object to update lastKnownValue
