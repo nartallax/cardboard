@@ -32,25 +32,18 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		return !!(this.subscriptions || this.propBoxInternalSubscriptions)
 	}
 
-	callSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
-		this.notifyPropSubscribers(changeSourceBox, updateMeta)
-		this.notifySubscribers(changeSourceBox, updateMeta)
+	callSubscribers(value: T, changeSourceBox: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
+		this.notifyPropSubscribers(value, changeSourceBox, updateMeta)
+		this.notifySubscribers(value, changeSourceBox, updateMeta)
 		updateQueue.run()
 	}
 
-	private notifySubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifySubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		if(!this.subscriptions){
 			return
 		}
 
 		for(const subscription of this.subscriptions.values()){
-			/* we get value each time here to avoid scenario when subscriber gets outdated value
-			while it's not bad on its own (because subscriber will eventually get most up-to-date-value),
-			it can confuse users of the library, if outdated value is passed into some kind of user handler
-			it can lead to questions like "why box.get() is not equal to value passed into handler", which is fair
-
-			it is only possible in case of double-changes; most of the time value will be the same */
-			const value = this.owner.getExistingValue() // TODO: remove
 			if(subscription.receiver === changeSourceBox){
 				// that box already knows what value of this box should be
 				// TODO: think about in which situation this can backfire and how to fix it
@@ -62,7 +55,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyPropSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscribers(value: T, changeSourceBox: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
 		if(!this.propBoxInternalSubscriptions){
 			return
 		}
@@ -70,19 +63,18 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		if(updateMeta && updateMeta.type === "property_update"){
 			const propSubscriptionArray = this.propBoxInternalSubscriptions.get(updateMeta.propName)
 			if(propSubscriptionArray){
-				this.notifyPropSubscriptionArray(propSubscriptionArray, changeSourceBox, updateMeta)
+				this.notifyPropSubscriptionArray(value, propSubscriptionArray, changeSourceBox, updateMeta)
 			}
 			return
 		}
 
 		for(const propSubscriptionArray of this.propBoxInternalSubscriptions.values()){
-			this.notifyPropSubscriptionArray(propSubscriptionArray, changeSourceBox, updateMeta)
+			this.notifyPropSubscriptionArray(value, propSubscriptionArray, changeSourceBox, updateMeta)
 		}
 	}
 
-	private notifyPropSubscriptionArray(arr: Subscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscriptionArray(value: T, arr: Subscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		for(let i = 0; i < arr.length; i++){
-			const value = this.owner.getExistingValue()
 			const subscription = arr[i]!
 			if(subscription.receiver === changeSourceBox){
 				subscription.lastKnownValue = value

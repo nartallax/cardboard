@@ -21,7 +21,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		}
 
 		this.value = newValue
-		this.notifyOnValueChange(changeSource, updateMeta)
+		this.notifyOnValueChange(newValue, changeSource, updateMeta)
 	}
 
 	get(): T {
@@ -38,13 +38,6 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	 * of course other box didn't get NoValue value, it's never shown to outside world */
 	private getForSubscription(): T {
 		return this.value === NoValue ? this.get() : this.value
-	}
-
-	getExistingValue(): T {
-		if(this.value === NoValue){
-			throw new Error("Unexpected absence of value. Not sure how did we get here. Go report a bug.")
-		}
-		return this.value
 	}
 
 	/** When a box is disposed, it is no longer possible to get or set a value to this box
@@ -66,8 +59,8 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.unsubscribe(handler)
 	}
 
-	protected notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
-		this.subscriberList.callSubscribers(changeSource, updateMeta)
+	protected notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
+		this.subscriberList.callSubscribers(value, changeSource, updateMeta)
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R>

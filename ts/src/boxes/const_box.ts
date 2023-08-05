@@ -23,10 +23,6 @@ export class ConstBox<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 		return this.value as T
 	}
 
-	getExistingValue(): T {
-		return this.value as T
-	}
-
 	subscribe(): void {
 		// nothing. handler will never be called anyway
 	}
