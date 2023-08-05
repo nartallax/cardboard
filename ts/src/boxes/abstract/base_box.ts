@@ -58,11 +58,11 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.dispose()
 	}
 
-	subscribe(handler: UpstreamSubscriber | ChangeHandler<T, this>): void {
+	subscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
 		this.subscriberList.subscribe(handler, this.getForSubscription())
 	}
 
-	unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T, this>): void {
+	unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
 		this.subscriberList.unsubscribe(handler)
 	}
 

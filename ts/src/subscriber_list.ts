@@ -1,9 +1,9 @@
-import {updateQueue, type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox, Subscription, Update, RBox} from "src/internal"
+import {updateQueue, type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox, Subscription, Update} from "src/internal"
 
 /** Class that manages list of active subscribers to some box */
 export class SubscriberList<T, O extends BoxInternal<T>> {
-	private subscriptions: Map<ChangeHandler<T, O> | UpstreamSubscriber, Subscription<T, O>> | null = null
-	private propBoxInternalSubscriptions: Map<unknown, Subscription<T, O>[]> | null = null
+	private subscriptions: Map<ChangeHandler<T> | UpstreamSubscriber, Subscription<T>> | null = null
+	private propBoxInternalSubscriptions: Map<unknown, Subscription<T>[]> | null = null
 
 	/** There once was a number field called `revision` here.
 	 * As the library was going ahead with more and more complex calculations and logic, it became obsolete.
@@ -58,7 +58,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				subscription.lastKnownValue = value
 				continue
 			}
-			updateQueue.enqueueUpdate(new Update<unknown, RBox<unknown>>(subscription as Subscription<unknown, RBox<unknown>>, value, this.owner, updateMeta))
+			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
 		}
 	}
 
@@ -80,7 +80,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyPropSubscriptionArray(arr: Subscription<T, O>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscriptionArray(arr: Subscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		for(let i = 0; i < arr.length; i++){
 			const value = this.owner.getExistingValue()
 			const subscription = arr[i]!
@@ -88,12 +88,12 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				subscription.lastKnownValue = value
 				continue
 			}
-			updateQueue.enqueueUpdate(new Update<unknown, RBox<unknown>>(subscription as Subscription<unknown, RBox<unknown>>, value, this.owner, updateMeta))
+			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
 		}
 	}
 
-	subscribe(handler: ChangeHandler<T, O> | UpstreamSubscriber, lastKnownValue: T): void {
-		const sub: Subscription<T, O> = {lastKnownValue, receiver: handler}
+	subscribe(handler: ChangeHandler<T> | UpstreamSubscriber, lastKnownValue: T): void {
+		const sub: Subscription<T> = {lastKnownValue, receiver: handler}
 		if(handler instanceof PropBox){
 			const map = this.propBoxInternalSubscriptions ||= new Map()
 			if(map.has(handler)){ // TODO: ?????
@@ -119,7 +119,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		map.set(handler, sub)
 	}
 
-	unsubscribe(handler: ChangeHandler<T, O> | UpstreamSubscriber): void {
+	unsubscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void {
 		if(handler instanceof PropBox){
 			if(!this.propBoxInternalSubscriptions){
 				return
@@ -130,7 +130,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				return
 			}
 
-			let sub: Subscription<T, O> | null = null
+			let sub: Subscription<T> | null = null
 
 			arr = arr.filter(x => {
 				if(x.receiver === handler){

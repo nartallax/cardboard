@@ -5,7 +5,7 @@ export abstract class FirstSubscriberHandlingBox<T> extends BaseBox<T> {
 	protected abstract onFirstSubscriber(): void
 	protected abstract onLastUnsubscriber(): void
 
-	override subscribe(handler: UpstreamSubscriber | ChangeHandler<T, this>): void {
+	override subscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
 		const hadSubs = this.haveSubscribers()
 		super.subscribe(handler)
 		if(!hadSubs){
@@ -13,7 +13,7 @@ export abstract class FirstSubscriberHandlingBox<T> extends BaseBox<T> {
 		}
 	}
 
-	override unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T, this>): void {
+	override unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
 		const hadSubs = this.haveSubscribers()
 		super.unsubscribe(handler)
 		// hadSubs check here because we could already have none subscribers

@@ -11,10 +11,10 @@ export interface RBox<T>{
 	 *
 	 * Note that the handler is stored until explicitly unsubscribed;
 	 * this may cause memory leaks in some scenarios. */
-	subscribe(handler: ChangeHandler<T, this>): void
+	subscribe(handler: ChangeHandler<T>): void
 
 	/** Removes a subscriber from the box */
-	unsubscribe(handler: ChangeHandler<T, this>): void
+	unsubscribe(handler: ChangeHandler<T>): void
 
 	/** Create another box, value of which entirely depends on value of this one box
 	 *
@@ -130,15 +130,15 @@ type TakeNonBoxes<T> = T extends RBox<any> ? never : T
  * Does the same to types that unbox() does to values */
 export type Unboxed<T> = T extends RBox<infer X> ? X : T
 
-export type ChangeHandler<T, B extends RBox<T> = RBox<T>> = (value: T, box: B) => void
+export type ChangeHandler<T> = (value: T, box: RBox<T>) => void
 
 /** In reality all of the boxes are internally WBoxes */
 export interface BoxInternal<T> extends WBox<T> {
 	value: T | typeof NoValue
 	getExistingValue(): T
 	haveSubscribers(): boolean
-	subscribe(handler: ChangeHandler<T, this> | UpstreamSubscriber): void
-	unsubscribe(handler: ChangeHandler<T, this> | UpstreamSubscriber): void
+	subscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void
+	unsubscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void
 	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void
 }
 
@@ -163,10 +163,10 @@ export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	readonly dependencyList: DependencyList
 }
 
-export type UpdateReceiver<T, O extends RBox<T>> = ChangeHandler<T, O> | UpstreamSubscriber
+export type UpdateReceiver<T> = ChangeHandler<T> | UpstreamSubscriber
 
 // TODO: think about reducing amount of generics in those types, we really don't need that much
-export interface Subscription<T, O extends RBox<T>> {
+export interface Subscription<T> {
 	/** Last value with which handler was called.
 	 * Having just a revision number won't do here, because value can go back-and-forth
 	 * within one update session.
@@ -178,6 +178,6 @@ export interface Subscription<T, O extends RBox<T>> {
 	 *
 	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
 	 * or to the same value as the box already has; it will only be different within update rounds */
-	lastKnownValue: T
-	readonly receiver: UpdateReceiver<T, O>
+	lastKnownValue: unknown
+	readonly receiver: UpdateReceiver<T>
 }

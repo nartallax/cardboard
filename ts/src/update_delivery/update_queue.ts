@@ -1,14 +1,14 @@
-import {Subscription, UpdateReceiver, MapBox, Update, ViewBox, RBox} from "src/internal"
+import {Subscription, UpdateReceiver, MapBox, Update, ViewBox} from "src/internal"
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type NTuple<X, T> = X extends `${infer _}${infer B}` ? [T, ...NTuple<B, T>] : []
-type SubQueue<T> = Map<Subscription<T, RBox<T>>, Update<T, RBox<T>>>
+type SubQueue<T> = Map<Subscription<T>, Update<T>>
 
 class UpdateQueue {
 	private readonly subQueues = new Array(4).fill(null).map(() => new Map()) as NTuple<"1234", SubQueue<unknown>>
 	private isRunning = false
 
-	private getSubQueue<T>(receiver: UpdateReceiver<T, RBox<T>>): SubQueue<T> {
+	private getSubQueue<T>(receiver: UpdateReceiver<T>): SubQueue<T> {
 		// this exact ordering of update distribution is dictated by the need to avoid showing inconsistent state to user callbacks
 		if(typeof(receiver) === "function"){
 			return this.subQueues[3] as SubQueue<T>
@@ -21,7 +21,7 @@ class UpdateQueue {
 		}
 	}
 
-	enqueueUpdate<T>(update: Update<T, RBox<T>>): void {
+	enqueueUpdate<T>(update: Update<T>): void {
 		const subQueue = this.getSubQueue(update.subscription.receiver)
 		const oldUpdate = subQueue.get(update.subscription)
 		if(oldUpdate){
@@ -38,7 +38,7 @@ class UpdateQueue {
 		}
 	}
 
-	deleteUpdate<T>(subscription: Subscription<T, RBox<T>>): void {
+	deleteUpdate<T>(subscription: Subscription<T>): void {
 		this.getSubQueue(subscription.receiver).delete(subscription)
 	}
 
@@ -60,7 +60,7 @@ class UpdateQueue {
 		while(true){
 			for(let i = 0; i < this.subQueues.length; i++){
 				const subQueue = this.subQueues[i]!
-				const update = subQueue.values().next().value as Update<unknown, RBox<unknown>> | undefined
+				const update = subQueue.values().next().value as Update<unknown> | undefined
 				if(!update){
 					if(i === this.subQueues.length - 1){
 						return
