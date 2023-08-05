@@ -7,7 +7,9 @@ export const viewBox = <T>(calcFunction: () => T, explicitDependencyList?: reado
 
 export class ViewBox<T> extends DownstreamBox<T> {
 
-	constructor(readonly calculate: () => T, explicitDependencyList?: readonly BoxInternal<unknown>[]) {
+	forcedShouldRecalculate = false
+
+	constructor(readonly calculateFn: () => T, explicitDependencyList?: readonly BoxInternal<unknown>[]) {
 		super(explicitDependencyList
 			? explicitDependencyList.length === 1
 				? new SingleDependencyList(explicitDependencyList[0]!)
@@ -17,6 +19,19 @@ export class ViewBox<T> extends DownstreamBox<T> {
 
 	toString(): string {
 		return `ViewBox(${anythingToString(this.value)})`
+	}
+
+	calculate(): T {
+		this.forcedShouldRecalculate = false
+		return this.calculateFn()
+	}
+
+	protected override shouldRecalculate(justHadFirstSubscriber?: boolean | undefined): boolean {
+		if(this.forcedShouldRecalculate){
+			return true
+		}
+
+		return super.shouldRecalculate(justHadFirstSubscriber)
 	}
 
 }

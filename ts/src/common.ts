@@ -15,8 +15,11 @@ export const unbox = <T>(boxOrValue: T): Unboxed<T> => {
  * Note that every box supplied by this library is an RBox;
  * every WBox is an RBox, every const box is an RBox, etc */
 export const isRBox = (value: unknown): value is RBox<unknown> => {
+	// TODO: simplify, check for BaseBox
 	return isWBox(value) || isConstBox(value) || value instanceof ViewBox || value instanceof PropRBox || value instanceof ArrayItemRBoxImpl || value instanceof MapRBox
 }
+
+// TODO: check for array item box
 
 /** Checks if the value is a writable box */
 export const isWBox = (value: unknown): value is WBox<unknown> => {

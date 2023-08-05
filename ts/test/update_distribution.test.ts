@@ -3,7 +3,7 @@ import {box, viewBox} from "src/internal"
 import {makeCallCounter} from "test/test_utils"
 import expect from "expect.js"
 
-describe("UpdateQueue", () => {
+describe("Update distribution", () => {
 
 	test("viewbox gets updates before external subscribers", () => {
 		const a = box(5)
@@ -117,7 +117,7 @@ describe("UpdateQueue", () => {
 	test("when subscribed during recalculation, subscriber should receive updates", () => {
 		const a = box(6)
 
-		const aCounter = makeCallCounter()
+		const aCounter = makeCallCounter("aCounter")
 		const b = a.map(x => {
 			a.subscribe(aCounter)
 			a.set(x & (~1))

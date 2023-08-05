@@ -176,6 +176,8 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		return box
 	}
 
+	// TODO: think about moving it into base_box
+	// we really don't need it here, it makes no sense
 	mapArray<R>(mapper: (item: E, index: number) => R): RBox<R[]>
 	mapArray<R>(mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
 	mapArray<R>(mapper: (item: E, index: number) => R, reverseMapper?: (item: R, index: number) => E): RBox<R[]> | WBox<R[]> {

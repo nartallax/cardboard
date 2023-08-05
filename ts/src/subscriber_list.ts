@@ -1,35 +1,10 @@
-import {type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox} from "src/internal"
-
-const enum UpdateFlag {
-	haveOngoing = 1 << 0,
-	haveQueued = 1 << 1
-}
-
-interface Subscription<T> {
-	/** Last value with which handler was called.
-	 * Having just a revision number won't do here, because value can go back-and-forth
-	 * within one update session.
-	 *
-	 * This field must always contain value;
-	 * when someone subscribes, it must be initiated with current value of the box.
-	 * This is required to maintain the behaviour that subscriber knows what value the box had
-	 * right before the subscription happens; so the call with the very same value could not happen in the next update.
-	 *
-	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
-	 * or to the same value as the box already has; it will only be different within update rounds */
-	lastKnownValue: T
-}
-
-interface PropSubscription<T> extends Subscription<T> {
-	readonly box: UpstreamSubscriber
-}
-
+import {updateQueue, type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox, Subscription, Update} from "src/internal"
 
 /** Class that manages list of active subscribers to some box */
 export class SubscriberList<T, O extends BoxInternal<T>> {
 	private subscriptions: Map<ChangeHandler<T, O>, Subscription<T>> | null = null
 	private internalSubscriptions: Map<UpstreamSubscriber, Subscription<T>> | null = null
-	private propBoxInternalSubscriptions: Map<unknown, PropSubscription<T>[]> | null = null
+	private propBoxInternalSubscriptions: Map<unknown, Subscription<T>[]> | null = null
 
 	/** There once was a number field called `revision` here.
 	 * As the library was going ahead with more and more complex calculations and logic, it became obsolete.
@@ -51,7 +26,6 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 	 * You can try to use revision to prevent calls of subscribers with outdated value;
 	 * hovewer, it will also have bugs related to early-drops of things that should not be dropped,
 	 * in cases of array contexts (there's a test for that) and partial updates */
-	private updateStatus = 0
 
 	constructor(private readonly owner: O) {}
 
@@ -59,49 +33,11 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		return !!(this.subscriptions || this.internalSubscriptions || this.propBoxInternalSubscriptions)
 	}
 
-	/** Call subscribers with value.
-	 *
-	 * Returns true if all the subscribers were called successfully.
-	 * Returns false if this update happened during another ongoing update;
-	 * that means some (all?) of the subscribers will be called in the future and wasn't called during this call
-	 *
-	 * That also means that somewhere is ongoing notification call, which will be finished after this call
-	 * And if a box needs to do something strictly after all notification calls are finished -
-	 * then this box should wait for `true` to be returned */
-	callSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
-		// TODO: think about manipulating updates in more explicit way, with queues
-		// this can mitigate problems when external subscribers were invoked before internal ones
-		if((this.updateStatus & UpdateFlag.haveOngoing) !== 0){
-			this.updateStatus |= UpdateFlag.haveQueued
-			return false
-		}
-		this.updateStatus |= UpdateFlag.haveOngoing
-
+	callSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		this.notifyInternalSubscribers(changeSourceBox, updateMeta)
 		this.notifyPropSubscribers(changeSourceBox, updateMeta)
-
-		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
-			this.updateStatus = 0
-			/* on nested (double) subscriber notification we explicitly do not pass source box or update meta
-			because we don't store neither update source nor meta for the last update
-			and if we pass what we have - we'll be wrong, because they are not the source of the latest change.
-
-			also, we need to trigger full update and not partial update,
-			otherwise there could be situations when update just never arrives */
-			this.callSubscribers()
-			return true
-		}
-
 		this.notifyExternalSubscribers()
-
-		if((this.updateStatus & UpdateFlag.haveQueued) !== 0){
-			this.updateStatus = 0
-			this.callSubscribers()
-			return true
-		}
-
-		this.updateStatus = 0
-		return true
+		updateQueue.run()
 	}
 
 	private notifyInternalSubscribers(changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
@@ -116,16 +52,13 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 			it can lead to questions like "why box.get() is not equal to value passed into handler", which is fair
 
 			it is only possible in case of double-changes; most of the time value will be the same */
-			const value = this.owner.getExistingValue()
+			const value = this.owner.getExistingValue() // TODO: remove
 			if(box === changeSourceBox){
 				// that box already knows what value of this box should be
 				subscription.lastKnownValue = value
 				continue
 			}
-			if(subscription.lastKnownValue !== value){
-				subscription.lastKnownValue = value
-				box.onUpstreamChange(this.owner, updateMeta)
-			}
+			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
 		}
 	}
 
@@ -147,18 +80,17 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyPropSubscriptionArray(arr: PropSubscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscriptionArray(arr: Subscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
 		for(let i = 0; i < arr.length; i++){
 			const value = this.owner.getExistingValue()
 			const subscription = arr[i]!
-			if(subscription.box === changeSourceBox){
+			if(subscription.receiver === changeSourceBox){
+				// TODO: think about in which situation this can backfire and how to fix it
+				// maybe we need to remove update from queue? but how this situation even possible?
 				subscription.lastKnownValue = value
 				continue
 			}
-			if(subscription.lastKnownValue !== value){
-				subscription.lastKnownValue = value
-				subscription.box.onUpstreamChange(this.owner, updateMeta)
-			}
+			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
 		}
 	}
 
@@ -167,37 +99,56 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 			return
 		}
 
-		for(const [handler, subscription] of this.subscriptions){
+		for(const subscription of this.subscriptions.values()){
 			const value = this.owner.getExistingValue()
-			if(subscription.lastKnownValue !== value){
-				subscription.lastKnownValue = value
-				handler(value, this.owner)
-			}
+			// TODO: think about passing update meta to external subs
+			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, undefined))
 		}
 	}
 
 	subscribe(handler: ChangeHandler<T, O>, lastKnownValue: unknown): void {
-		(this.subscriptions ||= new Map()).set(handler, {lastKnownValue})
+		const map = this.subscriptions ||= new Map()
+		if(!map.has(handler)){
+			/** It's important to avoid creating new subscription objects if there are old ones
+			 * Because update queue may hold reference to old object to update lastKnownValue
+			 * and if new object is created for same handler/downstream, this update will be lost, which is bad */
+			const sub: Subscription<unknown> = {lastKnownValue, receiver: handler as ChangeHandler<unknown>}
+			map.set(handler, sub)
+		}
 	}
 
 	subscribeInternal(box: UpstreamSubscriber, lastKnownValue: unknown): void {
+		const sub: Subscription<unknown> = {lastKnownValue, receiver: box}
 		if(box instanceof PropBox){
 			const map = this.propBoxInternalSubscriptions ||= new Map()
+			if(map.has(box)){
+				return
+			}
+
 			let arr = map.get(box.propName)
 			if(!arr){
 				arr = []
 				map.set(box.propName, arr)
 			}
-			arr.push({lastKnownValue, box})
+			arr.push(sub)
 			return
 		}
 
-		(this.internalSubscriptions ||= new Map()).set(box, {lastKnownValue})
+		const map = this.internalSubscriptions ||= new Map()
+		if(map.has(box)){
+			return
+		}
+		map.set(box, sub)
 	}
 
 	unsubscribe(handler: ChangeHandler<T, O>): void {
 		if(!this.subscriptions){
 			return
+		}
+
+		const sub = this.subscriptions.get(handler)
+		if(sub){
+			updateQueue.deleteUpdate(sub)
 		}
 
 		this.subscriptions.delete(handler)
@@ -217,7 +168,20 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				return
 			}
 
-			arr = arr.filter(sub => sub.box !== box)
+			let sub: Subscription<T> | null = null
+
+			arr = arr.filter(x => {
+				if(x.receiver === box){
+					sub = x
+					return false
+				}
+				return true
+			})
+
+			if(sub){
+				updateQueue.deleteUpdate(sub)
+			}
+
 			if(arr.length === 0){
 				this.propBoxInternalSubscriptions.delete(box.propName)
 				if(this.propBoxInternalSubscriptions.size === 0){

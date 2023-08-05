@@ -6,7 +6,7 @@ export function makeCallCounter<T = any>(name?: string): CallCounter<T> {
 		res.callCount++
 		res.lastCallValue = value
 	}
-	res.toString = () => `CallCounter(${name})`
+	res.toString = () => `CallCounter(${name ?? "unnamed"})`
 	res.callCount = 0
 	res.lastCallValue = null
 	return res

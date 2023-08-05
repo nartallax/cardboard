@@ -18,13 +18,11 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 		return notificationStack.getWithoutNotifications(this.upstream)
 	}
 
-	protected override notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
-		if(!super.notifyOnValueChange(changeSource, updateMeta) || changeSource === this.upstream){
-			return false
+	protected override notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		super.notifyOnValueChange(changeSource, updateMeta)
+		if(changeSource !== this.upstream){
+			this.updateUpstreamWith(this.getExistingValue())
 		}
-
-		this.updateUpstreamWith(this.getExistingValue())
-		return true
 	}
 
 	protected override calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown> | undefined): void {

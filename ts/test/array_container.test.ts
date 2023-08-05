@@ -30,7 +30,6 @@ describe("Array container", () => {
 		arrBox.set([arrBox.get()[0]!, arrBox.get()[1]!, {...arrBox.get()[2]!, name: "owo"}])
 		expect(mapResult.get()[2]!).to.be("{\"id\":1,\"name\":\"owo\"}")
 		expect(callCount).to.be(4)
-
 	})
 
 	test("readonly array", () => {

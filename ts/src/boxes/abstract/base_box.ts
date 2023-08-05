@@ -74,8 +74,8 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.unsubscribeInternal(box)
 	}
 
-	protected notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
-		return this.subscriberList.callSubscribers(changeSource, updateMeta)
+	protected notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		this.subscriberList.callSubscribers(changeSource, updateMeta)
 	}
 
 	map<R>(mapper: (value: T) => R): RBox<R>

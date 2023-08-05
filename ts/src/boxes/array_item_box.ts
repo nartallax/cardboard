@@ -51,13 +51,11 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> i
 		return super.get()
 	}
 
-	protected override notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): boolean {
-		if(!super.notifyOnValueChange(changeSource, updateMeta) || changeSource === this.arrayContext){
-			return false
+	protected override notifyOnValueChange(changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		super.notifyOnValueChange(changeSource, updateMeta)
+		if(changeSource !== this.arrayContext){
+			this.arrayContext.onDownstreamChange(this, this.getExistingValue())
 		}
-
-		this.arrayContext.onDownstreamChange(this, this.getExistingValue())
-		return true
 	}
 
 	deleteArrayElement(): void {
