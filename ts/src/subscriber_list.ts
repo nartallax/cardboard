@@ -29,7 +29,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				subscription.lastKnownValue = value
 				continue
 			}
-			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
+			updateQueue.enqueueUpdate(new Update(subscription, value, updateMeta))
 		}
 	}
 
@@ -58,12 +58,12 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 				subscription.lastKnownValue = value
 				continue
 			}
-			updateQueue.enqueueUpdate(new Update(subscription, value, this.owner, updateMeta))
+			updateQueue.enqueueUpdate(new Update(subscription, value, updateMeta))
 		}
 	}
 
 	subscribe(handler: ChangeHandler<T> | UpstreamSubscriber, lastKnownValue: T): void {
-		const sub: Subscription<T> = {lastKnownValue, receiver: handler}
+		const sub: Subscription<T> = {lastKnownValue, receiver: handler, provider: this.owner}
 		if(handler instanceof PropBox){
 			const map: typeof this.propBoxInternalSubscriptions = this.propBoxInternalSubscriptions ||= new Map()
 

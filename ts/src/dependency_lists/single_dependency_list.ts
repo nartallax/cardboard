@@ -20,6 +20,7 @@ export class SingleDependencyList<T> implements DependencyList {
 	}
 
 	didDependencyListChange(): boolean {
+		// TODO: optimize this away as well
 		return this.lastKnownDependencyValue !== this.dependency.get()
 	}
 
@@ -33,6 +34,7 @@ export class SingleDependencyList<T> implements DependencyList {
 		// this potentially makes n^2 calculations, where n = cumulative amount of dependent boxes
 		// which is very, very bad, it should be linear
 		// that is, owner already .get() this box when calculating, let's not do it again
+		// (same for static dependency list)
 		this.lastKnownDependencyValue = this.dependency.get()
 	}
 

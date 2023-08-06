@@ -178,6 +178,7 @@ export interface Subscription<T> {
 	 *
 	 * This shouldn't create noticeable memory leak, because it will either refer to NoValue,
 	 * or to the same value as the box already has; it will only be different within update rounds */
-	lastKnownValue: unknown
+	lastKnownValue: T
 	readonly receiver: UpdateReceiver<T>
+	readonly provider: BoxInternal<T>
 }

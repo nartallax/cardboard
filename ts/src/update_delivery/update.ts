@@ -1,5 +1,5 @@
 import {ViewBox, anythingToString} from "src/internal"
-import {BoxInternal, Subscription} from "src/types"
+import {Subscription} from "src/types"
 import {UpdateMeta} from "src/update_delivery/update_meta"
 
 /** Update is a single act of notifying a subscriber about change
@@ -9,7 +9,6 @@ export class Update<T> {
 	constructor(
 		readonly subscription: Subscription<T>,
 		readonly value: T,
-		readonly provider: BoxInternal<T>, // TODO: put it into Subscription
 		public meta: UpdateMeta | undefined
 	) {
 		if(subscription.receiver instanceof ViewBox){
@@ -35,13 +34,13 @@ export class Update<T> {
 				receiver.get()
 			}
 		} else if(typeof(receiver) === "function"){
-			receiver(this.value, this.provider, this.meta)
+			receiver(this.value, this.subscription.provider, this.meta)
 		} else {
-			receiver.onUpstreamChange(this.provider, this.meta)
+			receiver.onUpstreamChange(this.subscription.provider, this.meta)
 		}
 	}
 
 	toString(): string {
-		return `Update(${anythingToString(this.value)}, from ${this.provider} to ${this.subscription.receiver}${!this.meta ? "" : ", " + JSON.stringify(this.meta)})`
+		return `Update(${anythingToString(this.value)}, from ${this.subscription.provider} to ${this.subscription.receiver}${!this.meta ? "" : ", " + JSON.stringify(this.meta)})`
 	}
 }

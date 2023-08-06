@@ -9,7 +9,14 @@ It allows you to organize data flow in your project. Intended to use in frontend
 npm install @nartallax/cardboard
 ```
 
-TODO: general description of library idea here
+## General idea
+
+This library allows you to put data in boxes.  
+Box is a container for data that manages it; box allows you to change the data and subscribe to changes.  
+You can take parts of data in box to be put into smaller box, which will synchronize their values with original box.  
+You also can combine boxes, or create mapping boxes, or apply other different transforms to boxes (which result in creating new boxes that synchronize its value with original box).  
+
+All of this can be used to organize data flow through application; typical scenario is that on some high-level control you have box with some complex objects, you split it by fields and pass through some layers of controls, to finally be bound to input, or some visual property.  
 
 ## Basic WBox usage
 
