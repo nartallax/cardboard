@@ -26,7 +26,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		}
 	}
 
-	onUpstreamChange(_: BoxInternal<unknown>, updateMeta?: UpdateMeta, upstreamArray?: E[]): void {
+	onUpstreamChange(_: BoxInternal<unknown>, updateMeta: UpdateMeta | undefined, upstreamArray?: E[]): void {
 		upstreamArray ??= notificationStack.getWithoutNotifications(this.upstream)
 		this.lastKnownUpstreamValue = upstreamArray
 

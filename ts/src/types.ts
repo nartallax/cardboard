@@ -144,7 +144,7 @@ export interface BoxInternal<T> extends WBox<T> {
 
 /** A box or other entity that could internally subscribe to upstream box */
 export interface UpstreamSubscriber {
-	onUpstreamChange(upstream: BoxInternal<unknown>, updateMeta?: UpdateMeta): void
+	onUpstreamChange(upstream: BoxInternal<unknown>, updateMeta: UpdateMeta | undefined): void
 	dispose(): void
 }
 

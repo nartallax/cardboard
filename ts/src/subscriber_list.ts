@@ -26,6 +26,8 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		for(const subscription of this.subscriptions.values()){
 			if(subscription.receiver === changeSourceBox){
 				// that box already knows what value of this box should be
+				// even if there's an update already in queue - it's not a big deal
+				// downstream box will get fresh value each time anyway, instead of using value from update
 				subscription.lastKnownValue = value
 				continue
 			}
