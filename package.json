@@ -12,10 +12,9 @@
     "test:build": "./node_modules/.bin/parcel build --target test --no-cache",
     "test:run": "node ./dist/test/test.js",
     "typecheck": "cd ts && ../node_modules/typescript/bin/tsc --noEmit && cd - > /dev/null",
-    "dts": "npm run dts:prepare && npm run dts:generate && npm run dts:cleanup",
-    "dts:prepare": "rm -rf dts",
-    "dts:generate": "./node_modules/.bin/tsc --project tsconfig.json --emitDeclarationOnly --declaration --outDir dts --removeComments false",
-    "dts:cleanup": "mv ./dts/src/cardboard.d.ts ./target/cardboard.d.ts && rm -rf dts",
+    "dts": "npm run dts:generate && npm run dts:cleanup",
+    "dts:generate": "./node_modules/.bin/parcel build --target types --no-cache",
+    "dts:cleanup": "mv ./cardboard.d.ts ./target/cardboard.d.ts && rm -rf ./cardboard.d.ts",
     "build": "npm run build:prepare && npm run dts && npm run build:build && npm run build:copy_static",
     "build:prepare": "rm -rf ./target && rm -rf ./dist && mkdir ./target",
     "build:build": "./node_modules/.bin/parcel build --target release --no-cache && cp ./dist/release/* ./target/",
@@ -36,6 +35,10 @@
       "isLibrary": true,
       "outputFormat": "esmodule",
       "optimize": true
+    },
+    "types": {
+      "source": "./ts/src/cardboard.ts",
+      "sourceMap": false
     }
   },
   "repository": {
@@ -51,6 +54,8 @@
   "devDependencies": {
     "@nartallax/clamsensor": "^2.0.10",
     "@nartallax/package-cutter": "^1.0.2",
+    "@parcel/packager-ts": "^2.9.3",
+    "@parcel/transformer-typescript-types": "^2.9.3",
     "@types/expect.js": "^0.3.29",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
