@@ -175,4 +175,18 @@ describe("MapBox", () => {
 		expect(a.get()).to.be(2)
 	})
 
+	test("if value is changed during subscription - it should be updated", () => {
+		// TODO: same test about viewbox
+		const base = box(5)
+
+		const b1 = base.map(x => {
+			base.set(x & (~1))
+			return x
+		})
+
+		b1.subscribe(makeCallCounter("b1"))
+
+		expect(b1.get()).to.be(4)
+	})
+
 })

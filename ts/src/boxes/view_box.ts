@@ -18,7 +18,7 @@ export class ViewBox<T> extends DownstreamBox<T> {
 	}
 
 	toString(): string {
-		return `ViewBox(${anythingToString(this.value)})`
+		return `${this.name ?? "ViewBox"}(${anythingToString(this.value)})`
 	}
 
 	calculate(): T {
@@ -26,12 +26,12 @@ export class ViewBox<T> extends DownstreamBox<T> {
 		return this.calculateFn()
 	}
 
-	protected override shouldRecalculate(justHadFirstSubscriber?: boolean | undefined): boolean {
+	protected override shouldRecalculate(): boolean {
 		if(this.forcedShouldRecalculate){
 			return true
 		}
 
-		return super.shouldRecalculate(justHadFirstSubscriber)
+		return super.shouldRecalculate()
 	}
 
 }

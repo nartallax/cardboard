@@ -24,7 +24,15 @@ export class SingleDependencyList<T> implements DependencyList {
 	}
 
 	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void {
-		owner.set(notificationStack.calculateWithoutNoticiations(owner), changeSourceBox)
+		const startingRevision = owner.revision
+		const value = notificationStack.calculateWithoutNoticiations(owner)
+		if(owner.revision === startingRevision){
+			owner.set(value, changeSourceBox)
+		}
+		// TODO: think about NOT doing this
+		// this potentially makes n^2 calculations, where n = cumulative amount of dependent boxes
+		// which is very, very bad, it should be linear
+		// that is, owner already .get() this box when calculating, let's not do it again
 		this.lastKnownDependencyValue = this.dependency.get()
 	}
 

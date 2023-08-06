@@ -9,6 +9,8 @@ It allows you to organize data flow in your project. Intended to use in frontend
 npm install @nartallax/cardboard
 ```
 
+TODO: general description of library idea here
+
 ## Basic WBox usage
 
 For example, suppose you have an input, and you need to organize bi-directional data flow; that is, you need to put initial value in input, then, as user changes value of the input, you need to notify the rest of your application that value is changed.  

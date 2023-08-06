@@ -23,6 +23,7 @@ export class DynamicDependencyList extends BaseMapDependencyList implements Depe
 	}
 
 	calculateAndUpdateSubscriptions<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void {
+		const startingRevision = owner.revision
 		const oldDependencies = new Set(this.boxes.keys())
 		this.boxes.clear()
 
@@ -34,7 +35,10 @@ export class DynamicDependencyList extends BaseMapDependencyList implements Depe
 			owner.value = NoValue
 			throw e
 		}
-		owner.set(value)
+
+		if(startingRevision === owner.revision){
+			owner.set(value)
+		}
 
 		for(const oldDependency of oldDependencies){
 			if(!this.boxes.has(oldDependency)){

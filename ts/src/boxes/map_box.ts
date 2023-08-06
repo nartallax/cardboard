@@ -10,7 +10,7 @@ export abstract class MapBox<T, U> extends SingleDownstreamBox<T, U> {
 	}
 
 	toString(): string {
-		return `MapBox(${anythingToString(this.value)})`
+		return `${this.name ?? "MapBox"}(${anythingToString(this.value)})`
 	}
 
 	protected updateUpstreamWith(downstreamValue: T): void {

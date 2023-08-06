@@ -131,4 +131,46 @@ describe("Update distribution", () => {
 		expect(aCounter.lastCallValue).to.be(4)
 	})
 
+	// TODO: revive this test and make it fail or at least understand why it's not failing
+	// test("non-delivery of updates to downstream boxes that supplied the update won't lead to delivery of outdated update", () => {
+	// const base = box(5) as BoxInternal<number>
+	// base.name = "base"
+
+	// const b1 = base.map(x => {
+	// 	console.log("set A")
+	// 	a.set(x & (~1))
+	// 	return x
+	// }, x => {
+	// 	a.set(x & (~1))
+	// 	return x
+	// }) as BoxInternal<number>
+	// b1.name = "b1"
+
+	// const a = base.map(x => x, x => x) as BoxInternal<number>
+	// a.name = "a"
+
+	// 	const b2 = base.map(x => {
+	// 		a.set(x & (~1))
+	// 		return x
+	// 	}, x => {
+	// 		a.set(x & (~1))
+	// 		return x
+	// 	}) as BoxInternal<number>
+	// 	b2.name = "b2"
+
+	// b1.subscribe(makeCallCounter("b1"))
+	// a.subscribe(makeCallCounter("a"))
+	// b2.subscribe(makeCallCounter("b2"))
+
+	// expect(b1.get()).to.be(4)
+	// expect(b2.get()).to.be(4)
+	// expect(a.get()).to.be(4)
+
+	// 	console.log("setting!")
+	// 	base.set(11)
+	// 	expect(b1.get()).to.be(10)
+	// 	expect(b2.get()).to.be(10)
+	// 	expect(a.get()).to.be(10)
+	// })
+
 })

@@ -135,6 +135,7 @@ export type ChangeHandler<T> = (value: T, box: RBox<T>, meta: UpdateMeta | undef
 /** In reality all of the boxes are internally WBoxes */
 export interface BoxInternal<T> extends WBox<T> {
 	value: T | typeof NoValue
+	name?: string
 	haveSubscribers(): boolean
 	subscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void
 	unsubscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void
@@ -159,6 +160,7 @@ export interface DependencyList {
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	calculate(): T
+	readonly revision: number
 	readonly dependencyList: DependencyList
 }
 

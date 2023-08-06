@@ -1,4 +1,4 @@
-import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, CalculatableBox, DynamicDependencyList} from "src/internal"
+import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, CalculatableBox, DynamicDependencyList, UpdateMeta, UpstreamSubscriber} from "src/internal"
 
 /** DownstreamBox is a box that is derived from some other box (or several)
  * Those base boxes are called upstream; so this box is downstream box related to the upstream boxes
@@ -8,6 +8,23 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 
 	/** Calculate value of this box based on its internal calculation logic */
 	abstract calculate(): T
+
+	/** A revision is a counter that is incremented each time the value of the box is changed.
+	 *
+	 * It is very tempting to use revision number to check if value is changed or not.
+	 * However, it can go wrong when value does not change until you explicitly check.
+	 * For example, consider viewBox that depends on another viewBox
+	 * When there is no subscribers, upstream viewBox will never change, regardless of its own upstreams
+	 * And if downstream viewbox only relying on upstream viewbox's revision number to check if it is was changed,
+	 * there will be false negatives, because in this case it is required to check dependencies of upstream viewbox more thorough.
+	 *
+	 * And also value can change back and forth within one calculation, and revision will still be incremented;
+	 * that's why if you rely on revision to check if the value changed you'll get some false-positives.
+	 *
+	 * You can try to use revision to prevent calls of subscribers with outdated value;
+	 * hovewer, it will also have bugs related to early-drops of things that should not be dropped,
+	 * in cases of array contexts (there's a test for that) and partial updates */
+	revision = 0
 
 	constructor(readonly dependencyList: DependencyList) {
 		super()
@@ -19,27 +36,32 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	 * This value should be called as handler of internal subscription calls
 	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
-	protected calculateAndResubscribe(changeSourceBox?: BoxInternal<unknown>): void {
-		if(this.haveSubscribers() && this.dependencyList instanceof DynamicDependencyList){
+	protected calculateAndResubscribe(isPreparingForFirstSub: boolean, changeSourceBox: BoxInternal<unknown> | undefined): void {
+		if((isPreparingForFirstSub || this.haveSubscribers()) && this.dependencyList instanceof DynamicDependencyList){
 			this.dependencyList.calculateAndUpdateSubscriptions(this, changeSourceBox)
 		} else {
 			this.dependencyList.calculate(this, changeSourceBox)
 		}
 	}
 
-	onUpstreamChange(upstream: BoxInternal<unknown>): void {
-		this.calculateAndResubscribe(upstream)
+	protected notifyOnValueChange(value: T, changeSource: UpstreamSubscriber | BoxInternal<unknown> | undefined, updateMeta: UpdateMeta | undefined): void {
+		this.revision++
+		super.notifyOnValueChange(value, changeSource, updateMeta)
 	}
 
-	protected shouldRecalculate(justHadFirstSubscriber?: boolean): boolean {
+	onUpstreamChange(upstream: BoxInternal<unknown>): void {
+		this.calculateAndResubscribe(false, upstream)
+	}
+
+	protected shouldRecalculate(): boolean {
 		if(this.value === NoValue){
-			// we should never show disposed value to outside world
+			// we should never show absent value to outside world
 			// also NoValue = disposed, and being disposed means that next recalculation will throw
 			// and that's a good thing, because it will notify user of error in his code
 			return true
 		}
 
-		if(!justHadFirstSubscriber && this.haveSubscribers()){
+		if(this.haveSubscribers()){
 			// if we have subscribers - we are subscribed to our dependencies
 			// that means we recalculate each time a dependency is changed
 			// and that means our value is up-to-date and we don't need to recalculate
@@ -60,21 +82,18 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 
 	override get(): T {
 		if(this.shouldRecalculate()){
-			this.calculateAndResubscribe()
+			this.calculateAndResubscribe(false, undefined)
 		}
 
 		return super.get()
 	}
 
 	protected override onFirstSubscriber(): void {
-		if(this.shouldRecalculate(true)){
+		this.dependencyList.subscribeToDependencies(this)
+		if(this.shouldRecalculate()){
 			// something may change while we wasn't subscribed to our dependencies
 			// that's why we should recalculate - so our value is actual
-			this.calculateAndResubscribe(undefined)
-		} else {
-			// even if we don't recalculate - we must subscribe to dependencies
-			// (if we recalculate - it will subscribe anyway)
-			this.dependencyList.subscribeToDependencies(this)
+			this.calculateAndResubscribe(true, undefined)
 		}
 	}
 

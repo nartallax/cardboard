@@ -1,4 +1,4 @@
-import {ViewBox} from "src/internal"
+import {ViewBox, anythingToString} from "src/internal"
 import {BoxInternal, Subscription} from "src/types"
 import {UpdateMeta} from "src/update_delivery/update_meta"
 
@@ -9,7 +9,7 @@ export class Update<T> {
 	constructor(
 		readonly subscription: Subscription<T>,
 		readonly value: T,
-		readonly provider: BoxInternal<T>,
+		readonly provider: BoxInternal<T>, // TODO: put it into Subscription
 		public meta: UpdateMeta | undefined
 	) {
 		if(subscription.receiver instanceof ViewBox){
@@ -22,9 +22,11 @@ export class Update<T> {
 			 * and therefore should be recalculated again later; also it can be confusing to user */
 			subscription.receiver.forcedShouldRecalculate = true
 		}
+		// console.log("created " + this)
 	}
 
 	deliver(): void {
+		// console.log("delivering " + this)
 		this.subscription.lastKnownValue = this.value
 		const receiver = this.subscription.receiver
 		if(receiver instanceof ViewBox){
@@ -37,5 +39,9 @@ export class Update<T> {
 		} else {
 			receiver.onUpstreamChange(this.provider, this.meta)
 		}
+	}
+
+	toString(): string {
+		return `Update(${anythingToString(this.value)}, from ${this.provider} to ${this.subscription.receiver}${!this.meta ? "" : ", " + JSON.stringify(this.meta)})`
 	}
 }

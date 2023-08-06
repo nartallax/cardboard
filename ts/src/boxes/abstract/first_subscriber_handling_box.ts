@@ -6,11 +6,10 @@ export abstract class FirstSubscriberHandlingBox<T> extends BaseBox<T> {
 	protected abstract onLastUnsubscriber(): void
 
 	override subscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
-		const hadSubs = this.haveSubscribers()
-		super.subscribe(handler)
-		if(!hadSubs){
+		if(!this.haveSubscribers()){
 			this.onFirstSubscriber()
 		}
+		super.subscribe(handler)
 	}
 
 	override unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {

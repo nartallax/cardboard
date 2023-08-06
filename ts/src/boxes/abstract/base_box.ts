@@ -7,6 +7,7 @@ export const NoValue = Symbol("AbsentBoxValue")
 export abstract class BaseBox<T> implements BoxInternal<T> {
 	value: T | typeof NoValue = NoValue
 	private readonly subscriberList = new SubscriberList<T, this>(this)
+	name?: string // just for debugging purposes; we won't even create this property most of the time
 
 	haveSubscribers(): boolean {
 		return this.subscriberList.haveSubscribers()
@@ -16,6 +17,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	 *
 	 * @param changeSource the box that caused the change. Won't be notified of the change happening. */
 	set(newValue: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+		// console.log("setting " + this + " to " + newValue + " from " + changeSource)
 		if(this.value === newValue){
 			return
 		}
@@ -32,14 +34,6 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return this.value
 	}
 
-	/** Get the value. Recalculate only if value is absent.
-	 * Result of the call should be used as subscription "initially-known" value
-	 * And we shouldn't use NoValue because it doesn't make sense;
-	 * of course other box didn't get NoValue value, it's never shown to outside world */
-	private getForSubscription(): T {
-		return this.value === NoValue ? this.get() : this.value
-	}
-
 	/** When a box is disposed, it is no longer possible to get or set a value to this box
 	 *
 	 * Use case is situation when some upstream becomes invalid;
@@ -52,7 +46,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	}
 
 	subscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
-		this.subscriberList.subscribe(handler, this.getForSubscription())
+		this.subscriberList.subscribe(handler, this.get())
 	}
 
 	unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
