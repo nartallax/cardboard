@@ -55,8 +55,6 @@ class UpdateQueue {
 	}
 
 	private runInternal(): void {
-		// TODO: think about optimizing this
-		// maybe there's a better structure to avoid misusing maps
 		while(true){
 			for(let i = 0; i < this.subQueues.length; i++){
 				const subQueue = this.subQueues[i]!

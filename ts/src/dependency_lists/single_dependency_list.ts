@@ -20,7 +20,6 @@ export class SingleDependencyList<T> implements DependencyList {
 	}
 
 	didDependencyListChange(): boolean {
-		// TODO: optimize this away as well
 		return this.lastKnownDependencyValue !== this.dependency.get()
 	}
 
@@ -30,11 +29,11 @@ export class SingleDependencyList<T> implements DependencyList {
 		if(owner.revision === startingRevision){
 			owner.set(value, changeSourceBox)
 		}
-		// TODO: think about NOT doing this
-		// this potentially makes n^2 calculations, where n = cumulative amount of dependent boxes
-		// which is very, very bad, it should be linear
-		// that is, owner already .get() this box when calculating, let's not do it again
-		// (same for static dependency list)
+		// it's not great that we're doing this
+		// because each recalc we call .get() at least two times, maybe three, if we are not subscribed to
+		// but, if we have a subscription, it's not that bad, because that also means our upstream have subscription
+		// and will short-circuit to just give existing value
+		// it becomes really bad without subscription, but I don't want to complicate code even further for such rare case
 		this.lastKnownDependencyValue = this.dependency.get()
 	}
 
