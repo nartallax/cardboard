@@ -1,5 +1,5 @@
 import {describe, test} from "@nartallax/clamsensor"
-import {BoxInternal, box, viewBox} from "src/internal"
+import {BoxInternal, box, viewBox, withBoxUpdatesPaused} from "src/internal"
 import {makeCallCounter} from "test/test_utils"
 import expect from "expect.js"
 
@@ -168,6 +168,40 @@ describe("Update distribution", () => {
 		expect(b1.get()).to.be(10)
 		expect(b2.get()).to.be(10)
 		expect(a.get()).to.be(10)
+	})
+
+	test("update pausing works", () => {
+		const b = box(5)
+		const counter = makeCallCounter()
+		b.subscribe(counter)
+
+		withBoxUpdatesPaused(() => {
+			b.set(1)
+			b.set(2)
+			b.set(3)
+		})
+
+		expect(counter.callCount).to.be(1)
+		expect(counter.lastCallValue).to.be(3)
+	})
+
+	test("nested update pausing works", () => {
+		const b = box(5)
+		const counter = makeCallCounter()
+		b.subscribe(counter)
+
+		withBoxUpdatesPaused(() => {
+			b.set(1)
+
+			withBoxUpdatesPaused(() => {
+				b.set(2)
+			})
+
+			b.set(3)
+		})
+
+		expect(counter.callCount).to.be(1)
+		expect(counter.lastCallValue).to.be(3)
 	})
 
 })

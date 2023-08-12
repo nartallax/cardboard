@@ -1,6 +1,5 @@
 import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, UpdateMeta} from "src/internal"
-import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArray, notificationStack} from "src/internal"
-import {SubscriberList} from "src/subscriber_list"
+import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArray, notificationStack, SubscriberList} from "src/internal"
 
 export const NoValue = Symbol("AbsentBoxValue")
 

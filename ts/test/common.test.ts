@@ -1,7 +1,7 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {Boxed, MRBox, RBox, WBox, box, constBoxWrap, isConstBox, isRBox, isWBox, unbox} from "src/cardboard"
-import {BoxInternal, Unboxed} from "src/types"
+import {Unboxed, Boxed, MRBox, RBox, WBox, box, constBoxWrap, isConstBox, isRBox, isWBox, unbox} from "src/cardboard"
+import {BoxInternal} from "src/types"
 import {IfTypeEquals, makeCallCounter} from "test/test_utils"
 
 describe("common functions", () => {
@@ -155,5 +155,21 @@ describe("common functions", () => {
 		b.set(8)
 		expect(counter.callCount).to.be(1)
 		expect(counter.lastCallValue).to.be(6)
+	})
+
+	test("isConstBox doesn't cause bad type narrowing", () => {
+		// this is type test
+		// it will break compilation if something is broken
+		function callHandler<T>(value: MRBox<T>, handler: (value: T) => void): void {
+			if(!isRBox(value) || isConstBox(value)){
+				handler(unbox(value))
+				return
+			}
+
+			value.subscribe(handler)
+			handler(value.get())
+		}
+
+		callHandler(box(5), () => {/* noop */})
 	})
 })

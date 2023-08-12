@@ -212,6 +212,8 @@ box2.deleteArrayElement()
 console.log(parent.get()) // []
 ```
 
+A callback to `.getArrayContext()` gets element value and index. In general, you should not use index as your item key; hovewer, in some scenarios it could be okay; for example, if you absolutely sure that array won't be sorted, elements won't be added or removed.  
+
 ## .mapArray() method
 
 If you don't need to work with individual boxes of the array - you can use `.mapArray()` method.  
@@ -243,6 +245,26 @@ console.log(bb.get()) // 12345
 
 ```
 
+## Utility functions
+
+There are some functions related to box manipulation:
+
+```ts
+let box: RBox<string> = box("owo")
+console.log(isRBox(box)) // true
+console.log(isWBox(box)) // true
+console.log(isConstBox(box)) // false
+console.log(unbox(box)) // "owo"
+
+let callCount = 0
+box.subcribe(() => callCount++)
+withBoxUpdatesPaused(() => {
+	box.set("uwu")
+	box.set("ayaya")
+})
+console.log(callCount) // 1
+```
+
 ## Partial update methods
 
 There are other methods that exist on writable boxes, like `.setProp()`, `.setElementAtIndex()`, `.appendElements()`, `.deleteElements()` and many more. Calling one of those methods are usually more optimal way of doing the update; i.e. `b.setProp("x", 5)` is more optimal than `b.set({...b.get(), x: 5})`.  
@@ -251,6 +273,22 @@ The reason for that is partial updates.
 Partial update happens when boxes know what part exactly changed in a composite value, like object or array. This includes changing just one element of the array, or one property of the object. When box knows what exactly changed, it may skip delivering updates to other boxes that are certain to not react to them; if only one property of an object is changed - it is guaranteed that other properties of an object are not changed, which means that boxes that are result of a `.prop()` method for different property do not need to receive new value.  
 
 In most cases it's fine to not use methods that cause partial updates. Boxes will figure out what's changed on their own. But if you can, and if you have a lot of data in boxes (thousands of elements in array, for example) - it's a good idea to use them.  
+
+## Memory management considerations
+
+There are some ways you may accidently create a memory leak using this library. So, let's outline most obvious of them:
+
+1. Subscription to a box will hold in memory subscriber (and everything in its closure) as long as the box itself is in memory. It can be okay sometimes, if you are sure that the box and subscriber should always exist, but if you have, for example, dynamically created control - you may want to unsubscribe once the control is no longer needed; that will allow the control to be garbadge-collected.  
+2. Downstream box always holds reference to its upstream:
+
+```ts
+let myBox: RBox<number> = box(5)
+for(let i = 0; i < 100; i++){
+	myBox = myBox.map(x => x + 1, x => x - 1)
+}
+```
+
+In example above we create 100 boxes, but can actually use only last one. Other 99 boxes won't be garbadge collected as long as that last box is not garbadge collected.  
 
 ## Antipatterns
 

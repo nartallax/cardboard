@@ -1,6 +1,4 @@
-import {ViewBox, anythingToString} from "src/internal"
-import {Subscription} from "src/types"
-import {UpdateMeta} from "src/update_delivery/update_meta"
+import {ViewBox, anythingToString, Subscription, UpdateMeta} from "src/internal"
 
 /** Update is a single act of notifying a subscriber about change
  *

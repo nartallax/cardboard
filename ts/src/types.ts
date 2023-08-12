@@ -32,6 +32,13 @@ export interface RBox<T>{
 	mapArray<E, R>(this: RBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
 }
 
+/** ConstBox - a box that can never change its value.
+ * This interface mostly exists to help with type narrowing in some situations */
+export interface ConstBox<T> extends RBox<T>{
+	/** This helps typings */
+	readonly isConstBox: true
+}
+
 /** Writable box: a box in which you can put value, and get value from. */
 export interface WBox<T> extends RBox<T> {
 	/** Put the value in the box, overwriting existing value and calling all the change handlers. */

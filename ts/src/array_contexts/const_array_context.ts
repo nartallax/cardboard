@@ -1,14 +1,13 @@
-import {ConstBox} from "src/internal"
-import {ArrayContext} from "src/types"
+import {ConstBoxImpl, ArrayContext} from "src/internal"
 
-export class ConstArrayContext<E, K> implements ArrayContext<E, K, ConstBox<E>> {
+export class ConstArrayContext<E, K> implements ArrayContext<E, K, ConstBoxImpl<E>> {
 
-	private boxMap: Map<K, ConstBox<E>> | null = null
-	private boxArray: ConstBox<E>[] | null = null
+	private boxMap: Map<K, ConstBoxImpl<E>> | null = null
+	private boxArray: ConstBoxImpl<E>[] | null = null
 
-	constructor(private readonly upstream: ConstBox<readonly E[]>, private readonly getKey: (item: E, index: number) => K) {}
+	constructor(private readonly upstream: ConstBoxImpl<readonly E[]>, private readonly getKey: (item: E, index: number) => K) {}
 
-	getBoxForKey(key: K): ConstBox<E> {
+	getBoxForKey(key: K): ConstBoxImpl<E> {
 		if(!this.boxMap){
 			this.boxMap = new Map()
 			const upstreamArray = this.upstream.get()
@@ -18,7 +17,7 @@ export class ConstArrayContext<E, K> implements ArrayContext<E, K, ConstBox<E>> 
 				if(this.boxMap.has(key)){
 					throw new Error("Duplicate array key: " + key)
 				}
-				this.boxMap.set(key, new ConstBox(item))
+				this.boxMap.set(key, new ConstBoxImpl(item))
 			}
 		}
 
@@ -30,10 +29,10 @@ export class ConstArrayContext<E, K> implements ArrayContext<E, K, ConstBox<E>> 
 		return box
 	}
 
-	getBoxes(): ConstBox<E>[] {
+	getBoxes(): ConstBoxImpl<E>[] {
 		if(!this.boxArray){
 			const upstreamArray = this.upstream.get()
-			this.boxArray = upstreamArray.map(item => new ConstBox(item))
+			this.boxArray = upstreamArray.map(item => new ConstBoxImpl(item))
 		}
 		return [...this.boxArray]
 	}

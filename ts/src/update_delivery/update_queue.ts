@@ -7,6 +7,7 @@ type SubQueue<T> = Map<Subscription<T>, Update<T>>
 class UpdateQueue {
 	private readonly subQueues = new Array(4).fill(null).map(() => new Map()) as NTuple<"1234", SubQueue<unknown>>
 	private isRunning = false
+	private pauseLevel = 0
 
 	private getSubQueue<T>(receiver: UpdateReceiver<T>): SubQueue<T> {
 		// this exact ordering of update distribution is dictated by the need to avoid showing inconsistent state to user callbacks
@@ -18,6 +19,16 @@ class UpdateQueue {
 			return this.subQueues[1] as SubQueue<T>
 		} else {
 			return this.subQueues[0] as SubQueue<T>
+		}
+	}
+
+	withUpdatesPaused<T>(callback: () => T): T {
+		this.pauseLevel++
+		try {
+			return callback()
+		} finally {
+			this.pauseLevel--
+			this.run()
 		}
 	}
 
@@ -43,7 +54,7 @@ class UpdateQueue {
 	}
 
 	run(): void {
-		if(this.isRunning){
+		if(this.isRunning || this.pauseLevel > 0){
 			return
 		}
 		this.isRunning = true

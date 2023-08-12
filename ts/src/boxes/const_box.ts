@@ -5,10 +5,12 @@ import {ConstArrayContext, anythingToString, ArrayContext, RBox, WBox, BoxIntern
  * It exists mostly for convenience, to avoid writing two variants of code -
  * one for plain values and one for boxes */
 export const constBox = <T>(value: T): RBox<T> => {
-	return new ConstBox(value)
+	return new ConstBoxImpl(value)
 }
 
-export class ConstBox<T> implements BoxInternal<T>, ArrayItemWBox<T> {
+export class ConstBoxImpl<T> implements BoxInternal<T>, ArrayItemWBox<T> {
+	readonly isConstBox!: true
+
 	constructor(readonly value: T | typeof NoValue) {
 		if(value === NoValue){
 			throw new Error("ConstBox must always have a value")
@@ -36,21 +38,21 @@ export class ConstBox<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 	}
 
 	map<R>(mapper: (value: T) => R): WBox<R> {
-		return new ConstBox(mapper(this.value as T))
+		return new ConstBoxImpl(mapper(this.value as T))
 	}
 
 	prop<K extends keyof T>(propName: K): WBox<T[K]> {
-		return new ConstBox((this.value as T)[propName])
+		return new ConstBoxImpl((this.value as T)[propName])
 	}
 
-	getArrayContext<E, K>(this: ConstBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, ConstBox<E>> {
+	getArrayContext<E, K>(this: ConstBoxImpl<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContext<E, K, ConstBoxImpl<E>> {
 		return new ConstArrayContext<E, K>(this, getKey)
 	}
 
 	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
 	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
-	mapArray<E, R>(this: ConstBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]> | WBox<R[]> {
-		return new ConstBox((this.value as E[]).map((item, index) => mapper(item, index)))
+	mapArray<E, R>(this: ConstBoxImpl<E[]>, mapper: (item: E, index: number) => R): RBox<R[]> | WBox<R[]> {
+		return new ConstBoxImpl((this.value as E[]).map((item, index) => mapper(item, index)))
 	}
 
 	set(): void {
@@ -121,3 +123,6 @@ export class ConstBox<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 function throwOnChange(): never {
 	throw new Error("You can't change anything about value of const box")
 }
+
+// ew. but we should do it to not diverge from typings
+(ConstBoxImpl.prototype as any).isConstBox = true
