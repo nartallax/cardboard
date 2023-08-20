@@ -2,11 +2,9 @@
  * It is only required to resolve circular dependencies */
 
 export * from "src/types"
-export * from "src/dependency_lists/base_map_dependency_list"
-export * from "src/dependency_lists/static_dependency_list"
-export * from "src/dependency_lists/dynamic_dependency_list"
+export * from "src/dependency_lists/base_dependency_list"
+export * from "src/dependency_lists/multiple_dependency_list"
 export * from "src/dependency_lists/single_dependency_list"
-export * from "src/notification_stack"
 
 export * from "src/boxes/abstract/base_box"
 export * from "src/boxes/abstract/first_subscriber_handling_box"

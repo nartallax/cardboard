@@ -1,4 +1,4 @@
-import {notificationStack, isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, UpdateMeta} from "src/internal"
+import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, UpdateMeta} from "src/internal"
 
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
@@ -20,14 +20,14 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 			// that means our value is up-to-date
 			return
 		}
-		const upstreamArray = notificationStack.getWithoutNotifications(this.upstream)
+		const upstreamArray = this.upstream.get()
 		if(upstreamArray !== this.lastKnownUpstreamValue){
 			this.onUpstreamChange(this.upstream, undefined, upstreamArray)
 		}
 	}
 
 	onUpstreamChange(_: BoxInternal<unknown>, updateMeta: UpdateMeta | undefined, upstreamArray?: E[]): void {
-		upstreamArray ??= notificationStack.getWithoutNotifications(this.upstream)
+		upstreamArray ??= this.upstream.get()
 		this.lastKnownUpstreamValue = upstreamArray
 
 		if(updateMeta){
@@ -125,7 +125,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 			throw new Error("Array item box changed key, which is not allowed; was: " + downstreamBox.key + ", now " + newKey)
 		}
 
-		const oldUpstreamValue = notificationStack.getWithoutNotifications(this.upstream)
+		const oldUpstreamValue = this.upstream.get()
 		const newUpstreamValue: E[] = [...oldUpstreamValue]
 		newUpstreamValue[downstreamBox.index] = value
 		this.lastKnownUpstreamValue = newUpstreamValue
@@ -152,7 +152,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 
 	getBoxes(): ArrayItemBox<E, K>[] {
 		this.tryUpdate()
-		const upstreamValue = notificationStack.getWithoutNotifications(this.upstream)
+		const upstreamValue = this.upstream.get()
 		const result: ArrayItemBox<E, K>[] = new Array(upstreamValue.length)
 		for(let i = 0; i < upstreamValue.length; i++){
 			const oldValue = upstreamValue[i]!

@@ -19,7 +19,7 @@ export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<
 
 	protected override updateUpstreamWith(downstreamValue: U[K]): void {
 		const value: U = {
-			...this.getUpstreamValue(),
+			...this.upstream.get(),
 			[this.propName]: downstreamValue
 		}
 		this.upstream.set(value, this, {type: "property_update", propName: this.propName})

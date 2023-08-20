@@ -1,4 +1,4 @@
-import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, CalculatableBox, DynamicDependencyList, UpdateMeta, UpstreamSubscriber} from "src/internal"
+import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, CalculatableBox, UpdateMeta, UpstreamSubscriber} from "src/internal"
 
 /** DownstreamBox is a box that is derived from some other box (or several)
  * Those base boxes are called upstream; so this box is downstream box related to the upstream boxes
@@ -36,12 +36,8 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	 * This value should be called as handler of internal subscription calls
 	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
-	protected calculateAndResubscribe(isPreparingForFirstSub: boolean, changeSourceBox: BoxInternal<unknown> | undefined): void {
-		if((isPreparingForFirstSub || this.haveSubscribers()) && this.dependencyList instanceof DynamicDependencyList){
-			this.dependencyList.calculateAndUpdateSubscriptions(this, changeSourceBox)
-		} else {
-			this.dependencyList.calculate(this, changeSourceBox)
-		}
+	protected calculateAndResubscribe(changeSourceBox: BoxInternal<unknown> | undefined): void {
+		this.dependencyList.calculate(this, changeSourceBox)
 	}
 
 	protected notifyOnValueChange(value: T, changeSource: UpstreamSubscriber | BoxInternal<unknown> | undefined, updateMeta: UpdateMeta | undefined): void {
@@ -50,7 +46,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	}
 
 	onUpstreamChange(upstream: BoxInternal<unknown>): void {
-		this.calculateAndResubscribe(false, upstream)
+		this.calculateAndResubscribe(upstream)
 	}
 
 	protected shouldRecalculate(): boolean {
@@ -82,7 +78,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 
 	override get(): T {
 		if(this.shouldRecalculate()){
-			this.calculateAndResubscribe(false, undefined)
+			this.calculateAndResubscribe(undefined)
 		}
 
 		return super.get()
@@ -93,7 +89,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		if(this.shouldRecalculate()){
 			// something may change while we wasn't subscribed to our dependencies
 			// that's why we should recalculate - so our value is actual
-			this.calculateAndResubscribe(true, undefined)
+			this.calculateAndResubscribe(undefined)
 		}
 	}
 

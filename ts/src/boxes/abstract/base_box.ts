@@ -1,5 +1,5 @@
 import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, UpdateMeta} from "src/internal"
-import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArray, notificationStack, SubscriberList} from "src/internal"
+import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArray, SubscriberList} from "src/internal"
 
 export const NoValue = Symbol("AbsentBoxValue")
 
@@ -26,7 +26,6 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	}
 
 	get(): T {
-		notificationStack.notify(this, this.value)
 		if(this.value === NoValue){
 			throw new Error("This box is disposed; no value can be get")
 		}

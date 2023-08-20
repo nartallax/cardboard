@@ -1,4 +1,4 @@
-import {anythingToString, StaticDependencyList, RBox, BoxInternal, DownstreamBox, SingleDependencyList, Unboxed} from "src/internal"
+import {anythingToString, MultipleDependencyList, RBox, BoxInternal, DownstreamBox, SingleDependencyList, Unboxed} from "src/internal"
 
 // type DependencyBoxes<D extends readonly unknown[]> = D extends [infer X, ...infer Rest]
 // 	? readonly [RBox<X>, ...DependencyBoxes<Rest>]
@@ -26,7 +26,7 @@ export class ViewBox<T> extends DownstreamBox<T> {
 	forcedShouldRecalculate = false
 
 	constructor(dependencies: readonly BoxInternal<unknown>[], readonly calculateFn: (...args: unknown[]) => T) {
-		super(dependencies.length === 1 ? new SingleDependencyList(dependencies[0]!) : new StaticDependencyList(dependencies))
+		super(dependencies.length === 1 ? new SingleDependencyList(dependencies[0]!) : new MultipleDependencyList(dependencies))
 	}
 
 	toString(): string {

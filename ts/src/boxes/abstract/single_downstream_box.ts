@@ -1,4 +1,4 @@
-import {DownstreamBox, BoxInternal, SingleDependencyList, notificationStack, UpstreamSubscriber, UpdateMeta} from "src/internal"
+import {DownstreamBox, BoxInternal, SingleDependencyList, UpstreamSubscriber, UpdateMeta} from "src/internal"
 
 /** A downstream box that has only one upstream */
 export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
@@ -11,11 +11,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 	}
 
 	override calculate(): T {
-		return this.makeDownstreamValue(this.getUpstreamValue())
-	}
-
-	protected getUpstreamValue(): U {
-		return notificationStack.getWithoutNotifications(this.upstream)
+		return this.makeDownstreamValue(this.upstream.get())
 	}
 
 	protected override notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
@@ -25,7 +21,7 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 		super.notifyOnValueChange(value, changeSource, updateMeta)
 	}
 
-	protected override calculateAndResubscribe(isPreparingForFirstSub: boolean, changeSourceBox: BoxInternal<unknown> | undefined): void {
+	protected override calculateAndResubscribe(changeSourceBox: BoxInternal<unknown> | undefined): void {
 		if(!changeSourceBox){
 			// the only case when we don't have a source box and need to recalculate
 			// is when we detect that our value is out of date and needs to be updated
@@ -35,6 +31,6 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 			changeSourceBox = this.upstream
 		}
 
-		super.calculateAndResubscribe(isPreparingForFirstSub, changeSourceBox)
+		super.calculateAndResubscribe(changeSourceBox)
 	}
 }
