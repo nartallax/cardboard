@@ -15,10 +15,6 @@ export const calcBox = <T, D extends readonly RBox<unknown>[]>(dependencies: D, 
 
 export class CalcBox<T> extends DownstreamBox<T> {
 
-	// TODO: consider doing the same for MapBox
-	// this could potentially reduce confusion about untimely calls of mapboxes
-	forcedShouldRecalculate = false
-
 	constructor(dependencies: readonly BoxInternal<unknown>[], readonly calculateFn: (...args: unknown[]) => T) {
 		super(dependencies.length === 1 ? new SingleDependencyList(dependencies[0]!) : new MultipleDependencyList(dependencies))
 	}
@@ -27,18 +23,8 @@ export class CalcBox<T> extends DownstreamBox<T> {
 		return `${this.name ?? "CalcBox"}(${anythingToString(this.value)})`
 	}
 
-	calculate(): T {
-		this.forcedShouldRecalculate = false
+	override calculate(): T {
 		const values = this.dependencyList.getDependencyValues()
 		return this.calculateFn(...values)
 	}
-
-	protected override shouldRecalculate(): boolean {
-		if(this.forcedShouldRecalculate){
-			return true
-		}
-
-		return super.shouldRecalculate()
-	}
-
 }

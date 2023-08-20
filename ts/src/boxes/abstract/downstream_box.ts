@@ -25,18 +25,18 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	 * hovewer, it will also have bugs related to early-drops of things that should not be dropped,
 	 * in cases of array contexts (there's a test for that) and partial updates */
 	revision = 0
+	forcedShouldRecalculate = false
 
 	constructor(readonly dependencyList: DependencyList) {
 		super()
 	}
 
-	/** Calculate the value, calling the calculation function, set it to this box,
-	 * update dependency list and update subscriptions
-	 *
-	 * This value should be called as handler of internal subscription calls
+	/** Calculate the value, calling the calculation function, and set it to this box.
+	 * This method should be called as handler of internal subscription calls
 	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
-	protected calculateAndResubscribe(changeSourceBox: BoxInternal<unknown> | undefined): void {
+	protected calculateAndUpdate(changeSourceBox: BoxInternal<unknown> | undefined): void {
+		this.forcedShouldRecalculate = false
 		this.dependencyList.calculate(this, changeSourceBox)
 	}
 
@@ -46,10 +46,14 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	}
 
 	onUpstreamChange(upstream: BoxInternal<unknown>): void {
-		this.calculateAndResubscribe(upstream)
+		this.calculateAndUpdate(upstream)
 	}
 
 	protected shouldRecalculate(): boolean {
+		if(this.forcedShouldRecalculate){
+			return true
+		}
+
 		if(this.value === NoValue){
 			// we should never show absent value to outside world
 			// also NoValue = disposed, and being disposed means that next recalculation will throw
@@ -78,7 +82,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 
 	override get(): T {
 		if(this.shouldRecalculate()){
-			this.calculateAndResubscribe(undefined)
+			this.calculateAndUpdate(undefined)
 		}
 
 		return super.get()
@@ -89,7 +93,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		if(this.shouldRecalculate()){
 			// something may change while we wasn't subscribed to our dependencies
 			// that's why we should recalculate - so our value is actual
-			this.calculateAndResubscribe(undefined)
+			this.calculateAndUpdate(undefined)
 		}
 	}
 
