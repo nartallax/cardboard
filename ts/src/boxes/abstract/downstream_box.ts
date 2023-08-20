@@ -13,10 +13,10 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	 *
 	 * It is very tempting to use revision number to check if value is changed or not.
 	 * However, it can go wrong when value does not change until you explicitly check.
-	 * For example, consider viewBox that depends on another viewBox
-	 * When there is no subscribers, upstream viewBox will never change, regardless of its own upstreams
-	 * And if downstream viewbox only relying on upstream viewbox's revision number to check if it is was changed,
-	 * there will be false negatives, because in this case it is required to check dependencies of upstream viewbox more thorough.
+	 * For example, consider calcBox that depends on another calcBox
+	 * When there is no subscribers, upstream calcBox will never change, regardless of its own upstreams
+	 * And if downstream calcbox only relying on upstream calcbox's revision number to check if it is was changed,
+	 * there will be false negatives, because in this case it is required to check dependencies of upstream calcbox more thorough.
 	 *
 	 * And also value can change back and forth within one calculation, and revision will still be incremented;
 	 * that's why if you rely on revision to check if the value changed you'll get some false-positives.
@@ -65,8 +65,8 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 			return false
 		}
 
-		// this is a little bit bad, because if we have a big "network" of viewboxes noone subscribed to,
-		// then each .get() to viewbox will trigger a chain checks for each box in network
+		// this is a little bit bad, because if we have a big "network" of calcboxes noone subscribed to,
+		// then each .get() to calcbox will trigger a chain checks for each box in network
 		// which could happen on first render of an app UI, for example
 		// nothing really can be done with it without introducing "non-update" bugs
 		if(!this.dependencyList.didDependencyListChange()){

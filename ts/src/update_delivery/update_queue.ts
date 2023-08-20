@@ -1,4 +1,4 @@
-import {Subscription, UpdateReceiver, MapBox, Update, ViewBox} from "src/internal"
+import {Subscription, UpdateReceiver, MapBox, Update, CalcBox} from "src/internal"
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type NTuple<X, T> = X extends `${infer _}${infer B}` ? [T, ...NTuple<B, T>] : []
@@ -13,7 +13,7 @@ class UpdateQueue {
 		// this exact ordering of update distribution is dictated by the need to avoid showing inconsistent state to user callbacks
 		if(typeof(receiver) === "function"){
 			return this.subQueues[3] as SubQueue<T>
-		} else if(receiver instanceof ViewBox){
+		} else if(receiver instanceof CalcBox){
 			return this.subQueues[2] as SubQueue<T>
 		} else if(receiver instanceof MapBox){
 			return this.subQueues[1] as SubQueue<T>

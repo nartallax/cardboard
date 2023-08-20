@@ -1,6 +1,6 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {isConstBox, isRBox, isWBox, unbox, box, BoxInternal, constBox, viewBox} from "src/internal"
+import {isConstBox, isRBox, isWBox, unbox, box, BoxInternal, constBox, calcBox} from "src/internal"
 import {makeCallCounter} from "test/test_utils"
 
 describe("MapBox", () => {
@@ -9,35 +9,35 @@ describe("MapBox", () => {
 		expect(isRBox(box(5).map(x => x + 1, x => x - 1))).to.be(true)
 		// this is not technically MapBox, but belongs here anyway
 		expect(isRBox(box(5).map(x => x + 1))).to.be(true)
-		expect(isRBox(viewBox([], () => 5).map(x => x + 1))).to.be(true)
+		expect(isRBox(calcBox([], () => 5).map(x => x + 1))).to.be(true)
 		expect(isRBox(constBox(5).map(x => x + 1))).to.be(true)
 	})
 
 	test("isWBox", () => {
 		expect(isWBox(box(5).map(x => x + 1, x => x - 1))).to.be(true)
 		expect(isWBox(box(5).map(x => x + 1))).to.be(false)
-		expect(isWBox(viewBox([], () => 5).map(x => x + 1))).to.be(false)
+		expect(isWBox(calcBox([], () => 5).map(x => x + 1))).to.be(false)
 		expect(isWBox(constBox(5).map(x => x + 1))).to.be(false)
 	})
 
 	test("isConstBox", () => {
 		expect(isConstBox(box(5).map(x => x + 1, x => x - 1))).to.be(false)
 		expect(isConstBox(box(5).map(x => x + 1))).to.be(false)
-		expect(isConstBox(viewBox([], () => 5).map(x => x + 1))).to.be(false)
+		expect(isConstBox(calcBox([], () => 5).map(x => x + 1))).to.be(false)
 		expect(isConstBox(constBox(5).map(x => x + 1))).to.be(true)
 	})
 
 	test("unbox", () => {
 		expect(unbox(box(5).map(x => x + 1, x => x - 1))).to.be(6)
 		expect(unbox(box(5).map(x => x + 1))).to.be(6)
-		expect(unbox(viewBox([], () => 5).map(x => x + 1))).to.be(6)
+		expect(unbox(calcBox([], () => 5).map(x => x + 1))).to.be(6)
 		expect(unbox(constBox(5).map(x => x + 1))).to.be(6)
 	})
 
 	test("toString", () => {
 		const a = box(5).map(x => x + 1, x => x - 1)
 		const b = box(5).map(x => x + 1)
-		const c = viewBox([], () => 5).map(x => x + 1)
+		const c = calcBox([], () => 5).map(x => x + 1)
 		const d = constBox(5).map(x => x + 1)
 		expect(a + "").to.be("MapBox(Symbol(AbsentBoxValue))")
 		expect(b + "").to.be("MapBox(Symbol(AbsentBoxValue))")

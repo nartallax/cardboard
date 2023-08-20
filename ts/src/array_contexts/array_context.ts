@@ -16,7 +16,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 
 	tryUpdate(): void {
 		if(this.childSubCount > 0){
-			// the same logic as in viewbox - if we are being subscribed to, then we are subscribed to upstream
+			// the same logic as in calcbox - if we are being subscribed to, then we are subscribed to upstream
 			// that means our value is up-to-date
 			return
 		}

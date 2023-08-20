@@ -1,10 +1,5 @@
 import {anythingToString, MultipleDependencyList, RBox, BoxInternal, DownstreamBox, SingleDependencyList, Unboxed} from "src/internal"
 
-// type DependencyBoxes<D extends readonly unknown[]> = D extends [infer X, ...infer Rest]
-// 	? readonly [RBox<X>, ...DependencyBoxes<Rest>]
-// 	: D extends []
-// 		? []
-// 		: readonly RBox<D[number]>[]
 type DependencyBoxValues<D> = D extends [infer X, ...infer Rest]
 	? readonly [Unboxed<X>, ...DependencyBoxValues<Rest>]
 	: D extends []
@@ -13,13 +8,12 @@ type DependencyBoxValues<D> = D extends [infer X, ...infer Rest]
 			? readonly Unboxed<D[number]>[]
 			: never
 
-// TODO: think of a better name? it's not a view, it's something different
-/** Make new view box, readonly box that calculates its value based on passed function */
-export const viewBox = <T, D extends readonly RBox<unknown>[]>(dependencies: D, calcFunction: (...dependencyValues: DependencyBoxValues<D>) => T): RBox<T> => {
-	return new ViewBox(dependencies as unknown as readonly BoxInternal<unknown>[], calcFunction as unknown as (...args: unknown[]) => T)
+/** Make new calc box, readonly box that calculates its value based on passed function */
+export const calcBox = <T, D extends readonly RBox<unknown>[]>(dependencies: D, calcFunction: (...dependencyValues: DependencyBoxValues<D>) => T): RBox<T> => {
+	return new CalcBox(dependencies as unknown as readonly BoxInternal<unknown>[], calcFunction as unknown as (...args: unknown[]) => T)
 }
 
-export class ViewBox<T> extends DownstreamBox<T> {
+export class CalcBox<T> extends DownstreamBox<T> {
 
 	// TODO: consider doing the same for MapBox
 	// this could potentially reduce confusion about untimely calls of mapboxes
@@ -30,7 +24,7 @@ export class ViewBox<T> extends DownstreamBox<T> {
 	}
 
 	toString(): string {
-		return `${this.name ?? "ViewBox"}(${anythingToString(this.value)})`
+		return `${this.name ?? "CalcBox"}(${anythingToString(this.value)})`
 	}
 
 	calculate(): T {

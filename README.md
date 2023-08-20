@@ -98,17 +98,17 @@ So if, for example, your component won't ever need to push updates to the value 
 
 By the way, internally all boxes in this library have all the methods `WBox` have, but calling them on boxes that are not `WBox` (i.e. `isWBox(x) === false`) could result in various bugs. Library expects you to rely on type-checking and not invoke methods that TypeScript won't let you invoke.  
 
-## RBox views
+## calcBox
 
-The example above is not the only way to get the `RBox`. You can, for example, create a `viewBox`:
+The example above is not the only way to get the `RBox`. You can, for example, create a `calcBox`:
 
 ```typescript
-import {box, viewBox} from "@nartallax/cardboard"
+import {box, calcBox} from "@nartallax/cardboard"
 
 let a = box(5)
 let b = box(10)
 // first argument is list of dependent boxes; their values are passed to the callback
-let sumOfAB = viewBox([a, b], (a, b) => a + b)
+let sumOfAB = calcBox([a, b], (a, b) => a + b)
 
 console.log(sumOfAB.get()) // 15
 
@@ -116,12 +116,12 @@ a.set(4)
 console.log(sumOfAB.get()) // 14
 ```
 
-In this example we create a `viewBox`; it's an `RBox` that depends on other box values. Each time any box it depends on updates - the value of `viewBox` is also updated (and subscribers are called, of course).  
+In this example we create a `calcBox`; it's an `RBox` that depends on other box values. Each time any box it depends on updates - the value of `calcBox` is also updated (and subscribers are called, of course).  
 
 ## .map() method
 
 Now you should be ready to understand how `.map()` method of the boxes works.  
-`.map()` with one argument is present on both `RBox` and `WBox`; it creates a `viewBox` which only depends on that one box you created it off:  
+`.map()` with one argument is present on both `RBox` and `WBox`; it creates a `calcBox` which only depends on that one box you created it off:  
 
 ```typescript
 import {box} from "@nartallax/cardboard"
@@ -132,7 +132,7 @@ let bb = box.map(value => value + 5)
 console.log(bb.get()) // 15
 
 // above code is equivalent of
-let bb = viewBox([b], b => b + 5)
+let bb = calcBox([b], b => b + 5)
 ```
 
 `.map()` with two arguments is only present on `WBox`; it creates another `WBox` which synchronises its value with base box:
@@ -230,7 +230,7 @@ const doubleArr = singleArr.mapArray(
 ## constBox
 
 `constBox` is a type of `RBox` that never changes its value.  
-You can think of it as a `viewBox([], () => someConstant)`, but more optimized.  
+You can think of it as a `calcBox([], () => someConstant)`, but more optimized.  
 This box exists because it's sometimes convenient to only write code in assumption that you will receive box and not a plain value.  
 `constBoxWrap` is a way to use this convenience - if its argument is a `RBox`, then it will return the box; otherwise it will create a const box with argument as value.  
 
@@ -240,7 +240,7 @@ import {constBox, constBoxWrap} from "@nartallax/cardboard"
 const b = constBox(5)
 console.log(b.get()) // 5
 
-const bb = constBoxWrap(viewBox([], () => 12345))
+const bb = constBoxWrap(calcBox([], () => 12345))
 console.log(bb.get()) // 12345
 
 ```
@@ -294,10 +294,10 @@ In example above we create 100 boxes, but can actually use only last one. Other 
 
 There are some ways of using this library that will result in worse performance or other weird bugs.
 
-1. Avoid putting boxes inside boxes. Boxes exist to manipulate data, and putting something as complex as another box won't end well; sometimes it means that `viewBox` will get attached to wrong box, which will trigger recalculations when they are not required, which is bad performance. Also you generally should avoid putting mutable data and class instances inside boxes, but sometimes it can be fine if you know what you're doing and comfortable enough with the library.  
+1. Avoid putting boxes inside boxes. Boxes exist to manipulate data, and putting something as complex as another box won't end well; sometimes it means that `calcBox` will get attached to wrong box, which will trigger recalculations when they are not required, which is bad performance. Also you generally should avoid putting mutable data and class instances inside boxes, but sometimes it can be fine if you know what you're doing and comfortable enough with the library.  
 2. Avoid getting value of other boxes from callback of `.map()` method. Those other boxes won't be included in the dependency list and won't trigger recalculation. Also sometimes this could mean getting outdated value from that other box.  
-3. Avoid setting value of any box from inside callback of `.map()` or `viewBox()`. This means that a box will be updated out-of-order during update, and this will trigger double-update, that is, update within update; this will make library drop partial updates, and this will lead to decreased performance. Other than that it will probably be fine; it's okay to do that on a small scale, if you're trying to organize some smart calculation system consisting of several variables.  
-4. Avoid having big chains of downstream boxes (`viewBox()`, `.map()`-boxes, `.prop()`-boxes, array element boxes) without subscribers. This will lead to reduced performance. When a downstream box without subscribers is accessed, it needs to check if new value needs to be calculated; to do that, it accesses its upstream boxes; if those boxes don't have subscribers either - they access their upstreams, and so on; (when a box is subscribed to, it can safely assume that its value is up-to-date on access, because it receives updates and can update its own value, so it won't try to access its upstreams). Only one box at the end of the chain needs to be subscribed to remedy this problem, because it will lead to other boxes also subscribing to their upstreams.
+3. Avoid setting value of any box from inside callback of `.map()` or `calcBox()`. This means that a box will be updated out-of-order during update, and this will trigger double-update, that is, update within update; this will make library drop partial updates, and this will lead to decreased performance. Other than that it will probably be fine; it's okay to do that on a small scale, if you're trying to organize some smart calculation system consisting of several variables.  
+4. Avoid having big chains of downstream boxes (`calcBox()`, `.map()`-boxes, `.prop()`-boxes, array element boxes) without subscribers. This will lead to reduced performance. When a downstream box without subscribers is accessed, it needs to check if new value needs to be calculated; to do that, it accesses its upstream boxes; if those boxes don't have subscribers either - they access their upstreams, and so on; (when a box is subscribed to, it can safely assume that its value is up-to-date on access, because it receives updates and can update its own value, so it won't try to access its upstreams). Only one box at the end of the chain needs to be subscribed to remedy this problem, because it will lead to other boxes also subscribing to their upstreams.
 
 ## Naming
 

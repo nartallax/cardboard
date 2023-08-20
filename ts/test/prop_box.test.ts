@@ -1,37 +1,37 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {BoxInternal, WBox, box, constBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/internal"
+import {BoxInternal, WBox, box, constBox, isConstBox, isRBox, isWBox, unbox, calcBox} from "src/internal"
 import {expectExecutionTimeLessThan, makeCallCounter} from "test/test_utils"
 
 describe("PropBox", () => {
 
 	test("isRBox", () => {
 		expect(isRBox(box({a: 5}).prop("a"))).to.be(true)
-		expect(isRBox(viewBox([], () => ({a: 5})).prop("a"))).to.be(true)
+		expect(isRBox(calcBox([], () => ({a: 5})).prop("a"))).to.be(true)
 		expect(isRBox(constBox({a: 5}).prop("a"))).to.be(true)
 	})
 
 	test("isWBox", () => {
 		expect(isWBox(box({a: 5}).prop("a"))).to.be(true)
-		expect(isWBox(viewBox([], () => ({a: 5})).prop("a"))).to.be(false)
+		expect(isWBox(calcBox([], () => ({a: 5})).prop("a"))).to.be(false)
 		expect(isWBox(constBox({a: 5}).prop("a"))).to.be(false)
 	})
 
 	test("isConstBox", () => {
 		expect(isConstBox(box({a: 5}).prop("a"))).to.be(false)
-		expect(isConstBox(viewBox([], () => ({a: 5})).prop("a"))).to.be(false)
+		expect(isConstBox(calcBox([], () => ({a: 5})).prop("a"))).to.be(false)
 		expect(isConstBox(constBox({a: 5}).prop("a"))).to.be(true)
 	})
 
 	test("unbox", () => {
 		expect(unbox(box({a: 5}).prop("a"))).to.be(5)
-		expect(unbox(viewBox([], () => ({a: 5})).prop("a"))).to.be(5)
+		expect(unbox(calcBox([], () => ({a: 5})).prop("a"))).to.be(5)
 		expect(unbox(constBox({a: 5}).prop("a"))).to.be(5)
 	})
 
 	test("toString", () => {
 		const a = box({a: 5}).prop("a")
-		const b = viewBox([], () => ({a: 5})).prop("a")
+		const b = calcBox([], () => ({a: 5})).prop("a")
 		const c = constBox({a: 5}).prop("a")
 		expect(a + "").to.be("PropBox(Symbol(AbsentBoxValue))")
 		expect(b + "").to.be("PropBox(Symbol(AbsentBoxValue))")
@@ -297,7 +297,7 @@ describe("PropBox", () => {
 		expect(child.get().c).to.be.equal(20)
 	})
 
-	test("view only subscribes to prop box, not to the parent box", () => {
+	test("calc only subscribes to prop box, not to the parent box", () => {
 		const parent = box({a: 5})
 		const child = parent.prop("a")
 		const parentCounter = makeCallCounter()
@@ -305,11 +305,11 @@ describe("PropBox", () => {
 		const childCounter = makeCallCounter()
 		child.subscribe(childCounter)
 		let calcCount = 0
-		const view = viewBox([child], child => {
+		const calc = calcBox([child], child => {
 			calcCount++
 			return child * 2
 		})
-		view.subscribe(() => {
+		calc.subscribe(() => {
 			// nothing
 		})
 
@@ -377,18 +377,18 @@ describe("PropBox", () => {
 		expect(p.get().a).to.be.equal(11)
 	})
 
-	test("prop of viewbox", () => {
+	test("prop of calcbox", () => {
 		const parent = box({a: 5}) as BoxInternal<{a: number}>
-		const view = viewBox([parent], x => ({...x, b: x.a * 2})) as BoxInternal<{a: number, b: number}>
-		const propA1 = view.prop("a") as BoxInternal<number>
-		const propA2 = view.prop("a") as BoxInternal<number>
-		const propB = view.prop("b") as BoxInternal<number>
+		const calc = calcBox([parent], x => ({...x, b: x.a * 2})) as BoxInternal<{a: number, b: number}>
+		const propA1 = calc.prop("a") as BoxInternal<number>
+		const propA2 = calc.prop("a") as BoxInternal<number>
+		const propB = calc.prop("b") as BoxInternal<number>
 
 		expect(propA1.get()).to.be.equal(5)
 		expect(propA2.get()).to.be.equal(5)
 		expect(propB.get()).to.be.equal(10)
 		expect(parent.haveSubscribers()).to.be.equal(false)
-		expect(view.haveSubscribers()).to.be.equal(false)
+		expect(calc.haveSubscribers()).to.be.equal(false)
 		expect(propA1.haveSubscribers()).to.be.equal(false)
 		expect(propA2.haveSubscribers()).to.be.equal(false)
 		expect(propB.haveSubscribers()).to.be.equal(false)
@@ -399,7 +399,7 @@ describe("PropBox", () => {
 		expect(propA2.get()).to.be.equal(6)
 		expect(propB.get()).to.be.equal(12)
 		expect(parent.haveSubscribers()).to.be.equal(false)
-		expect(view.haveSubscribers()).to.be.equal(false)
+		expect(calc.haveSubscribers()).to.be.equal(false)
 		expect(propA1.haveSubscribers()).to.be.equal(false)
 		expect(propA2.haveSubscribers()).to.be.equal(false)
 		expect(propB.haveSubscribers()).to.be.equal(false)
@@ -407,7 +407,7 @@ describe("PropBox", () => {
 		const counter = makeCallCounter()
 		propA1.subscribe(counter)
 		expect(parent.haveSubscribers()).to.be.equal(true)
-		expect(view.haveSubscribers()).to.be.equal(true)
+		expect(calc.haveSubscribers()).to.be.equal(true)
 		expect(propA1.haveSubscribers()).to.be.equal(true)
 		expect(propA2.haveSubscribers()).to.be.equal(false)
 		expect(propB.haveSubscribers()).to.be.equal(false)
@@ -425,7 +425,7 @@ describe("PropBox", () => {
 		expect(propA1.get()).to.be.equal(9)
 		expect(counter.callCount).to.be.equal(2)
 		expect(parent.haveSubscribers()).to.be.equal(false)
-		expect(view.haveSubscribers()).to.be.equal(false)
+		expect(calc.haveSubscribers()).to.be.equal(false)
 		expect(propA1.haveSubscribers()).to.be.equal(false)
 		expect(propA2.haveSubscribers()).to.be.equal(false)
 		expect(propB.haveSubscribers()).to.be.equal(false)

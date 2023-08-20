@@ -1,14 +1,14 @@
 import {describe, test} from "@nartallax/clamsensor"
-import {BoxInternal, box, viewBox, withBoxUpdatesPaused} from "src/internal"
+import {BoxInternal, box, calcBox, withBoxUpdatesPaused} from "src/internal"
 import {makeCallCounter} from "test/test_utils"
 import expect from "expect.js"
 
 describe("Update distribution", () => {
 
-	test("viewbox gets updates before external subscribers", () => {
+	test("calcbox gets updates before external subscribers", () => {
 		const a = box(5)
-		const b1 = viewBox([a], a => a + 1)
-		const b2 = viewBox([a], a => a + 2)
+		const b1 = calcBox([a], a => a + 1)
+		const b2 = calcBox([a], a => a + 2)
 
 		const check = () => {
 			expect(b1.get()).to.be(a.get() + 1)
@@ -21,7 +21,7 @@ describe("Update distribution", () => {
 		a.set(6)
 	})
 
-	test("mapbox gets updates before viewbox", () => {
+	test("mapbox gets updates before calcbox", () => {
 		const a = box(5)
 		const b = a.map(x => x + 1)
 
@@ -30,8 +30,8 @@ describe("Update distribution", () => {
 			return b + 1
 		}
 
-		const c1 = viewBox([b, a], calc)
-		const c2 = viewBox([b, a], calc)
+		const c1 = calcBox([b, a], calc)
+		const c2 = calcBox([b, a], calc)
 
 		c1.subscribe(makeCallCounter())
 		b.subscribe(makeCallCounter())
@@ -76,14 +76,14 @@ describe("Update distribution", () => {
 		a.set([4, 5, 6])
 	})
 
-	test("viewbox depending on viewbox and same parent box gets update in proper order", () => {
+	test("calcbox depending on calcbox and same parent box gets update in proper order", () => {
 		const a = box(5)
-		const b = viewBox([a], a => a + 1)
-		const c1 = viewBox([a, b], (a, b) => {
+		const b = calcBox([a], a => a + 1)
+		const c1 = calcBox([a, b], (a, b) => {
 			expect(b).to.be(a + 1)
 			return b + a
 		})
-		const c2 = viewBox([a, b], (a, b) => {
+		const c2 = calcBox([a, b], (a, b) => {
 			expect(b).to.be(a + 1)
 			return b * a
 		})

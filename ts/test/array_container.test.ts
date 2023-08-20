@@ -1,5 +1,5 @@
 import {describe, test} from "@nartallax/clamsensor"
-import {box, viewBox} from "src/internal"
+import {box, calcBox} from "src/internal"
 import expect from "expect.js"
 import {expectExecutionTimeLessThan, makeCallCounter} from "test/test_utils"
 
@@ -48,7 +48,7 @@ describe("Array container", () => {
 
 	test("maparray box should throw if its value is requested while the value is being recalculated", () => {
 		try {
-			const urls = viewBox([], () => ["1", "2", "3"])
+			const urls = calcBox([], () => ["1", "2", "3"])
 			let maxImageHeight = 0
 			const calcMaxHeight = () => {
 				const imgs = images.get()

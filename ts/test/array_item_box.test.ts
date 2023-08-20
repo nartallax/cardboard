@@ -1,30 +1,30 @@
 import {describe, test} from "@nartallax/clamsensor"
-import {BoxInternal, box, constBox, isArrayItemWBox, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/internal"
+import {BoxInternal, box, constBox, isArrayItemWBox, isConstBox, isRBox, isWBox, unbox, calcBox} from "src/internal"
 import expect from "expect.js"
 import {makeCallCounter} from "test/test_utils"
 
 describe("ArrayItemBox", () => {
 	test("isRBox", () => {
 		expect(isRBox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
-		expect(isRBox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
+		expect(isRBox(calcBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
 		expect(isRBox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
 	})
 
 	test("isWBox", () => {
 		expect(isWBox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
-		expect(isWBox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
+		expect(isWBox(calcBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 		expect(isWBox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 	})
 
 	test("isConstBox", () => {
 		expect(isConstBox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
-		expect(isConstBox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
+		expect(isConstBox(calcBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 		expect(isConstBox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
 	})
 
 	test("isArrayItemWBox", () => {
 		expect(isArrayItemWBox(box(1))).to.be(false)
-		expect(isArrayItemWBox(viewBox([], () => 1))).to.be(false)
+		expect(isArrayItemWBox(calcBox([], () => 1))).to.be(false)
 		expect(isArrayItemWBox(constBox(1))).to.be(false)
 		expect(isArrayItemWBox(box({a: 1}).prop("a"))).to.be(false)
 		expect(isArrayItemWBox(box({a: 1}).map(x => x.a))).to.be(false)
@@ -33,13 +33,13 @@ describe("ArrayItemBox", () => {
 
 	test("unbox", () => {
 		expect(unbox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
-		expect(unbox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
+		expect(unbox(calcBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
 		expect(unbox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
 	})
 
 	test("toString", () => {
 		expect(box([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
-		expect(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
+		expect(calcBox([], () => [1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
 		expect(constBox([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ConstBox(1)")
 	})
 
@@ -415,109 +415,109 @@ describe("ArrayItemBox", () => {
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 	})
 
-	test("arraywrap and viewbox chain no sub", () => {
+	test("arraywrap and calcbox chain no sub", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view1 = viewBox([box1], b1 => b1.name + ", nya")
+		const calc1 = calcBox([box1], b1 => b1.name + ", nya")
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(view1.get()).to.be.equal("1, nya")
+		expect(calc1.get()).to.be.equal("1, nya")
 		expect(parent.get()[0]!.name).to.be.equal("1")
 
 		parent.set([{id: 1, name: "11"}, parent.get()[1]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(view1.get()).to.be.equal("11, nya")
+		expect(calc1.get()).to.be.equal("11, nya")
 		expect(parent.get()[0]!.name).to.be.equal("11")
 
 		parent.set([parent.get()[1]!, {id: 1, name: "11"}])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(view1.get()).to.be.equal("11, nya")
+		expect(calc1.get()).to.be.equal("11, nya")
 		expect(parent.get()[1]!.name).to.be.equal("11")
 
 		parent.set([parent.get()[0]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(() => view1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => calc1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 	})
 
-	test("arraywrap and viewbox chain with sub", () => {
+	test("arraywrap and calcbox chain with sub", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view1 = viewBox([box1], b1 => b1.name + ", nya")
+		const calc1 = calcBox([box1], b1 => b1.name + ", nya")
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 		const counter = makeCallCounter()
-		view1.subscribe(counter)
+		calc1.subscribe(counter)
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(view1.get()).to.be.equal("1, nya")
+		expect(calc1.get()).to.be.equal("1, nya")
 		expect(parent.get()[0]!.name).to.be.equal("1")
 		expect(counter.callCount).to.be.equal(0)
 
 		parent.set([{id: 1, name: "11"}, parent.get()[1]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(view1.get()).to.be.equal("11, nya")
+		expect(calc1.get()).to.be.equal("11, nya")
 		expect(parent.get()[0]!.name).to.be.equal("11")
-		expect(counter.lastCallValue).to.be.equal(view1.get())
+		expect(counter.lastCallValue).to.be.equal(calc1.get())
 		expect(counter.callCount).to.be.equal(1)
 
 		parent.set([parent.get()[1]!, {id: 1, name: "11"}])
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(view1.get()).to.be.equal("11, nya")
+		expect(calc1.get()).to.be.equal("11, nya")
 		expect(parent.get()[1]!.name).to.be.equal("11")
-		expect(counter.lastCallValue).to.be.equal(view1.get())
+		expect(counter.lastCallValue).to.be.equal(calc1.get())
 		expect(counter.callCount).to.be.equal(1)
 
-		view1.unsubscribe(counter)
+		calc1.unsubscribe(counter)
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(view1.get()).to.be.equal("11, nya")
+		expect(calc1.get()).to.be.equal("11, nya")
 		expect(counter.callCount).to.be.equal(1)
 	})
 
-	test("arraywrap and viewbox chain with sub different throw", () => {
+	test("arraywrap and calcbox chain with sub different throw", () => {
 		const parent = box([{id: 1, name: "1"}, {id: 2, name: "2"}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view1 = viewBox([box1], b1 => b1.name + ", nya")
+		const calc1 = calcBox([box1], b1 => b1.name + ", nya")
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 		const counter = makeCallCounter()
-		view1.subscribe(counter)
+		calc1.subscribe(counter)
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(view1.get()).to.be.equal("1, nya")
+		expect(calc1.get()).to.be.equal("1, nya")
 		expect(parent.get()[0]!.name).to.be.equal("1")
 		expect(counter.callCount).to.be.equal(0)
 
 		parent.set([{id: 1, name: "11"}, parent.get()[1]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(view1.get()).to.be.equal("11, nya")
+		expect(calc1.get()).to.be.equal("11, nya")
 		expect(parent.get()[0]!.name).to.be.equal("11")
-		expect(counter.lastCallValue).to.be.equal(view1.get())
+		expect(counter.lastCallValue).to.be.equal(calc1.get())
 		expect(counter.callCount).to.be.equal(1)
 
 		parent.set([parent.get()[1]!, {id: 1, name: "11"}])
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(view1.get()).to.be.equal("11, nya")
+		expect(calc1.get()).to.be.equal("11, nya")
 		expect(parent.get()[1]!.name).to.be.equal("11")
-		expect(counter.lastCallValue).to.be.equal(view1.get())
+		expect(counter.lastCallValue).to.be.equal(calc1.get())
 		expect(counter.callCount).to.be.equal(1)
 
 		parent.set([parent.get()[0]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(() => view1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => calc1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 		expect(counter.callCount).to.be.equal(1)
 	})
 
-	test("viewbox and arraywrap chain no sub", () => {
+	test("calcbox and arraywrap chain no sub", () => {
 		const parent = box({a: [{id: 1, name: "1"}]})
 		const parentInternal = parent as unknown as BoxInternal<{a: {id: number, name: string}[]}>
-		const view = viewBox([parent], parent => parent.a)
-		const context = view.getArrayContext(el => el.id)
+		const calc = calcBox([parent], parent => parent.a)
+		const context = calc.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
@@ -539,11 +539,11 @@ describe("ArrayItemBox", () => {
 		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 	})
 
-	test("viewbox and arraywrap chain with sub", () => {
+	test("calcbox and arraywrap chain with sub", () => {
 		const parent = box({a: [{id: 1, name: "1"}]})
 		const parentInternal = parent as unknown as BoxInternal<{a: {id: number, name: string}[]}>
-		const view = viewBox([parent], parent => parent.a)
-		const context = view.getArrayContext(el => el.id)
+		const calc = calcBox([parent], parent => parent.a)
+		const context = calc.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
@@ -576,13 +576,13 @@ describe("ArrayItemBox", () => {
 		expect(counter.callCount).to.be.equal(2)
 	})
 
-	test("arraywrap of viewbox of arraywrap no sub", () => {
+	test("arraywrap of calcbox of arraywrap no sub", () => {
 		const parent = box([{a: [{id: 7, name: "1"}], id: 5}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
-		const view = viewBox([firstContextBox], x => x.a)
-		const secondContext = view.getArrayContext(el => el.id)
+		const calc = calcBox([firstContextBox], x => x.a)
+		const secondContext = calc.getArrayContext(el => el.id)
 		const box1 = secondContext.getBoxes()[0]!
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
@@ -604,13 +604,13 @@ describe("ArrayItemBox", () => {
 		expect(() => box1.get()).to.throwError(/This array item box \(key = 5\) is no longer attached/i)
 	})
 
-	test("arraywrap of viewbox of arraywrap with sub", () => {
+	test("arraywrap of calcbox of arraywrap with sub", () => {
 		const parent = box([{a: [{id: 7, name: "1"}], id: 5}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
-		const view = viewBox([firstContextBox], x => x.a)
-		const secondContext = view.getArrayContext(el => el.id)
+		const calc = calcBox([firstContextBox], x => x.a)
+		const secondContext = calc.getArrayContext(el => el.id)
 		const box1 = secondContext.getBoxes()[0]!
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
@@ -641,13 +641,13 @@ describe("ArrayItemBox", () => {
 		expect(() => box1.get()).to.throwError(/This array item box \(key = 5\) is no longer attached/i)
 	})
 
-	test("arraywrap of viewbox of arraywrap with sub no throw", () => {
+	test("arraywrap of calcbox of arraywrap with sub no throw", () => {
 		const parent = box([{a: [{id: 7, name: "1"}], id: 5}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
-		const view = viewBox([firstContextBox], x => x.a)
-		const secondContext = view.getArrayContext(el => el.id)
+		const calc = calcBox([firstContextBox], x => x.a)
+		const secondContext = calc.getArrayContext(el => el.id)
 		const box1 = secondContext.getBoxes()[0]!
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
@@ -686,78 +686,78 @@ describe("ArrayItemBox", () => {
 		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
 	})
 
-	test("view and arraywrap item", () => {
+	test("calc and arraywrap item", () => {
 		const parent = box([{id: 1, name: "1"}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
-		const view = viewBox([parent], x => x[0]!)
+		const calc = calcBox([parent], x => x[0]!)
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 
-		const viewCounter = makeCallCounter()
-		view.subscribe(viewCounter)
+		const calcCounter = makeCallCounter()
+		calc.subscribe(calcCounter)
 
 		const boxCounter = makeCallCounter()
 		box1.subscribe(boxCounter)
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(box1.get()).to.be.equal(view.get())
+		expect(box1.get()).to.be.equal(calc.get())
 		expect(box1.get().name).to.be.equal("1")
 
 		parent.set([{id: 1, name: "11"}])
-		expect(boxCounter.lastCallValue).to.be.equal(view.get())
-		expect(viewCounter.lastCallValue).to.be.equal(box1.get())
-		expect(box1.get()).to.be.equal(view.get())
+		expect(boxCounter.lastCallValue).to.be.equal(calc.get())
+		expect(calcCounter.lastCallValue).to.be.equal(box1.get())
+		expect(box1.get()).to.be.equal(calc.get())
 		expect(box1.get().name).to.be.equal("11")
 		expect(boxCounter.callCount).to.be.equal(1)
-		expect(viewCounter.callCount).to.be.equal(1)
+		expect(calcCounter.callCount).to.be.equal(1)
 
 		box1.set({id: 1, name: "111"})
-		expect(boxCounter.lastCallValue).to.be.equal(view.get())
-		expect(viewCounter.lastCallValue).to.be.equal(box1.get())
-		expect(box1.get()).to.be.equal(view.get())
+		expect(boxCounter.lastCallValue).to.be.equal(calc.get())
+		expect(calcCounter.lastCallValue).to.be.equal(box1.get())
+		expect(box1.get()).to.be.equal(calc.get())
 		expect(box1.get().name).to.be.equal("111")
 		expect(boxCounter.callCount).to.be.equal(2)
-		expect(viewCounter.callCount).to.be.equal(2)
+		expect(calcCounter.callCount).to.be.equal(2)
 
-		view.unsubscribe(viewCounter)
+		calc.unsubscribe(calcCounter)
 		box1.unsubscribe(boxCounter)
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 	})
 
-	test("arraywrap item and view", () => {
+	test("arraywrap item and calc", () => {
 		const parent = box([{id: 1, name: "1"}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view = viewBox([parent], x => x[0]!)
+		const calc = calcBox([parent], x => x[0]!)
 
-		const viewCounter = makeCallCounter()
-		view.subscribe(viewCounter)
+		const calcCounter = makeCallCounter()
+		calc.subscribe(calcCounter)
 
 		const boxCounter = makeCallCounter()
 		box1.subscribe(boxCounter)
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
-		expect(box1.get()).to.be.equal(view.get())
+		expect(box1.get()).to.be.equal(calc.get())
 		expect(box1.get().name).to.be.equal("1")
 
 		parent.set([{id: 1, name: "11"}])
-		expect(boxCounter.lastCallValue).to.be.equal(view.get())
-		expect(viewCounter.lastCallValue).to.be.equal(box1.get())
-		expect(box1.get()).to.be.equal(view.get())
+		expect(boxCounter.lastCallValue).to.be.equal(calc.get())
+		expect(calcCounter.lastCallValue).to.be.equal(box1.get())
+		expect(box1.get()).to.be.equal(calc.get())
 		expect(box1.get().name).to.be.equal("11")
 		expect(boxCounter.callCount).to.be.equal(1)
-		expect(viewCounter.callCount).to.be.equal(1)
+		expect(calcCounter.callCount).to.be.equal(1)
 
 		box1.set({id: 1, name: "111"})
-		expect(boxCounter.lastCallValue).to.be.equal(view.get())
-		expect(viewCounter.lastCallValue).to.be.equal(box1.get())
-		expect(box1.get()).to.be.equal(view.get())
+		expect(boxCounter.lastCallValue).to.be.equal(calc.get())
+		expect(calcCounter.lastCallValue).to.be.equal(box1.get())
+		expect(box1.get()).to.be.equal(calc.get())
 		expect(box1.get().name).to.be.equal("111")
 		expect(boxCounter.callCount).to.be.equal(2)
-		expect(viewCounter.callCount).to.be.equal(2)
+		expect(calcCounter.callCount).to.be.equal(2)
 
-		view.unsubscribe(viewCounter)
+		calc.unsubscribe(calcCounter)
 		box1.unsubscribe(boxCounter)
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 	})

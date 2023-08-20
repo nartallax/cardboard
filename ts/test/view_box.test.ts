@@ -1,37 +1,37 @@
 import {describe, test} from "@nartallax/clamsensor"
 import expect from "expect.js"
-import {box, isConstBox, isRBox, isWBox, unbox, viewBox} from "src/cardboard"
+import {box, isConstBox, isRBox, isWBox, unbox, calcBox} from "src/cardboard"
 import {BoxInternal} from "src/types"
 import {makeCallCounter} from "test/test_utils"
 
-describe("ViewBox", () => {
+describe("CalcBox", () => {
 
 	test("isRBox", () => {
-		expect(isRBox(viewBox([], () => 5))).to.be(true)
+		expect(isRBox(calcBox([], () => 5))).to.be(true)
 	})
 
 	test("isWBox", () => {
-		expect(isWBox(viewBox([], () => 5))).to.be(false)
+		expect(isWBox(calcBox([], () => 5))).to.be(false)
 	})
 
 	test("isConstBox", () => {
-		expect(isConstBox(viewBox([], () => 5))).to.be(false)
+		expect(isConstBox(calcBox([], () => 5))).to.be(false)
 	})
 
 	test("unbox", () => {
-		expect(unbox(viewBox([], () => 5))).to.be(5)
+		expect(unbox(calcBox([], () => 5))).to.be(5)
 	})
 
 	test("toString", () => {
-		const b = viewBox([], () => 5)
-		expect(b + "").to.be("ViewBox(Symbol(AbsentBoxValue))")
+		const b = calcBox([], () => 5)
+		expect(b + "").to.be("CalcBox(Symbol(AbsentBoxValue))")
 		b.get()
-		expect(b + "").to.be("ViewBox(5)")
+		expect(b + "").to.be("CalcBox(5)")
 	})
 
 	test("calls subscriber when dependency updates and value updates", () => {
 		const a = box(0)
-		const b = viewBox([a], a => Math.floor(a / 2))
+		const b = calcBox([a], a => Math.floor(a / 2))
 
 		const counter = makeCallCounter()
 
@@ -56,29 +56,29 @@ describe("ViewBox", () => {
 	test("calculation logic when no subscribers", () => {
 		const b = box(5)
 		let calcCount = 0
-		const view = viewBox([b], b => {
+		const calc = calcBox([b], b => {
 			calcCount++
 			return b * 2
 		})
 
 		expect(calcCount).to.be.equal(0)
-		expect(view.get()).to.be.equal(10)
+		expect(calc.get()).to.be.equal(10)
 		expect(calcCount).to.be.equal(1)
-		expect(view.get()).to.be.equal(10)
+		expect(calc.get()).to.be.equal(10)
 		expect(calcCount).to.be.equal(1)
 
 		b.set(6)
 		expect(calcCount).to.be.equal(1)
-		expect(view.get()).to.be.equal(12)
+		expect(calc.get()).to.be.equal(12)
 		expect(calcCount).to.be.equal(2)
-		expect(view.get()).to.be.equal(12)
+		expect(calc.get()).to.be.equal(12)
 		expect(calcCount).to.be.equal(2)
 	})
 
-	test("calls subscriber when viewBox depends on other viewBox", () => {
+	test("calls subscriber when calcBox depends on other calcBox", () => {
 		const a = box(5)
-		const b = viewBox([a], a => a * 2)
-		const c = viewBox([b], b => b * 3)
+		const b = calcBox([a], a => a * 2)
+		const c = calcBox([b], b => b * 3)
 
 		let successB = false
 		let successC = false
@@ -94,10 +94,10 @@ describe("ViewBox", () => {
 		expect(successC).to.be.equal(true)
 	})
 
-	test("properly recalculates when viewBox depends on other viewBox without subscribers", () => {
+	test("properly recalculates when calcBox depends on other calcBox without subscribers", () => {
 		const a = box(5)
-		const b = viewBox([a], a => a * 2)
-		const c = viewBox([b], b => b * 3)
+		const b = calcBox([a], a => a * 2)
+		const c = calcBox([b], b => b * 3)
 
 		expect(c.get()).to.be(30)
 
@@ -108,12 +108,12 @@ describe("ViewBox", () => {
 	test("only subscribes to direct dependencies", () => {
 		const a = box(5)
 		let bRecalcs = 0
-		const b = viewBox([a], a => {
+		const b = calcBox([a], a => {
 			bRecalcs++
 			return Math.floor(a / 2)
 		})
 		let cRecalcs = 0
-		const c = viewBox([b], b => {
+		const c = calcBox([b], b => {
 			cRecalcs++
 			return b + 1
 		})
@@ -149,28 +149,28 @@ describe("ViewBox", () => {
 
 	test("works fine with zero dependencies", () => {
 		let calcCount = 0
-		const view = viewBox([], () => {
+		const calc = calcBox([], () => {
 			calcCount++
 			return 2 * 2
 		})
 
-		expect(view.get()).to.be.equal(4)
+		expect(calc.get()).to.be.equal(4)
 		expect(calcCount).to.be.equal(1)
-		expect(view.get()).to.be.equal(4)
+		expect(calc.get()).to.be.equal(4)
 		expect(calcCount).to.be.equal(1)
 
 		let subCalls = 0
-		view.subscribe(() => subCalls++)
+		calc.subscribe(() => subCalls++)
 
 		expect(subCalls).to.be.equal(0)
-		expect(view.get()).to.be.equal(4)
+		expect(calc.get()).to.be.equal(4)
 		expect(subCalls).to.be.equal(0)
 	})
 
 	test("ignores additional dependencies when explicit dependency list is passed", () => {
 		const a = box(2)
 		const b = box(2)
-		const c = viewBox([a], a => a + b.get())
+		const c = calcBox([a], a => a + b.get())
 
 		expect(c.get()).to.be.equal(4)
 		a.set(3)
@@ -196,7 +196,7 @@ describe("ViewBox", () => {
 
 	test("unsubscribing properly", () => {
 		const b = box(5)
-		const v = viewBox([b], b => b * 2)
+		const v = calcBox([b], b => b * 2)
 
 		const rb = b as BoxInternal<number>
 		const rv = v as BoxInternal<number>
@@ -228,8 +228,8 @@ describe("ViewBox", () => {
 
 	test("unsubscribing properly when chained", () => {
 		const b = box(5)
-		const v = viewBox([b], b => b * 2)
-		const vv = viewBox([v], v => v - 2)
+		const v = calcBox([b], b => b * 2)
+		const vv = calcBox([v], v => v - 2)
 
 		const rb = b as BoxInternal<number>
 		const rv = v as BoxInternal<number>
@@ -293,8 +293,8 @@ describe("ViewBox", () => {
 	})
 
 
-	test("viewbox with explicit dependency list caches result always", () => {
-		// this test may be a bit outdated, because all viewboxes now cache values, but anyway
+	test("calcbox with explicit dependency list caches result always", () => {
+		// this test may be a bit outdated, because all calcboxes now cache values, but anyway
 
 		const a = box(5)
 		let callCount = 0
@@ -321,20 +321,20 @@ describe("ViewBox", () => {
 		// this test doesn't make much sense now, but I'm still keeping it
 		// it made some sense while dependency lists were dynamic
 		const myBox = box(5)
-		const myViewBox = viewBox([myBox], boxValue => {
+		const myCalcBox = calcBox([myBox], boxValue => {
 			const firstValue = boxValue
 			myBox.set(6)
 			const secondValue = boxValue
 			return firstValue + secondValue
 		})
-		expect(myViewBox.get()).to.be(10)
+		expect(myCalcBox.get()).to.be(10)
 	})
 
 	test("dynamic subscription update", () => {
 		// this test also doesn't make much sense without dynamic dependency lists
 		const boxA = box(false) as BoxInternal<boolean>
 		const boxB = box(10) as BoxInternal<number>
-		const b = viewBox([boxA, boxB], (boxA, boxB) => boxA ? 5 : boxB)
+		const b = calcBox([boxA, boxB], (boxA, boxB) => boxA ? 5 : boxB)
 
 		const counter = makeCallCounter()
 		b.subscribe(counter)
@@ -359,7 +359,7 @@ describe("ViewBox", () => {
 	test("if value is changed during subscription - it should be updated", () => {
 		const base = box(5)
 
-		const b1 = viewBox([base], x => {
+		const b1 = calcBox([base], x => {
 			base.set(x & (~1))
 			return x
 		})

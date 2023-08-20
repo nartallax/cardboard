@@ -29,6 +29,6 @@ export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<
 
 // there are two classes to distinguish between rbox and wbox in runtime
 // we could always return PropWBox, as each wbox is also a rbox, but that will only protect us on type level
-// that is, in such case isWBox(viewBox(() => ({a:5})).prop("a")) will be true, which is unacceptable
+// that is, in such case isWBox(calcBox(() => ({a:5})).prop("a")) will be true, which is unacceptable
 export class PropRBox<U, K extends keyof U> extends PropBox<U, K> {}
 export class PropWBox<U, K extends keyof U> extends PropBox<U, K> {}
