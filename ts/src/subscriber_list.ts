@@ -1,8 +1,8 @@
-import {updateQueue, type ChangeHandler, type BoxInternal, type UpstreamSubscriber, UpdateMeta, PropBox, Subscription, Update} from "src/internal"
+import {updateQueue, type BoxChangeHandler, type BoxInternal, type UpstreamSubscriber, BoxUpdateMeta, PropBox, Subscription, Update} from "src/internal"
 
 /** Class that manages list of active subscribers to some box */
 export class SubscriberList<T, O extends BoxInternal<T>> {
-	private subscriptions: Map<ChangeHandler<T> | UpstreamSubscriber, Subscription<T>> | null = null
+	private subscriptions: Map<BoxChangeHandler<T> | UpstreamSubscriber, Subscription<T>> | null = null
 	// propboxes are in separate collection to avoid calling all of them if meta tells us that we can skip some
 	private propBoxInternalSubscriptions: Map<unknown, Subscription<T>[]> | null = null
 
@@ -12,13 +12,13 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		return !!(this.subscriptions || this.propBoxInternalSubscriptions)
 	}
 
-	callSubscribers(value: T, changeSourceBox: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
+	callSubscribers(value: T, changeSourceBox: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: BoxUpdateMeta | undefined): void {
 		this.notifyPropSubscribers(value, changeSourceBox, updateMeta)
 		this.notifySubscribers(value, changeSourceBox, updateMeta)
 		updateQueue.run()
 	}
 
-	private notifySubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifySubscribers(value: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: BoxUpdateMeta): void {
 		if(!this.subscriptions){
 			return
 		}
@@ -35,7 +35,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyPropSubscribers(value: T, changeSourceBox: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
+	private notifyPropSubscribers(value: T, changeSourceBox: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: BoxUpdateMeta | undefined): void {
 		if(!this.propBoxInternalSubscriptions){
 			return
 		}
@@ -53,7 +53,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	private notifyPropSubscriptionArray(value: T, arr: Subscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	private notifyPropSubscriptionArray(value: T, arr: Subscription<T>[], changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: BoxUpdateMeta): void {
 		for(let i = 0; i < arr.length; i++){
 			const subscription = arr[i]!
 			if(subscription.receiver === changeSourceBox){
@@ -64,7 +64,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		}
 	}
 
-	subscribe(handler: ChangeHandler<T> | UpstreamSubscriber, lastKnownValue: T): void {
+	subscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber, lastKnownValue: T): void {
 		const sub: Subscription<T> = {lastKnownValue, receiver: handler, provider: this.owner}
 		if(handler instanceof PropBox){
 			const map: typeof this.propBoxInternalSubscriptions = this.propBoxInternalSubscriptions ||= new Map()
@@ -96,7 +96,7 @@ export class SubscriberList<T, O extends BoxInternal<T>> {
 		map.set(handler, sub)
 	}
 
-	unsubscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void {
+	unsubscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber): void {
 		if(handler instanceof PropBox){
 			if(!this.propBoxInternalSubscriptions){
 				return

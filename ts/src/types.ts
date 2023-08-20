@@ -1,4 +1,4 @@
-import {NoValue, UpdateMeta} from "src/internal"
+import {NoValue, BoxUpdateMeta} from "src/internal"
 
 /** Readonly box: a box which contents you can get, but cannot directly put anything into. */
 export interface RBox<T>{
@@ -11,10 +11,10 @@ export interface RBox<T>{
 	 *
 	 * Note that the handler is stored until explicitly unsubscribed;
 	 * this may cause memory leaks in some scenarios. */
-	subscribe(handler: ChangeHandler<T>): void
+	subscribe(handler: BoxChangeHandler<T>): void
 
 	/** Removes a subscriber from the box */
-	unsubscribe(handler: ChangeHandler<T>): void
+	unsubscribe(handler: BoxChangeHandler<T>): void
 
 	/** Create another box, value of which entirely depends on value of this one box
 	 *
@@ -137,21 +137,21 @@ type TakeNonBoxes<T> = T extends RBox<any> ? never : T
  * Does the same to types that unbox() does to values */
 export type Unboxed<T> = T extends RBox<infer X> ? X : T
 
-export type ChangeHandler<T> = (value: T, box: RBox<T>, meta: UpdateMeta | undefined) => void
+export type BoxChangeHandler<T> = (value: T, box: RBox<T>, meta: BoxUpdateMeta | undefined) => void
 
 /** In reality all of the boxes are internally WBoxes */
 export interface BoxInternal<T> extends WBox<T> {
 	value: T | typeof NoValue
 	name?: string
 	haveSubscribers(): boolean
-	subscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void
-	unsubscribe(handler: ChangeHandler<T> | UpstreamSubscriber): void
-	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void
+	subscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber): void
+	unsubscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber): void
+	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: BoxUpdateMeta): void
 }
 
 /** A box or other entity that could internally subscribe to upstream box */
 export interface UpstreamSubscriber {
-	onUpstreamChange(upstream: BoxInternal<unknown>, updateMeta: UpdateMeta | undefined): void
+	onUpstreamChange(upstream: BoxInternal<unknown>, updateMeta: BoxUpdateMeta | undefined): void
 	dispose(): void
 }
 
@@ -172,7 +172,7 @@ export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
 	readonly dependencyList: DependencyList
 }
 
-export type UpdateReceiver<T> = ChangeHandler<T> | UpstreamSubscriber
+export type UpdateReceiver<T> = BoxChangeHandler<T> | UpstreamSubscriber
 
 export interface Subscription<T> {
 	/** Last value with which handler was called.

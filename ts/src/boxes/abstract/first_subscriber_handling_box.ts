@@ -1,18 +1,18 @@
-import {BaseBox, ChangeHandler, UpstreamSubscriber} from "src/internal"
+import {BaseBox, BoxChangeHandler, UpstreamSubscriber} from "src/internal"
 
 /** A box that invokes its handlers on first subscriber subscribing/last subscriber unsubscribing */
 export abstract class FirstSubscriberHandlingBox<T> extends BaseBox<T> {
 	protected abstract onFirstSubscriber(): void
 	protected abstract onLastUnsubscriber(): void
 
-	override subscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
+	override subscribe(handler: UpstreamSubscriber | BoxChangeHandler<T>): void {
 		if(!this.haveSubscribers()){
 			this.onFirstSubscriber()
 		}
 		super.subscribe(handler)
 	}
 
-	override unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
+	override unsubscribe(handler: UpstreamSubscriber | BoxChangeHandler<T>): void {
 		const hadSubs = this.haveSubscribers()
 		super.unsubscribe(handler)
 		// hadSubs check here because we could already have none subscribers

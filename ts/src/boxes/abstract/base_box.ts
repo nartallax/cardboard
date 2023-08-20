@@ -1,4 +1,4 @@
-import type {ChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, UpdateMeta} from "src/internal"
+import type {BoxChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, BoxUpdateMeta} from "src/internal"
 import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArray, SubscriberList} from "src/internal"
 
 export const NoValue = Symbol("AbsentBoxValue")
@@ -15,7 +15,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	/** Update the value of the box, calling the subscribers.
 	 *
 	 * @param changeSource the box that caused the change. Won't be notified of the change happening. */
-	set(newValue: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
+	set(newValue: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: BoxUpdateMeta): void {
 		if(this.value === newValue){
 			return
 		}
@@ -42,15 +42,15 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.dispose()
 	}
 
-	subscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
+	subscribe(handler: UpstreamSubscriber | BoxChangeHandler<T>): void {
 		this.subscriberList.subscribe(handler, this.get())
 	}
 
-	unsubscribe(handler: UpstreamSubscriber | ChangeHandler<T>): void {
+	unsubscribe(handler: UpstreamSubscriber | BoxChangeHandler<T>): void {
 		this.subscriberList.unsubscribe(handler)
 	}
 
-	protected notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
+	protected notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: BoxUpdateMeta | undefined): void {
 		this.subscriberList.callSubscribers(value, changeSource, updateMeta)
 	}
 

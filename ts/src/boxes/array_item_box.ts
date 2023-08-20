@@ -1,4 +1,4 @@
-import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber, UpdateMeta, ArrayItemWBox} from "src/internal"
+import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber, BoxUpdateMeta, ArrayItemWBox} from "src/internal"
 
 /** A box that contains an array item
  * This box is managed by array context */
@@ -51,7 +51,7 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> i
 		return super.get()
 	}
 
-	protected override notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: UpdateMeta | undefined): void {
+	protected override notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: BoxUpdateMeta | undefined): void {
 		if(changeSource !== this.arrayContext){
 			this.arrayContext.onDownstreamChange(this, value)
 		}

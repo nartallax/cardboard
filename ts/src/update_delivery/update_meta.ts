@@ -6,7 +6,7 @@
  * which can lead to significant performance boost in some scenarios
  *
  * Sending no meta when there is meta won't lead to catastrophe, but sending wrong meta can. */
-export type UpdateMeta = {
+export type BoxUpdateMeta = {
 	readonly type: "property_update"
 	readonly propName: unknown
 } | {

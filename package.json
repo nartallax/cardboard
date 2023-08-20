@@ -1,6 +1,6 @@
 {
   "name": "@nartallax/cardboard",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Data logistics library",
   "types": "cardboard.d.ts",
   "main": "cardboard.js",

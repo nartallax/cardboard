@@ -1,4 +1,4 @@
-import {CalcBox, anythingToString, Subscription, UpdateMeta, MapBox} from "src/internal"
+import {CalcBox, anythingToString, Subscription, BoxUpdateMeta, MapBox} from "src/internal"
 
 /** Update is a single act of notifying a subscriber about change
  *
@@ -7,7 +7,7 @@ export class Update<T> {
 	constructor(
 		readonly subscription: Subscription<T>,
 		readonly value: T,
-		public meta: UpdateMeta | undefined
+		public meta: BoxUpdateMeta | undefined
 	) {
 		if(subscription.receiver instanceof CalcBox || subscription.receiver instanceof MapBox){
 			/** This is all it takes to deliver update to CalcBox or MapBox (and .get() later)

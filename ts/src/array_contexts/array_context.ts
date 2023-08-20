@@ -1,4 +1,4 @@
-import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, UpdateMeta} from "src/internal"
+import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, BoxUpdateMeta} from "src/internal"
 
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
@@ -26,7 +26,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		}
 	}
 
-	onUpstreamChange(_: BoxInternal<unknown>, updateMeta: UpdateMeta | undefined, upstreamArray?: E[]): void {
+	onUpstreamChange(_: BoxInternal<unknown>, updateMeta: BoxUpdateMeta | undefined, upstreamArray?: E[]): void {
 		upstreamArray ??= this.upstream.get()
 		this.lastKnownUpstreamValue = upstreamArray
 

@@ -1,4 +1,4 @@
-import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, CalculatableBox, UpdateMeta, UpstreamSubscriber} from "src/internal"
+import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, CalculatableBox, BoxUpdateMeta, UpstreamSubscriber} from "src/internal"
 
 /** DownstreamBox is a box that is derived from some other box (or several)
  * Those base boxes are called upstream; so this box is downstream box related to the upstream boxes
@@ -40,7 +40,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		this.dependencyList.calculate(this, changeSourceBox)
 	}
 
-	protected notifyOnValueChange(value: T, changeSource: UpstreamSubscriber | BoxInternal<unknown> | undefined, updateMeta: UpdateMeta | undefined): void {
+	protected notifyOnValueChange(value: T, changeSource: UpstreamSubscriber | BoxInternal<unknown> | undefined, updateMeta: BoxUpdateMeta | undefined): void {
 		this.revision++
 		super.notifyOnValueChange(value, changeSource, updateMeta)
 	}
