@@ -353,4 +353,12 @@ describe("Array container", () => {
 		expect(first.get()).to.be(3)
 		expect(() => last.get()).to.throwError(/no longer attached/)
 	})
+
+	test("improper index as key 2", () => {
+		const parent = box([1, 2, 3])
+		const context = parent.getArrayContext((_, i) => i)
+		const b = context.getBoxForKey(2)
+		b.subscribe(makeCallCounter())
+		expect(() => parent.insertElementAtIndex(1, 4)).to.throwError(/Duplicate key: 1/)
+	})
 })
