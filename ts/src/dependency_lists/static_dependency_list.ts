@@ -1,5 +1,6 @@
 import {BaseMapDependencyList, DependencyList, BoxInternal, CalculatableBox, notificationStack} from "src/internal"
 
+// TODO: rename? it's not static vs dynamic anymore
 export class StaticDependencyList extends BaseMapDependencyList implements DependencyList {
 	constructor(boxes: readonly BoxInternal<unknown>[]) {
 		super()
@@ -18,6 +19,15 @@ export class StaticDependencyList extends BaseMapDependencyList implements Depen
 		for(const box of this.boxes.keys()){
 			this.boxes.set(box, box.get())
 		}
+	}
+
+	getDependencyValues(): unknown[] {
+		const result: unknown[] = new Array(this.boxes.size)
+		let i = 0
+		for(const box of this.boxes.keys()){
+			result[i++] = box.get()
+		}
+		return result
 	}
 
 }

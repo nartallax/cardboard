@@ -48,7 +48,7 @@ describe("Array container", () => {
 
 	test("maparray box should throw if its value is requested while the value is being recalculated", () => {
 		try {
-			const urls = viewBox(() => ["1", "2", "3"])
+			const urls = viewBox([], () => ["1", "2", "3"])
 			let maxImageHeight = 0
 			const calcMaxHeight = () => {
 				const imgs = images.get()

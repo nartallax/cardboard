@@ -162,7 +162,9 @@ export interface DependencyList {
 	unsubscribeFromDependencies(owner: UpstreamSubscriber): void
 	subscribeToDependencies(owner: UpstreamSubscriber): void
 	/** Calculate and .set() value of the owner box */
+	// TODO: remove this method entirely? there's no point in having it
 	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void
+	getDependencyValues(): unknown[]
 }
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {

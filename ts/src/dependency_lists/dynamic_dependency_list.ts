@@ -1,7 +1,12 @@
 import {BaseMapDependencyList, DependencyList, BoxInternal, CalculatableBox, notificationStack, NoValue} from "src/internal"
 
+// TODO: rm
 /** A list of boxes and their values, calculated dynamically at runtime */
 export class DynamicDependencyList extends BaseMapDependencyList implements DependencyList {
+
+	getDependencyValues(): unknown[] {
+		throw new Error("Not implemented")
+	}
 
 	notifyDependencyCall<T>(box: BoxInternal<T>, value: T): void {
 		if(this.boxes.has(box)){

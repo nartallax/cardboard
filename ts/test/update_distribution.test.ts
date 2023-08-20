@@ -7,8 +7,8 @@ describe("Update distribution", () => {
 
 	test("viewbox gets updates before external subscribers", () => {
 		const a = box(5)
-		const b1 = viewBox(() => a.get() + 1)
-		const b2 = viewBox(() => a.get() + 2)
+		const b1 = viewBox([a], a => a + 1)
+		const b2 = viewBox([a], a => a + 2)
 
 		const check = () => {
 			expect(b1.get()).to.be(a.get() + 1)
@@ -25,13 +25,13 @@ describe("Update distribution", () => {
 		const a = box(5)
 		const b = a.map(x => x + 1)
 
-		const calc = () => {
-			expect(b.get()).to.be(a.get() + 1)
-			return b.get() + 1
+		const calc = (b: number, a: number) => {
+			expect(b).to.be(a + 1)
+			return b + 1
 		}
 
-		const c1 = viewBox(calc)
-		const c2 = viewBox(calc)
+		const c1 = viewBox([b, a], calc)
+		const c2 = viewBox([b, a], calc)
 
 		c1.subscribe(makeCallCounter())
 		b.subscribe(makeCallCounter())
@@ -78,16 +78,14 @@ describe("Update distribution", () => {
 
 	test("viewbox depending on viewbox and same parent box gets update in proper order", () => {
 		const a = box(5)
-		const c1 = viewBox(() => {
-			void a.get()
-			expect(b.get()).to.be(a.get() + 1)
-			return b.get() + a.get()
+		const b = viewBox([a], a => a + 1)
+		const c1 = viewBox([a, b], (a, b) => {
+			expect(b).to.be(a + 1)
+			return b + a
 		})
-		const b = viewBox(() => a.get() + 1)
-		const c2 = viewBox(() => {
-			void a.get()
-			expect(b.get()).to.be(a.get() + 1)
-			return b.get() * a.get()
+		const c2 = viewBox([a, b], (a, b) => {
+			expect(b).to.be(a + 1)
+			return b * a
 		})
 
 		c1.subscribe(makeCallCounter())

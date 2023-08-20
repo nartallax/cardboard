@@ -37,4 +37,8 @@ export class SingleDependencyList<T> implements DependencyList {
 		this.lastKnownDependencyValue = this.dependency.get()
 	}
 
+	getDependencyValues(): unknown[] {
+		return [this.dependency.get()]
+	}
+
 }

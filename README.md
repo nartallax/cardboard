@@ -107,7 +107,8 @@ import {box, viewBox} from "@nartallax/cardboard"
 
 let a = box(5)
 let b = box(10)
-let sumOfAB = viewBox(() => a.get() + b.get())
+// first argument is list of dependent boxes; their values are passed to the callback
+let sumOfAB = viewBox([a, b], (a, b) => a + b)
 
 console.log(sumOfAB.get()) // 15
 
@@ -116,7 +117,6 @@ console.log(sumOfAB.get()) // 14
 ```
 
 In this example we create a `viewBox`; it's an `RBox` that depends on other box values. Each time any box it depends on updates - the value of `viewBox` is also updated (and subscribers are called, of course).  
-(disclaimer: implementation is more complex than that, but for outside world it looks like it is; you can assume that it does update each time)  
 
 ## .map() method
 
@@ -132,7 +132,7 @@ let bb = box.map(value => value + 5)
 console.log(bb.get()) // 15
 
 // above code is equivalent of
-let bb = viewBox(() => b.get() + 5)
+let bb = viewBox([b], b => b + 5)
 ```
 
 `.map()` with two arguments is only present on `WBox`; it creates another `WBox` which synchronises its value with base box:
@@ -230,7 +230,7 @@ const doubleArr = singleArr.mapArray(
 ## constBox
 
 `constBox` is a type of `RBox` that never changes its value.  
-You can think of it as a `viewBox(() => someConstant)`, but more optimized.  
+You can think of it as a `viewBox([], () => someConstant)`, but more optimized.  
 This box exists because it's sometimes convenient to only write code in assumption that you will receive box and not a plain value.  
 `constBoxWrap` is a way to use this convenience - if its argument is a `RBox`, then it will return the box; otherwise it will create a const box with argument as value.  
 
@@ -240,7 +240,7 @@ import {constBox, constBoxWrap} from "@nartallax/cardboard"
 const b = constBox(5)
 console.log(b.get()) // 5
 
-const bb = constBoxWrap(viewBox(() => 12345))
+const bb = constBoxWrap(viewBox([], () => 12345))
 console.log(bb.get()) // 12345
 
 ```

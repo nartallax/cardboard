@@ -6,25 +6,25 @@ import {makeCallCounter} from "test/test_utils"
 describe("ArrayItemBox", () => {
 	test("isRBox", () => {
 		expect(isRBox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
-		expect(isRBox(viewBox(() => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
+		expect(isRBox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
 		expect(isRBox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
 	})
 
 	test("isWBox", () => {
 		expect(isWBox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
-		expect(isWBox(viewBox(() => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
+		expect(isWBox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 		expect(isWBox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 	})
 
 	test("isConstBox", () => {
 		expect(isConstBox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
-		expect(isConstBox(viewBox(() => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
+		expect(isConstBox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(false)
 		expect(isConstBox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(true)
 	})
 
 	test("isArrayItemWBox", () => {
 		expect(isArrayItemWBox(box(1))).to.be(false)
-		expect(isArrayItemWBox(viewBox(() => 1))).to.be(false)
+		expect(isArrayItemWBox(viewBox([], () => 1))).to.be(false)
 		expect(isArrayItemWBox(constBox(1))).to.be(false)
 		expect(isArrayItemWBox(box({a: 1}).prop("a"))).to.be(false)
 		expect(isArrayItemWBox(box({a: 1}).map(x => x.a))).to.be(false)
@@ -33,13 +33,13 @@ describe("ArrayItemBox", () => {
 
 	test("unbox", () => {
 		expect(unbox(box([1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
-		expect(unbox(viewBox(() => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
+		expect(unbox(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
 		expect(unbox(constBox([1]).getArrayContext(e => e).getBoxes()[0])).to.be(1)
 	})
 
 	test("toString", () => {
 		expect(box([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
-		expect(viewBox(() => [1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
+		expect(viewBox([], () => [1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
 		expect(constBox([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ConstBox(1)")
 	})
 
@@ -420,7 +420,7 @@ describe("ArrayItemBox", () => {
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view1 = viewBox(() => box1.get().name + ", nya")
+		const view1 = viewBox([box1], b1 => b1.name + ", nya")
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 		expect(view1.get()).to.be.equal("1, nya")
@@ -446,7 +446,7 @@ describe("ArrayItemBox", () => {
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view1 = viewBox(() => box1.get().name + ", nya")
+		const view1 = viewBox([box1], b1 => b1.name + ", nya")
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 		const counter = makeCallCounter()
@@ -482,7 +482,7 @@ describe("ArrayItemBox", () => {
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view1 = viewBox(() => box1.get().name + ", nya")
+		const view1 = viewBox([box1], b1 => b1.name + ", nya")
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 		const counter = makeCallCounter()
@@ -516,7 +516,7 @@ describe("ArrayItemBox", () => {
 	test("viewbox and arraywrap chain no sub", () => {
 		const parent = box({a: [{id: 1, name: "1"}]})
 		const parentInternal = parent as unknown as BoxInternal<{a: {id: number, name: string}[]}>
-		const view = viewBox(() => parent.get().a)
+		const view = viewBox([parent], parent => parent.a)
 		const context = view.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 
@@ -542,7 +542,7 @@ describe("ArrayItemBox", () => {
 	test("viewbox and arraywrap chain with sub", () => {
 		const parent = box({a: [{id: 1, name: "1"}]})
 		const parentInternal = parent as unknown as BoxInternal<{a: {id: number, name: string}[]}>
-		const view = viewBox(() => parent.get().a)
+		const view = viewBox([parent], parent => parent.a)
 		const context = view.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 
@@ -581,7 +581,7 @@ describe("ArrayItemBox", () => {
 		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
-		const view = viewBox(() => firstContextBox.get().a)
+		const view = viewBox([firstContextBox], x => x.a)
 		const secondContext = view.getArrayContext(el => el.id)
 		const box1 = secondContext.getBoxes()[0]!
 
@@ -609,7 +609,7 @@ describe("ArrayItemBox", () => {
 		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
-		const view = viewBox(() => firstContextBox.get().a)
+		const view = viewBox([firstContextBox], x => x.a)
 		const secondContext = view.getArrayContext(el => el.id)
 		const box1 = secondContext.getBoxes()[0]!
 
@@ -646,7 +646,7 @@ describe("ArrayItemBox", () => {
 		const parentInternal = parent as unknown as BoxInternal<{id: number, a: {id: number, name: string}[]}[]>
 		const firstContext = parent.getArrayContext(el => el.id)
 		const firstContextBox = firstContext.getBoxes()[0]!
-		const view = viewBox(() => firstContextBox.get().a)
+		const view = viewBox([firstContextBox], x => x.a)
 		const secondContext = view.getArrayContext(el => el.id)
 		const box1 = secondContext.getBoxes()[0]!
 
@@ -689,7 +689,7 @@ describe("ArrayItemBox", () => {
 	test("view and arraywrap item", () => {
 		const parent = box([{id: 1, name: "1"}])
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
-		const view = viewBox(() => parent.get()[0]!)
+		const view = viewBox([parent], x => x[0]!)
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
 
@@ -729,7 +729,7 @@ describe("ArrayItemBox", () => {
 		const parentInternal = parent as unknown as BoxInternal<{id: number, name: string}[]>
 		const context = parent.getArrayContext(el => el.id)
 		const box1 = context.getBoxes()[0]!
-		const view = viewBox(() => parent.get()[0]!)
+		const view = viewBox([parent], x => x[0]!)
 
 		const viewCounter = makeCallCounter()
 		view.subscribe(viewCounter)

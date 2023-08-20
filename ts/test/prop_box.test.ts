@@ -7,31 +7,31 @@ describe("PropBox", () => {
 
 	test("isRBox", () => {
 		expect(isRBox(box({a: 5}).prop("a"))).to.be(true)
-		expect(isRBox(viewBox(() => ({a: 5})).prop("a"))).to.be(true)
+		expect(isRBox(viewBox([], () => ({a: 5})).prop("a"))).to.be(true)
 		expect(isRBox(constBox({a: 5}).prop("a"))).to.be(true)
 	})
 
 	test("isWBox", () => {
 		expect(isWBox(box({a: 5}).prop("a"))).to.be(true)
-		expect(isWBox(viewBox(() => ({a: 5})).prop("a"))).to.be(false)
+		expect(isWBox(viewBox([], () => ({a: 5})).prop("a"))).to.be(false)
 		expect(isWBox(constBox({a: 5}).prop("a"))).to.be(false)
 	})
 
 	test("isConstBox", () => {
 		expect(isConstBox(box({a: 5}).prop("a"))).to.be(false)
-		expect(isConstBox(viewBox(() => ({a: 5})).prop("a"))).to.be(false)
+		expect(isConstBox(viewBox([], () => ({a: 5})).prop("a"))).to.be(false)
 		expect(isConstBox(constBox({a: 5}).prop("a"))).to.be(true)
 	})
 
 	test("unbox", () => {
 		expect(unbox(box({a: 5}).prop("a"))).to.be(5)
-		expect(unbox(viewBox(() => ({a: 5})).prop("a"))).to.be(5)
+		expect(unbox(viewBox([], () => ({a: 5})).prop("a"))).to.be(5)
 		expect(unbox(constBox({a: 5}).prop("a"))).to.be(5)
 	})
 
 	test("toString", () => {
 		const a = box({a: 5}).prop("a")
-		const b = viewBox(() => ({a: 5})).prop("a")
+		const b = viewBox([], () => ({a: 5})).prop("a")
 		const c = constBox({a: 5}).prop("a")
 		expect(a + "").to.be("PropBox(Symbol(AbsentBoxValue))")
 		expect(b + "").to.be("PropBox(Symbol(AbsentBoxValue))")
@@ -305,9 +305,9 @@ describe("PropBox", () => {
 		const childCounter = makeCallCounter()
 		child.subscribe(childCounter)
 		let calcCount = 0
-		const view = viewBox(() => {
+		const view = viewBox([child], child => {
 			calcCount++
-			return child.get() * 2
+			return child * 2
 		})
 		view.subscribe(() => {
 			// nothing
@@ -379,7 +379,7 @@ describe("PropBox", () => {
 
 	test("prop of viewbox", () => {
 		const parent = box({a: 5}) as BoxInternal<{a: number}>
-		const view = viewBox(() => ({...parent.get(), b: parent.get().a * 2})) as BoxInternal<{a: number, b: number}>
+		const view = viewBox([parent], x => ({...x, b: x.a * 2})) as BoxInternal<{a: number, b: number}>
 		const propA1 = view.prop("a") as BoxInternal<number>
 		const propA2 = view.prop("a") as BoxInternal<number>
 		const propB = view.prop("b") as BoxInternal<number>

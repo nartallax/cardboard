@@ -1,5 +1,6 @@
 import {type CalculatableBox, type BoxInternal, DynamicDependencyList} from "src/internal"
 
+// TODO: rm?
 /** This class allows non-trivial boxes to gather information on which boxes they depend on */
 class NotificationStack {
 

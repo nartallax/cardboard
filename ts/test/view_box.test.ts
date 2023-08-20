@@ -7,23 +7,23 @@ import {makeCallCounter} from "test/test_utils"
 describe("ViewBox", () => {
 
 	test("isRBox", () => {
-		expect(isRBox(viewBox(() => 5))).to.be(true)
+		expect(isRBox(viewBox([], () => 5))).to.be(true)
 	})
 
 	test("isWBox", () => {
-		expect(isWBox(viewBox(() => 5))).to.be(false)
+		expect(isWBox(viewBox([], () => 5))).to.be(false)
 	})
 
 	test("isConstBox", () => {
-		expect(isConstBox(viewBox(() => 5))).to.be(false)
+		expect(isConstBox(viewBox([], () => 5))).to.be(false)
 	})
 
 	test("unbox", () => {
-		expect(unbox(viewBox(() => 5))).to.be(5)
+		expect(unbox(viewBox([], () => 5))).to.be(5)
 	})
 
 	test("toString", () => {
-		const b = viewBox(() => 5)
+		const b = viewBox([], () => 5)
 		expect(b + "").to.be("ViewBox(Symbol(AbsentBoxValue))")
 		b.get()
 		expect(b + "").to.be("ViewBox(5)")
@@ -31,7 +31,7 @@ describe("ViewBox", () => {
 
 	test("calls subscriber when dependency updates and value updates", () => {
 		const a = box(0)
-		const b = viewBox(() => Math.floor(a.get() / 2))
+		const b = viewBox([a], a => Math.floor(a / 2))
 
 		const counter = makeCallCounter()
 
@@ -56,9 +56,9 @@ describe("ViewBox", () => {
 	test("calculation logic when no subscribers", () => {
 		const b = box(5)
 		let calcCount = 0
-		const view = viewBox(() => {
+		const view = viewBox([b], b => {
 			calcCount++
-			return b.get() * 2
+			return b * 2
 		})
 
 		expect(calcCount).to.be.equal(0)
@@ -77,8 +77,8 @@ describe("ViewBox", () => {
 
 	test("calls subscriber when viewBox depends on other viewBox", () => {
 		const a = box(5)
-		const b = viewBox(() => a.get() * 2)
-		const c = viewBox(() => b.get() * 3)
+		const b = viewBox([a], a => a * 2)
+		const c = viewBox([b], b => b * 3)
 
 		let successB = false
 		let successC = false
@@ -96,8 +96,8 @@ describe("ViewBox", () => {
 
 	test("properly recalculates when viewBox depends on other viewBox without subscribers", () => {
 		const a = box(5)
-		const b = viewBox(() => a.get() * 2)
-		const c = viewBox(() => b.get() * 3)
+		const b = viewBox([a], a => a * 2)
+		const c = viewBox([b], b => b * 3)
 
 		expect(c.get()).to.be(30)
 
@@ -108,14 +108,14 @@ describe("ViewBox", () => {
 	test("only subscribes to direct dependencies", () => {
 		const a = box(5)
 		let bRecalcs = 0
-		const b = viewBox(() => {
+		const b = viewBox([a], a => {
 			bRecalcs++
-			return Math.floor(a.get() / 2)
+			return Math.floor(a / 2)
 		})
 		let cRecalcs = 0
-		const c = viewBox(() => {
+		const c = viewBox([b], b => {
 			cRecalcs++
-			return b.get() + 1
+			return b + 1
 		})
 
 		const bCounter = makeCallCounter()
@@ -149,7 +149,7 @@ describe("ViewBox", () => {
 
 	test("works fine with zero dependencies", () => {
 		let calcCount = 0
-		const view = viewBox(() => {
+		const view = viewBox([], () => {
 			calcCount++
 			return 2 * 2
 		})
@@ -170,7 +170,7 @@ describe("ViewBox", () => {
 	test("ignores additional dependencies when explicit dependency list is passed", () => {
 		const a = box(2)
 		const b = box(2)
-		const c = viewBox(() => a.get() + b.get(), [a])
+		const c = viewBox([a], a => a + b.get())
 
 		expect(c.get()).to.be.equal(4)
 		a.set(3)
@@ -196,7 +196,7 @@ describe("ViewBox", () => {
 
 	test("unsubscribing properly", () => {
 		const b = box(5)
-		const v = viewBox(() => b.get() * 2)
+		const v = viewBox([b], b => b * 2)
 
 		const rb = b as BoxInternal<number>
 		const rv = v as BoxInternal<number>
@@ -228,8 +228,8 @@ describe("ViewBox", () => {
 
 	test("unsubscribing properly when chained", () => {
 		const b = box(5)
-		const v = viewBox(() => b.get() * 2)
-		const vv = viewBox(() => v.get() - 2)
+		const v = viewBox([b], b => b * 2)
+		const vv = viewBox([v], v => v - 2)
 
 		const rb = b as BoxInternal<number>
 		const rv = v as BoxInternal<number>
@@ -318,22 +318,23 @@ describe("ViewBox", () => {
 	})
 
 	test("box that changes value during call", () => {
-		expect(() => {
-			const myBox = box(5)
-			const myViewBox = viewBox(() => {
-				const firstValue = myBox.get()
-				myBox.set(6)
-				const secondValue = myBox.get()
-				return firstValue + secondValue
-			})
-			expect(myViewBox.get()).to.be(11)
-		}).to.throwError(/was called more than once/)
+		// this test doesn't make much sense now, but I'm still keeping it
+		// it made some sense while dependency lists were dynamic
+		const myBox = box(5)
+		const myViewBox = viewBox([myBox], boxValue => {
+			const firstValue = boxValue
+			myBox.set(6)
+			const secondValue = boxValue
+			return firstValue + secondValue
+		})
+		expect(myViewBox.get()).to.be(10)
 	})
 
 	test("dynamic subscription update", () => {
+		// this test also doesn't make much sense without dynamic dependency lists
 		const boxA = box(false) as BoxInternal<boolean>
 		const boxB = box(10) as BoxInternal<number>
-		const b = viewBox(() => boxA.get() ? 5 : boxB.get())
+		const b = viewBox([boxA, boxB], (boxA, boxB) => boxA ? 5 : boxB)
 
 		const counter = makeCallCounter()
 		b.subscribe(counter)
@@ -343,7 +344,7 @@ describe("ViewBox", () => {
 
 		boxA.set(true)
 		expect(boxA.haveSubscribers()).to.be(true)
-		expect(boxB.haveSubscribers()).to.be(false)
+		expect(boxB.haveSubscribers()).to.be(true)
 		expect(counter.callCount).to.be(1)
 
 		boxB.set(11)
@@ -358,8 +359,7 @@ describe("ViewBox", () => {
 	test("if value is changed during subscription - it should be updated", () => {
 		const base = box(5)
 
-		const b1 = viewBox(() => {
-			const x = base.get()
+		const b1 = viewBox([base], x => {
 			base.set(x & (~1))
 			return x
 		})
