@@ -80,9 +80,9 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		return true
 	}
 
-	override get(): T {
+	override get(changeSourceBox?: BoxInternal<unknown>): T {
 		if(this.shouldRecalculate()){
-			this.calculateAndUpdate(undefined)
+			this.calculateAndUpdate(changeSourceBox)
 		}
 
 		return super.get()

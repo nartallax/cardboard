@@ -95,6 +95,25 @@ describe("Update distribution", () => {
 		a.set(6)
 	})
 
+	test("mapboxes gets update in proper order", () => {
+		const a = box(5)
+		const b = a.map(a => a + 1)
+		const c1 = a.map(a => {
+			expect(b.get()).to.be(a + 1)
+			return a + 2
+		})
+		const c2 = a.map(a => {
+			expect(b.get()).to.be(a + 1)
+			return a + 3
+		})
+
+		c1.subscribe(makeCallCounter())
+		b.subscribe(makeCallCounter())
+		c2.subscribe(makeCallCounter())
+
+		a.set(6)
+	})
+
 	test("when unsubscribed during recalculation, subscriber should not receive any more updates", () => {
 		const a = box(6)
 
@@ -200,6 +219,21 @@ describe("Update distribution", () => {
 
 		expect(counter.callCount).to.be(1)
 		expect(counter.lastCallValue).to.be(3)
+	})
+
+	test("mapbox updated by upstream won't cycle back value to upstream", () => {
+		const a = box({a: 5})
+		;(a as any).name = "a"
+		const b = a.map(a => ({a: a.a + 1}), b => ({a: b.a - 1}))
+		;(b as any).name = "b"
+		const c = b.map(b => ({a: b.a + 1}), c => ({a: c.a - 1}))
+		;(c as any).name = "c"
+
+		c.subscribe(makeCallCounter())
+
+		expect(c.get().a).to.be(7)
+		a.set({a: 6})
+		expect(c.get().a).to.be(8)
 	})
 
 })

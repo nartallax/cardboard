@@ -1,4 +1,4 @@
-import {CalcBox, anythingToString, Subscription, UpdateMeta} from "src/internal"
+import {CalcBox, anythingToString, Subscription, UpdateMeta, MapBox} from "src/internal"
 
 /** Update is a single act of notifying a subscriber about change
  *
@@ -9,10 +9,9 @@ export class Update<T> {
 		readonly value: T,
 		public meta: UpdateMeta | undefined
 	) {
-		if(subscription.receiver instanceof CalcBox){
-			/** This is all it takes to deliver update to CalcBox (and .get() later)
-			 * We don't need to deliver meta, because no CalcBox can do anything meaningful with meta
-			 * We don't need to deliver provider, because CalcBox is readonly and therefore won't notify upstream of self updates
+		if(subscription.receiver instanceof CalcBox || subscription.receiver instanceof MapBox){
+			/** This is all it takes to deliver update to CalcBox or MapBox (and .get() later)
+			 * We don't need to deliver meta, because no CalcBox or MapBox can do anything meaningful with meta
 			 *
 			 * And we do it with the flag to enforce proper recalculation order;
 			 * if we deliver updates in order of receiving, there could be situation when some calcBox gets update before its upstream
@@ -26,10 +25,10 @@ export class Update<T> {
 		// console.log("delivering " + this)
 		this.subscription.lastKnownValue = this.value
 		const receiver = this.subscription.receiver
-		if(receiver instanceof CalcBox){
+		if(receiver instanceof CalcBox || receiver instanceof MapBox){
 			if(receiver.forcedShouldRecalculate){
 				// it could be called before us, if there are other boxes depending on this calcbox
-				receiver.get()
+				receiver.get(this.subscription.provider)
 			}
 		} else if(typeof(receiver) === "function"){
 			receiver(this.value, this.subscription.provider, this.meta)

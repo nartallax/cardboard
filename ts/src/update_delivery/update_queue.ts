@@ -5,17 +5,15 @@ type NTuple<X, T> = X extends `${infer _}${infer B}` ? [T, ...NTuple<B, T>] : []
 type SubQueue<T> = Map<Subscription<T>, Update<T>>
 
 class UpdateQueue {
-	private readonly subQueues = new Array(4).fill(null).map(() => new Map()) as NTuple<"1234", SubQueue<unknown>>
+	private readonly subQueues = new Array(3).fill(null).map(() => new Map()) as NTuple<"124", SubQueue<unknown>>
 	private isRunning = false
 	private pauseLevel = 0
 
 	private getSubQueue<T>(receiver: UpdateReceiver<T>): SubQueue<T> {
 		// this exact ordering of update distribution is dictated by the need to avoid showing inconsistent state to user callbacks
 		if(typeof(receiver) === "function"){
-			return this.subQueues[3] as SubQueue<T>
-		} else if(receiver instanceof CalcBox){
 			return this.subQueues[2] as SubQueue<T>
-		} else if(receiver instanceof MapBox){
+		} else if(receiver instanceof CalcBox || receiver instanceof MapBox){
 			return this.subQueues[1] as SubQueue<T>
 		} else {
 			return this.subQueues[0] as SubQueue<T>

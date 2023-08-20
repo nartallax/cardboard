@@ -16,7 +16,6 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	 *
 	 * @param changeSource the box that caused the change. Won't be notified of the change happening. */
 	set(newValue: T, changeSource?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: UpdateMeta): void {
-		// console.log("setting " + this + " to " + newValue + " from " + changeSource)
 		if(this.value === newValue){
 			return
 		}
