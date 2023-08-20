@@ -343,4 +343,14 @@ describe("Array container", () => {
 		expect(parent.get()).to.eql([])
 		expect(() => box1.get()).to.throwError(/no longer attached/)
 	})
+
+	test("improper index as key", () => {
+		const parent = box([1, 2, 3])
+		const context = parent.getArrayContext((_, i) => i)
+		const first = context.getBoxForKey(0)
+		const last = context.getBoxForKey(2)
+		parent.set([3, 2])
+		expect(first.get()).to.be(3)
+		expect(() => last.get()).to.throwError(/no longer attached/)
+	})
 })

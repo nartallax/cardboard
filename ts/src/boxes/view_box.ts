@@ -7,8 +7,11 @@ export const viewBox = <T>(calcFunction: () => T, explicitDependencyList?: reado
 
 export class ViewBox<T> extends DownstreamBox<T> {
 
+	// TODO: consider doing the same for MapBox
+	// this could potentially reduce confusion about untimely calls of mapboxes
 	forcedShouldRecalculate = false
 
+	// TODO: consider always requiring dependency list
 	constructor(readonly calculateFn: () => T, explicitDependencyList?: readonly BoxInternal<unknown>[]) {
 		super(explicitDependencyList
 			? explicitDependencyList.length === 1
