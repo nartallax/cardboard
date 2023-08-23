@@ -372,8 +372,20 @@ describe("CalcBox", () => {
 	test("calc box types", () => {
 		const a = box(5)
 		const b = box("uwu")
-		const c = calcBox([a, b], (a, b) => a.toFixed(2) + b.length)
-		expect(c.get()).to.be("5.003")
+		const maybeBoxA = Math.random() > -1 ? box("uwu") : "uwu"
+		const maybeBoxB = Math.random() < -1 ? box("owo") : "owo"
+		const c = calcBox(
+			[a, b, null, {x: 5}, maybeBoxA, maybeBoxB],
+			(a, b, c, d, e, f) => a.toFixed(2) + b.length + c + d.x + e + f
+		)
+
+		expect(c.get()).to.be("5.003null5uwuowo")
+
+		const counter = makeCallCounter()
+		c.subscribe(counter)
+
+		a.set(6)
+		expect(counter.lastCallValue).to.be("6.003null5uwuowo")
 	})
 
 })
