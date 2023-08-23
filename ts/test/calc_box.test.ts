@@ -369,4 +369,11 @@ describe("CalcBox", () => {
 		expect(b1.get()).to.be(4)
 	})
 
+	test("calc box types", () => {
+		const a = box(5)
+		const b = box("uwu")
+		const c = calcBox([a, b], (a, b) => a.toFixed(2) + b.length)
+		expect(c.get()).to.be("5.003")
+	})
+
 })

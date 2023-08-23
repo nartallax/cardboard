@@ -1,6 +1,6 @@
 import {anythingToString, MultipleDependencyList, RBox, BoxInternal, DownstreamBox, SingleDependencyList, Unboxed} from "src/internal"
 
-type DependencyBoxValues<D> = D extends [infer X, ...infer Rest]
+type DependencyBoxValues<D> = D extends readonly [infer X, ...infer Rest]
 	? readonly [Unboxed<X>, ...DependencyBoxValues<Rest>]
 	: D extends []
 		? []
@@ -9,7 +9,7 @@ type DependencyBoxValues<D> = D extends [infer X, ...infer Rest]
 			: never
 
 /** Make new calc box, readonly box that calculates its value based on passed function */
-export const calcBox = <T, D extends readonly RBox<unknown>[]>(dependencies: D, calcFunction: (...dependencyValues: DependencyBoxValues<D>) => T): RBox<T> => {
+export const calcBox = <T, const D extends readonly RBox<unknown>[]>(dependencies: D, calcFunction: (...dependencyValues: DependencyBoxValues<D>) => T): RBox<T> => {
 	return new CalcBox(dependencies as unknown as readonly BoxInternal<unknown>[], calcFunction as unknown as (...args: unknown[]) => T)
 }
 
