@@ -1,11 +1,11 @@
-import {anythingToString, SingleDownstreamBox, BoxInternal} from "src/internal"
+import {anythingToString, SingleDownstreamBox, BoxInternal, BoxUpdateMeta} from "src/internal"
 
 export abstract class MapBox<T, U> extends SingleDownstreamBox<T, U> {
 
 	constructor(
 		upstream: BoxInternal<U>,
-		protected readonly makeDownstreamValue: (value: U) => T,
-		protected readonly makeUpstreamValue: (value: T) => U) {
+		protected readonly makeDownstreamValue: (value: U, meta: BoxUpdateMeta | undefined) => T,
+		protected readonly makeUpstreamValue: (value: T, meta: BoxUpdateMeta | undefined) => U) {
 		super(upstream)
 	}
 
@@ -13,8 +13,8 @@ export abstract class MapBox<T, U> extends SingleDownstreamBox<T, U> {
 		return `${this.name ?? "MapBox"}(${anythingToString(this.value)})`
 	}
 
-	protected updateUpstreamWith(downstreamValue: T): void {
-		this.upstream.set(this.makeUpstreamValue(downstreamValue), this)
+	protected updateUpstreamWith(downstreamValue: T, meta: BoxUpdateMeta | undefined): void {
+		this.upstream.set(this.makeUpstreamValue(downstreamValue, meta), this)
 	}
 
 }

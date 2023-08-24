@@ -3,25 +3,25 @@ import {DownstreamBox, BoxInternal, SingleDependencyList, UpstreamSubscriber, Bo
 /** A downstream box that has only one upstream */
 export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 
-	protected abstract makeDownstreamValue(upstreamValue: U): T
-	protected abstract updateUpstreamWith(downstreamValue: T): void
+	protected abstract makeDownstreamValue(upstreamValue: U, meta: BoxUpdateMeta | undefined): T
+	protected abstract updateUpstreamWith(downstreamValue: T, meta: BoxUpdateMeta | undefined): void
 
 	constructor(protected readonly upstream: BoxInternal<U>) {
 		super(new SingleDependencyList(upstream))
 	}
 
-	override calculate(): T {
-		return this.makeDownstreamValue(this.upstream.get())
+	override calculate(_: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): T {
+		return this.makeDownstreamValue(this.upstream.get(), meta)
 	}
 
 	protected override notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: BoxUpdateMeta | undefined): void {
 		if(changeSource !== this.upstream){
-			this.updateUpstreamWith(value)
+			this.updateUpstreamWith(value, updateMeta)
 		}
 		super.notifyOnValueChange(value, changeSource, updateMeta)
 	}
 
-	protected override calculateAndUpdate(changeSourceBox: BoxInternal<unknown> | undefined): void {
+	protected override calculateAndUpdate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): void {
 		if(!changeSourceBox){
 			// the only case when we don't have a source box and need to recalculate
 			// is when we detect that our value is out of date and needs to be updated
@@ -31,6 +31,6 @@ export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 			changeSourceBox = this.upstream
 		}
 
-		super.calculateAndUpdate(changeSourceBox)
+		super.calculateAndUpdate(changeSourceBox, meta)
 	}
 }

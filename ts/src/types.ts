@@ -19,7 +19,7 @@ export interface RBox<T>{
 	/** Create another box, value of which entirely depends on value of this one box
 	 *
 	 * Even if other boxes are used in this box, they won't trigger recalculation */
-	map<R>(mapper: (value: T) => R): RBox<R>
+	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R): RBox<R>
 
 	/** Create another box which holds value of a property under that name */
 	prop<const K extends (keyof T) & (string | symbol)>(this: RBox<T>, propName: K): RBox<T[K]>
@@ -29,7 +29,10 @@ export interface RBox<T>{
 
 	/** Apply mapper to each individual value in the array, getting array with new items
 	 * Will only apply mapper to new/changed items when the source array changes */
-	mapArray<E, R>(this: RBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArrayElements<E, R>(this: RBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	/** Wrap each individual value in the array in its own box; apply the mapper to each of them
+	 * Will only apply mapper to new items */
+	mapArray<E, K, R>(this: RBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: RBox<E>, index: number) => R): RBox<R[]>
 }
 
 /** ConstBox - a box that can never change its value.
@@ -44,12 +47,12 @@ export interface WBox<T> extends RBox<T> {
 	/** Put the value in the box, overwriting existing value and calling all the change handlers. */
 	set(value: T): void
 
-	map<R>(mapper: (value: T) => R): RBox<R>
+	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R): RBox<R>
 	/** Create another box, value of which entirely depends on value of this one box
 	 * New box will also propagate its value to this box if changed
 	 *
 	 * Even if other boxes are used in this box, they won't trigger recalculation */
-	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
+	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R, reverseMapper: (value: R, meta: BoxUpdateMeta | undefined) => T): WBox<R>
 
 	/** Create another box which holds value of a property under that name */
 	prop<const K extends (keyof T) & (string | symbol)>(this: WBox<T>, propName: K): WBox<T[K]>
@@ -69,8 +72,11 @@ export interface WBox<T> extends RBox<T> {
 
 	/** Apply mapper to each individual value in the array, getting array with new items
 	 * Will only apply mapper to new/changed items when the source array changes */
-	mapArray<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
-	mapArray<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+	mapArrayElements<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArrayElements<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+	/** Wrap each individual value in the array in its own box; apply the mapper to each of them
+	 * Will only apply mapper to new elements */
+	mapArray<E, K, R>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<R[]>
 
 	/** This will set value of a property if there's an object inside the box
 	 * It's more optimal to do it that way instead of `.set({...value, [propName]: propValue})`,
@@ -162,12 +168,12 @@ export interface DependencyList {
 	unsubscribeFromDependencies(owner: UpstreamSubscriber): void
 	subscribeToDependencies(owner: UpstreamSubscriber): void
 	/** Calculate and .set() value of the owner box */
-	calculate<T>(owner: CalculatableBox<T>, changeSourceBox?: BoxInternal<unknown>): void
+	calculate<T>(owner: CalculatableBox<T>, changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): void
 	getDependencyValues(): unknown[]
 }
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
-	calculate(): T
+	calculate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): T
 	readonly revision: number
 	readonly dependencyList: DependencyList
 }

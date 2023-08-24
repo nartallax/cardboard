@@ -1,11 +1,13 @@
+import {mapArray} from "src/array_contexts/map_array"
 import type {BoxChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, BoxUpdateMeta} from "src/internal"
-import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArray, SubscriberList} from "src/internal"
+import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArrayElements, SubscriberList} from "src/internal"
 
 export const NoValue = Symbol("AbsentBoxValue")
 
 export abstract class BaseBox<T> implements BoxInternal<T> {
 	value: T | typeof NoValue = NoValue
 	private readonly subscriberList = new SubscriberList<T, this>(this)
+	// TODO: remove, it's still created in runtime, inacceptable
 	name?: string // just for debugging purposes; we won't even create this property most of the time
 
 	haveSubscribers(): boolean {
@@ -54,9 +56,9 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		this.subscriberList.callSubscribers(value, changeSource, updateMeta)
 	}
 
-	map<R>(mapper: (value: T) => R): RBox<R>
-	map<R>(mapper: (value: T) => R, reverseMapper: (value: R) => T): WBox<R>
-	map<R>(mapper: (value: T) => R, reverseMapper?: (value: R) => T): RBox<R> {
+	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R): RBox<R>
+	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R, reverseMapper: (value: R, meta: BoxUpdateMeta | undefined) => T): WBox<R>
+	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R, reverseMapper?: (value: R, meta: BoxUpdateMeta | undefined) => T): RBox<R> {
 		if(!reverseMapper){
 			return new MapRBox(this, mapper, throwOnReverseMapping)
 		} else {
@@ -74,10 +76,14 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return new ArrayContextImpl(this, getKey)
 	}
 
-	mapArray<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
-	mapArray<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
-	mapArray<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper?: (item: R, index: number) => E): WBox<R[]> | RBox<R[]> {
-		return mapArray(this, mapper, reverseMapper)
+	mapArrayElements<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArrayElements<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+	mapArrayElements<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper?: (item: R, index: number) => E): WBox<R[]> | RBox<R[]> {
+		return mapArrayElements(this, mapper, reverseMapper)
+	}
+
+	mapArray<E, K, R>(this: BaseBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<R[]> {
+		return mapArray(this, getKey, mapBox)
 	}
 
 	setProp<K extends keyof T>(propName: K, propValue: T[K]): void {

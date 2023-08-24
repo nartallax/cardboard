@@ -12,7 +12,7 @@ describe("Array container", () => {
 		])
 
 		let callCount = 0
-		const mapResult = arrBox.mapArray(x => {
+		const mapResult = arrBox.mapArrayElements(x => {
 			callCount++
 			return JSON.stringify(x)
 		}, x => JSON.parse(x))
@@ -40,7 +40,7 @@ describe("Array container", () => {
 		]
 		const arrBox = box(roArr)
 
-		const mapResult = arrBox.mapArray(x => JSON.stringify(x), x => JSON.parse(x))
+		const mapResult = arrBox.mapArrayElements(x => JSON.stringify(x), x => JSON.parse(x))
 		expect(mapResult.get()[0]!).to.be("{\"id\":1,\"name\":\"1\"}")
 		mapResult.set(["{\"id\":1,\"name\":\"uwu\"}", mapResult.get()[1]!, mapResult.get()[2]!])
 		expect(arrBox.get()[0]).to.eql({id: 1, name: "uwu"})
@@ -54,7 +54,7 @@ describe("Array container", () => {
 				const imgs = images.get()
 				maxImageHeight = imgs.reduce((a, b) => Math.max(a, b.height), 0)
 			}
-			const images = urls.mapArray(
+			const images = urls.mapArrayElements(
 				url => {
 					const img = {width: parseInt(url), height: parseInt(url)}
 					calcMaxHeight()

@@ -1,4 +1,4 @@
-import {ConstArrayContext, anythingToString, ArrayContext, RBox, WBox, BoxInternal, NoValue, ArrayItemWBox} from "src/internal"
+import {ConstArrayContext, anythingToString, ArrayContext, RBox, WBox, BoxInternal, NoValue, ArrayItemWBox, BoxUpdateMeta} from "src/internal"
 
 /** Make a new constant box, a readonly box which value never changes
  *
@@ -37,8 +37,8 @@ export class ConstBoxImpl<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 		return false
 	}
 
-	map<R>(mapper: (value: T) => R): WBox<R> {
-		return new ConstBoxImpl(mapper(this.value as T))
+	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R) {
+		return new ConstBoxImpl(mapper(this.value as T, undefined))
 	}
 
 	prop<K extends keyof T>(propName: K): WBox<T[K]> {
@@ -49,10 +49,24 @@ export class ConstBoxImpl<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 		return new ConstArrayContext<E, K>(this, getKey)
 	}
 
-	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
-	mapArray<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
-	mapArray<E, R>(this: ConstBoxImpl<E[]>, mapper: (item: E, index: number) => R): RBox<R[]> | WBox<R[]> {
+	mapArrayElements<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
+	mapArrayElements<E, R>(this: WBox<E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
+	mapArrayElements<E, R>(this: ConstBoxImpl<E[]>, mapper: (item: E, index: number) => R): RBox<R[]> | WBox<R[]> {
 		return new ConstBoxImpl((this.value as E[]).map((item, index) => mapper(item, index)))
+	}
+
+	mapArray<E, K, R>(this: ConstBoxImpl<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<R[]> {
+		const valueMap = new Map<K, R>()
+		return new ConstBoxImpl((this.value as E[]).map((sourceValue, i) => {
+			const key = getKey(sourceValue, i)
+			if(valueMap.has(key)){
+				return valueMap.get(key)!
+			}
+
+			const resultValue = mapBox(new ConstBoxImpl(sourceValue), i)
+			valueMap.set(key, resultValue)
+			return resultValue
+		}))
 	}
 
 	set(): void {

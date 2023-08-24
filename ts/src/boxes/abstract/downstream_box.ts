@@ -7,7 +7,7 @@ import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, Calcul
 export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> implements CalculatableBox<T> {
 
 	/** Calculate value of this box based on its internal calculation logic */
-	abstract calculate(): T
+	abstract calculate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): T
 
 	/** A revision is a counter that is incremented each time the value of the box is changed.
 	 *
@@ -35,9 +35,9 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	 * This method should be called as handler of internal subscription calls
 	 *
 	 * @param changeSourceBox the box that caused this value to be recalculated. Won't receive update about result. */
-	protected calculateAndUpdate(changeSourceBox: BoxInternal<unknown> | undefined): void {
+	protected calculateAndUpdate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): void {
 		this.forcedShouldRecalculate = false
-		this.dependencyList.calculate(this, changeSourceBox)
+		this.dependencyList.calculate(this, changeSourceBox, meta)
 	}
 
 	protected notifyOnValueChange(value: T, changeSource: UpstreamSubscriber | BoxInternal<unknown> | undefined, updateMeta: BoxUpdateMeta | undefined): void {
@@ -45,8 +45,8 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		super.notifyOnValueChange(value, changeSource, updateMeta)
 	}
 
-	onUpstreamChange(upstream: BoxInternal<unknown>): void {
-		this.calculateAndUpdate(upstream)
+	onUpstreamChange(upstream: BoxInternal<unknown>, meta: BoxUpdateMeta | undefined): void {
+		this.calculateAndUpdate(upstream, meta)
 	}
 
 	protected shouldRecalculate(): boolean {
@@ -80,9 +80,9 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		return true
 	}
 
-	override get(changeSourceBox?: BoxInternal<unknown>): T {
+	override get(changeSourceBox?: BoxInternal<unknown>, meta?: BoxUpdateMeta): T {
 		if(this.shouldRecalculate()){
-			this.calculateAndUpdate(changeSourceBox)
+			this.calculateAndUpdate(changeSourceBox, meta)
 		}
 
 		return super.get()
@@ -93,7 +93,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		if(this.shouldRecalculate()){
 			// something may change while we wasn't subscribed to our dependencies
 			// that's why we should recalculate - so our value is actual
-			this.calculateAndUpdate(undefined)
+			this.calculateAndUpdate(undefined, undefined)
 		}
 	}
 

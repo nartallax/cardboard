@@ -188,4 +188,27 @@ describe("MapBox", () => {
 		expect(b1.get()).to.be(4)
 	})
 
+	test("map box receives meta", () => {
+		const objBox = box({a: 5})
+		let lastKnownMeta: any = null
+		const a = objBox.map((value, meta) => {
+			lastKnownMeta = meta
+			return value
+		})
+		a.subscribe(makeCallCounter())
+
+		objBox.setProp("a", 6)
+		expect(lastKnownMeta).to.eql({type: "property_update", propName: "a"})
+
+		const arrayBox = box([1, 2, 3])
+		const b = arrayBox.map((value, meta) => {
+			lastKnownMeta = meta
+			return value
+		})
+		b.subscribe(makeCallCounter())
+
+		arrayBox.setElementAtIndex(1, 5)
+		expect(lastKnownMeta).to.eql({type: "array_item_update", index: 1})
+	})
+
 })
