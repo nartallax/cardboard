@@ -1,4 +1,4 @@
-import {BaseDependencyList, DependencyList, BoxInternal, UpstreamSubscriber, isRBox, unbox} from "src/internal"
+import {BaseDependencyList, DependencyList, BoxInternal, UpstreamSubscriber, isRBox, unbox, isWBox, RBox} from "src/internal"
 
 export class MultipleDependencyList extends BaseDependencyList implements DependencyList {
 	private readonly boxMap: Map<BoxInternal<unknown>, unknown> = new Map()
@@ -46,6 +46,25 @@ export class MultipleDependencyList extends BaseDependencyList implements Depend
 		}
 
 		return false
+	}
+
+	setDependencyValues(values: unknown[]): void {
+		for(let i = 0; i < this.rawDependencies.length; i++){
+			const dep = this.rawDependencies[i]!
+			const value = values[i]!
+			if(isWBox(dep)){
+				dep.set(value)
+			} else {
+				const currentValue = unbox(dep)
+				if(currentValue !== value){
+					throw new Error("Cannot update value of readonly dependency " + dep)
+				}
+			}
+		}
+	}
+
+	isDependency(box: RBox<unknown>): boolean {
+		return this.boxMap.has(box as BoxInternal<unknown>)
 	}
 
 }

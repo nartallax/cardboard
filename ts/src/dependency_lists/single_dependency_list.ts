@@ -1,11 +1,11 @@
-import {DependencyList, BoxInternal, UpstreamSubscriber, BaseDependencyList, unbox, isRBox} from "src/internal"
+import {DependencyList, BoxInternal, UpstreamSubscriber, BaseDependencyList, unbox, isRBox, isWBox, RBox} from "src/internal"
 
 /** A dependency list for cases when you have only one dependency */
 export class SingleDependencyList<T> extends BaseDependencyList implements DependencyList {
 	private lastKnownDependencyValue: T
 
 	constructor(
-		private readonly dependency: T | BoxInternal<T>) {
+		readonly dependency: T | BoxInternal<T>) {
 		super()
 		this.lastKnownDependencyValue = unbox(dependency)
 	}
@@ -32,6 +32,21 @@ export class SingleDependencyList<T> extends BaseDependencyList implements Depen
 
 	getDependencyValues(): unknown[] {
 		return [unbox(this.dependency)]
+	}
+
+	setDependencyValues(values: unknown[]): void {
+		if(isWBox(this.dependency)){
+			this.dependency.set(values[0]! as T)
+		} else {
+			const currentValue = unbox(this.dependency)
+			if(currentValue !== values[0]){
+				throw new Error("Cannot update value of readonly dependency " + this.dependency)
+			}
+		}
+	}
+
+	isDependency(box: RBox<unknown>): boolean {
+		return box === this.dependency
 	}
 
 }

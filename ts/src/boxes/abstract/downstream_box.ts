@@ -80,11 +80,14 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		return true
 	}
 
-	override get(changeSourceBox?: BoxInternal<unknown>, meta?: BoxUpdateMeta): T {
+	recalculateIfShould(changeSourceBox?: BoxInternal<unknown>, meta?: BoxUpdateMeta): void {
 		if(this.shouldRecalculate()){
 			this.calculateAndUpdate(changeSourceBox, meta)
 		}
+	}
 
+	override get(): T {
+		this.recalculateIfShould(undefined, {type: "recalc_on_get"})
 		return super.get()
 	}
 

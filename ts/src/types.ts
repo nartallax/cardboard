@@ -172,6 +172,8 @@ export interface DependencyList {
 	/** Calculate and .set() value of the owner box */
 	calculate<T>(owner: CalculatableBox<T>, changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): void
 	getDependencyValues(): unknown[]
+	setDependencyValues(values: unknown[]): void
+	isDependency(box: unknown): boolean
 }
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {

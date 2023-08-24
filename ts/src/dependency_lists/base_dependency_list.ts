@@ -8,7 +8,7 @@ export abstract class BaseDependencyList {
 		const startingRevision = owner.revision
 		const value = owner.calculate(changeSourceBox, meta)
 		if(owner.revision === startingRevision){
-			owner.set(value, changeSourceBox)
+			owner.set(value, changeSourceBox, meta)
 		}
 
 		this.updateKnownDependencies()

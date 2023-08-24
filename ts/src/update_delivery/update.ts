@@ -26,7 +26,7 @@ export class Update<T> {
 		if(receiver instanceof CalcBox || receiver instanceof MapBox){
 			if(receiver.forcedShouldRecalculate){
 				// it could be called before us, if there are other boxes depending on this calcbox
-				receiver.get(this.subscription.provider, this.meta)
+				receiver.recalculateIfShould(this.subscription.provider, this.meta)
 			}
 		} else if(typeof(receiver) === "function"){
 			receiver(this.value, this.subscription.provider, this.meta)

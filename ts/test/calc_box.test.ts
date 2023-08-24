@@ -388,4 +388,44 @@ describe("CalcBox", () => {
 		expect(counter.lastCallValue).to.be("6.003null5uwuowo")
 	})
 
+	test("reverse calc box", () => {
+		const obj = box({a: 5, b: 10})
+		const key = box<"a" | "b">("a")
+		const mappedKey = key.map(x => x)
+		const objByKey = calcBox(
+			[obj, mappedKey],
+			(obj, key) => obj[key],
+			(value, obj, key) => [{...obj, [key]: value}, key]
+		)
+
+		objByKey.subscribe(makeCallCounter())
+
+		expect(objByKey.get()).to.be(5)
+
+		key.set("b")
+		expect(objByKey.get()).to.be(10)
+
+		objByKey.set(15)
+		expect(obj.get()).to.eql({a: 5, b: 15})
+	})
+
+	test("reverse calc box throws", () => {
+		const obj = box({a: 5, b: 10})
+		const mappedObj = obj.map(x => x)
+		const key = box<"a" | "b">("a")
+		const mappedKey = key.map(x => x)
+		const objByKey = calcBox(
+			[mappedObj, mappedKey],
+			(obj, key) => obj[key],
+			(value, obj, key) => [{...obj, [key]: value}, key]
+		)
+
+		expect(objByKey.get()).to.be(5)
+
+		key.set("b")
+		expect(objByKey.get()).to.be(10)
+
+		expect(() => objByKey.set(15)).to.throwError(/readonly dependency/)
+	})
+
 })

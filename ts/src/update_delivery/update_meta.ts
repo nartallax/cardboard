@@ -25,4 +25,6 @@ export type BoxUpdateMeta = {
 	}[]
 } | {
 	readonly type: "array_items_delete_all"
+} | {
+	readonly type: "recalc_on_get"
 }
