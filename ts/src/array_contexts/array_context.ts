@@ -26,22 +26,34 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		}
 	}
 
+	private makeChildBox(item: E, index: number, key: K): ArrayItemBox<E, K> {
+		return !isWBox(this.upstream)
+			? new ArrayItemRBoxImpl<E, K>(this, item, index, key)
+			: new ArrayItemWBoxImpl<E, K>(this, item, index, key)
+	}
+
 	onUpstreamChange(_: BoxInternal<unknown>, updateMeta: BoxUpdateMeta | undefined, upstreamArray?: E[]): void {
 		upstreamArray ??= this.upstream.get()
 		this.lastKnownUpstreamValue = upstreamArray
 
 		if(updateMeta){
 			switch(updateMeta.type){
+
 				case "array_item_update": {
 					const item = upstreamArray[updateMeta.index]!
 					const key = this.getKey(item, updateMeta.index)
-					const box = this.boxes.get(key)
+					let box = this.boxes.get(key)
 					if(!box){
-						throw new Error(`Update meta points to update of array item at index ${updateMeta.index}; the key for this index is ${key}, but there's no box for this key. Either key generation logic is flawed, or there's bug in the library.`)
+						const oldKey = this.getKey(updateMeta.oldValue as E, updateMeta.index)
+						this.boxes.delete(oldKey)
+						box = this.makeChildBox(item, updateMeta.index, key)
+						this.boxes.set(key, box)
+					} else {
+						box.set(item, this)
 					}
-					box.set(item, this)
 					return
 				}
+
 				case "array_items_insert": {
 					for(let offset = 0; offset < updateMeta.count; offset++){
 						const index = updateMeta.index + offset
@@ -50,11 +62,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 						if(this.boxes.get(key)){
 							throw new Error("Duplicate key: " + key)
 						}
-						// it doesn't make much sense for upstream to be readonly when it is updated by item insert
-						// but let's check anyway
-						const box = !isWBox(this.upstream)
-							? new ArrayItemRBoxImpl<E, K>(this, item, index, key)
-							: new ArrayItemWBoxImpl<E, K>(this, item, index, key)
+						const box = this.makeChildBox(item, index, key)
 						this.boxes.set(key, box)
 					}
 					return
@@ -84,7 +92,6 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 			}
 		}
 
-		const isReadonly = !isWBox(this.upstream)
 		const outdatedKeys = new Set(this.boxes.keys())
 		for(let index = 0; index < upstreamArray.length; index++){
 			const item = upstreamArray[index]!
@@ -97,9 +104,7 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 				box.set(item, this)
 				box.index = index
 			} else {
-				box = isReadonly
-					? new ArrayItemRBoxImpl<E, K>(this, item, index, key)
-					: new ArrayItemWBoxImpl<E, K>(this, item, index, key)
+				box = this.makeChildBox(item, index, key)
 				this.boxes.set(key, box)
 			}
 
@@ -127,9 +132,10 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 
 		const oldUpstreamValue = this.upstream.get()
 		const newUpstreamValue: E[] = [...oldUpstreamValue]
+		const oldElementValue = newUpstreamValue[downstreamBox.index]
 		newUpstreamValue[downstreamBox.index] = value
 		this.lastKnownUpstreamValue = newUpstreamValue
-		this.upstream.set(newUpstreamValue, this, {type: "array_item_update", index: downstreamBox.index})
+		this.upstream.set(newUpstreamValue, this, {type: "array_item_update", index: downstreamBox.index, oldValue: oldElementValue})
 	}
 
 	onDownstreamSubscription(): void {

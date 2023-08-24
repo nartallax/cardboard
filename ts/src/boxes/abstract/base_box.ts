@@ -80,7 +80,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return mapArrayElements(this, mapper, reverseMapper)
 	}
 
-	mapArray<E, K, R>(this: BaseBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<R[]> {
+	mapArray<E, K, R>(this: BaseBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<readonly R[]> {
 		return mapArray(this, getKey, mapBox)
 	}
 
@@ -97,9 +97,10 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		if(oldValue[index] === value){
 			return
 		}
+		const oldElementValue = oldValue[index]
 		const newValue = [...oldValue]
 		newValue[index] = value
-		this.set(newValue, undefined, {type: "array_item_update", index})
+		this.set(newValue, undefined, {type: "array_item_update", index, oldValue: oldElementValue})
 	}
 
 	insertElementsAtIndex<E>(this: BaseBox<readonly E[]>, index: number, values: readonly E[]): void {

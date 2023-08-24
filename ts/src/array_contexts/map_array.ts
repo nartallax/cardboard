@@ -1,78 +1,76 @@
 import {BoxInternal, RBox, WBox} from "src/internal"
 
-export function mapArray<E, K, R>(upstream: BoxInternal<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<R[]> {
-	void upstream, getKey, mapBox
-	return null as any
-	// let context = upstream.getArrayContext(getKey)
-	// const keyToChildMap = new Map<K, R>()
+export function mapArray<E, K, R>(upstream: BoxInternal<readonly E[]>, getKey: (item: E, index: number) => K, mapper: (box: WBox<E>, index: number) => R): RBox<readonly R[]> {
+	const context = upstream.getArrayContext(getKey)
+	const keyToResultMap = new Map<K, R>()
 
-	// watchAndRun(null, parent, childItems, (childItems, _, meta) => {
-	// 	if(meta){
-	// 		switch(meta.type){
-	// 			case "array_item_update": {
-	// 				// fully processed by array context, no action required
-	// 				return
-	// 			}
+	return upstream.map((srcElements, meta) => {
+		switch(meta?.type){
+			case "array_item_update": {
+				const key = getKey(srcElements[meta.index] as E, meta.index)
+				if(!keyToResultMap.has(key)){
+					const oldKey = getKey(meta.oldValue as E, meta.index)
+					keyToResultMap.delete(oldKey)
+					const box = context.getBoxForKey(key)
+					keyToResultMap.set(key, mapper(box, meta.index))
+				}
+				break
+			}
 
-	// 			case "array_items_insert": {
-	// 				const nextChild = parent.childNodes[meta.index]
-	// 				for(let offset = 0; offset < meta.count; offset++){
-	// 					const index = meta.index + offset
-	// 					const key = getKey(childItems[index]!, index)
-	// 					const child = renderChild(arrayContext.getBoxForKey(key))
-	// 					keyToChildMap.set(key, child)
-	// 					if(nextChild){
-	// 						parent.insertBefore(child, nextChild)
-	// 					} else {
-	// 						parent.appendChild(child)
-	// 					}
-	// 				}
-	// 				return
-	// 			}
+			case "array_items_insert": {
+				for(let offset = 0; offset < meta.count; offset++){
+					const index = meta.index + offset
+					const key = getKey(srcElements[index]!, index)
+					const child = mapper(context.getBoxForKey(key), index)
+					keyToResultMap.set(key, child)
+				}
+				break
+			}
 
-	// 			case "array_items_delete": {
-	// 				for(const {index, value} of meta.indexValuePairs){
-	// 					const key = getKey(value as T, index)
-	// 					const child = keyToChildMap.get(key)
-	// 					if(!child){
-	// 						throw new Error("Tried to delete child at key " + key + ", but there's no item for that key.")
-	// 					}
-	// 					parent.removeChild(child)
-	// 					keyToChildMap.delete(key)
-	// 				}
-	// 				return
-	// 			}
+			case "array_items_delete": {
+				for(const {index, value} of meta.indexValuePairs){
+					const key = getKey(value as E, index)
+					const child = keyToResultMap.get(key)
+					if(!child){
+						throw new Error("Tried to delete child at key " + key + ", but there's no item for that key.")
+					}
+					keyToResultMap.delete(key)
+				}
+				break
+			}
 
-	// 			case "array_items_delete_all": {
-	// 				while(parent.firstChild){
-	// 					parent.removeChild(parent.firstChild)
-	// 				}
-	// 				keyToChildMap.clear()
-	// 				return
-	// 			}
+			case "array_items_delete_all": {
+				keyToResultMap.clear()
+				return []
+			}
 
-	// 		}
-	// 	}
+			default: {
+				// full update
+				const outdatedKeys = new Set(keyToResultMap.keys())
 
-	// 	const newChildArray: Node[] = new Array(childItems.length)
-	// 	const outdatedKeys = new Set(keyToChildMap.keys())
-	// 	for(let i = 0; i < childItems.length; i++){
-	// 		const childItem = childItems[i]!
-	// 		const key = getKey(childItem, i)
-	// 		let child = keyToChildMap.get(key)
-	// 		if(!child){
-	// 			const box = arrayContext.getBoxForKey(key)
-	// 			child = renderChild(box)
-	// 			keyToChildMap.set(key, child)
-	// 		}
-	// 		newChildArray[i] = child
-	// 		outdatedKeys.delete(key)
-	// 	}
+				for(let i = 0; i < srcElements.length; i++){
+					const childItem = srcElements[i]!
+					const key = getKey(childItem, i)
+					let child = keyToResultMap.get(key)
+					if(!child){
+						const box = context.getBoxForKey(key)
+						child = mapper(box, i)
+						keyToResultMap.set(key, child)
+					}
+					outdatedKeys.delete(key)
+				}
 
-	// 	for(const outdatedKey of outdatedKeys){
-	// 		keyToChildMap.delete(outdatedKey)
-	// 	}
+				for(const outdatedKey of outdatedKeys){
+					keyToResultMap.delete(outdatedKey)
+				}
+			}
 
-	// 	updateChildren(parent, newChildArray)
-	// })
+		}
+
+		const newChildArray: R[] = new Array(srcElements.length)
+		for(let i = 0; i < srcElements.length; i++){
+			newChildArray[i] = keyToResultMap.get(getKey(srcElements[i]!, i))!
+		}
+		return newChildArray
+	})
 }

@@ -214,17 +214,38 @@ console.log(parent.get()) // []
 
 A callback to `.getArrayContext()` gets element value and index. In general, you should not use index as your item key; hovewer, in some scenarios it could be okay; for example, if you absolutely sure that array won't be sorted, elements won't be added or removed.  
 
-## .mapArray() method
+## .mapArrayElements() method
 
-If you don't need to work with individual boxes of the array - you can use `.mapArray()` method.  
+If you don't need to work with individual boxes of the array - you can use `.mapArrayElements()` method.  
 This method will do to array pretty much the same thing `.map()` does to regular boxes; two differences are that callback is invoked for each element of the array individually, and result of mapping is cached; that means mapper won't be invoked twice for same exact element:  
 
 ```typescript
 const singleArr = box([1, 2, 3])
-const doubleArr = singleArr.mapArray(
+const doubleArr = singleArr.mapArrayElements(
 	sourceElement => sourceElement * 2,
 	doubledElement => doubledElement / 2
 )
+```
+
+## .mapArray() method
+
+There's another way to work with arrays - `.mapArray()` method.  
+It's weird, because it gives box to a callback, but expects just a value, and that callback will only be called once per value; that means method expects callback to subscribe to the box and update mutable values themselves, which goes a bit against the rules, but here we are.  
+
+```typescript
+const parent = box([{id: 1, a: 1}, {id: 2, a: 2}, {id: 3, a: 3}])
+const downstream = parent.mapArray(x => x.id, b => {
+	const result = {b: b.get().a}
+	b.subscribe(value => result.b = value.a)
+	return result
+})
+
+console.log(downstream.get()) // [{b: 1}, {b: 2}, {b: 3}]
+
+const arr = parent.get()
+parent.set([arr[2]!, arr[0]!, arr[1]!])
+
+console.log(downstream.get()) // [{b: 3}, {b: 1}, {b: 2}]
 ```
 
 ## constBox
@@ -294,7 +315,7 @@ In example above we create 100 boxes, but can actually use only last one. Other 
 
 There are some ways of using this library that will result in worse performance or other weird bugs.
 
-1. Avoid putting boxes inside boxes. Boxes exist to manipulate data, and putting something as complex as another box won't end well. Also you generally should avoid putting mutable data and class instances inside boxes, but sometimes it can be fine if you know what you're doing and comfortable enough with the library.  
+1. Avoid putting boxes inside boxes. Boxes exist to manipulate data, and putting something as complex as another box won't end well. Also that's complicates your code.  
 2. Avoid getting value of other boxes from callback of `.map()` method. Those other boxes won't be included in the dependency list and won't trigger recalculation. Also sometimes this could mean getting outdated value from that other box.  
 3. Avoid setting value of any box from inside callback of `.map()` or `calcBox()`. This means that a box will be updated out-of-order during update, and this will trigger double-update, that is, update within update; this will make library drop partial updates, and this will lead to decreased performance. Other than that it will probably be fine; it's okay to do that on a small scale, if you're trying to organize some smart calculation system consisting of several variables.  
 4. Avoid having big chains of downstream boxes (`calcBox()`, `.map()`-boxes, `.prop()`-boxes, array element boxes) without subscribers. This will lead to reduced performance. When a downstream box without subscribers is accessed, it needs to check if new value needs to be calculated; to do that, it accesses its upstream boxes; if those boxes don't have subscribers either - they access their upstreams, and so on; (when a box is subscribed to, it can safely assume that its value is up-to-date on access, because it receives updates and can update its own value, so it won't try to access its upstreams). Only one box at the end of the chain needs to be subscribed to remedy this problem, because it will lead to other boxes also subscribing to their upstreams.

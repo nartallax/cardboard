@@ -208,7 +208,7 @@ describe("MapBox", () => {
 		b.subscribe(makeCallCounter())
 
 		arrayBox.setElementAtIndex(1, 5)
-		expect(lastKnownMeta).to.eql({type: "array_item_update", index: 1})
+		expect(lastKnownMeta).to.eql({type: "array_item_update", index: 1, oldValue: 2})
 	})
 
 })

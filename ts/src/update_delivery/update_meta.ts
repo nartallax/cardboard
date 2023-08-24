@@ -12,6 +12,7 @@ export type BoxUpdateMeta = {
 } | {
 	readonly type: "array_item_update"
 	readonly index: number
+	readonly oldValue: unknown
 } | {
 	readonly type: "array_items_insert"
 	readonly index: number

@@ -46,7 +46,7 @@ describe("Array container", () => {
 		expect(arrBox.get()[0]).to.eql({id: 1, name: "uwu"})
 	})
 
-	test("maparray box should throw if its value is requested while the value is being recalculated", () => {
+	test("maparrayelements box should throw if its value is requested while the value is being recalculated", () => {
 		try {
 			const urls = calcBox([], () => ["1", "2", "3"])
 			let maxImageHeight = 0
@@ -360,5 +360,34 @@ describe("Array container", () => {
 		const b = context.getBoxForKey(2)
 		b.subscribe(makeCallCounter())
 		expect(() => parent.insertElementAtIndex(1, 4)).to.throwError(/Duplicate key: 1/)
+	})
+
+	test("maparray", () => {
+		const parent = box([{id: 1, a: 1}, {id: 2, a: 2}, {id: 3, a: 3}])
+		let callCount = 0
+		const downstream = parent.mapArray(x => x.id, b => {
+			const result = {b: b.get().a}
+			b.subscribe(value => result.b = value.a)
+			callCount++
+			return result
+		})
+		downstream.subscribe(makeCallCounter())
+
+		expect(downstream.get()).to.eql([{b: 1}, {b: 2}, {b: 3}])
+		expect(callCount).to.be(3)
+
+		const arr = parent.get()
+		parent.set([arr[2]!, arr[0]!, arr[1]!])
+
+		expect(downstream.get()).to.eql([{b: 3}, {b: 1}, {b: 2}])
+		expect(callCount).to.be(3)
+
+		parent.setElementAtIndex(0, {id: 4, a: 4})
+		expect(downstream.get()).to.eql([{b: 4}, {b: 1}, {b: 2}])
+		expect(callCount).to.be(4)
+
+		parent.setElementAtIndex(0, {id: 4, a: 5})
+		expect(downstream.get()).to.eql([{b: 5}, {b: 1}, {b: 2}])
+		expect(callCount).to.be(4)
 	})
 })
