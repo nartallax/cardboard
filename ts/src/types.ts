@@ -148,7 +148,6 @@ export type BoxChangeHandler<T> = (value: T, box: RBox<T>, meta: BoxUpdateMeta |
 /** In reality all of the boxes are internally WBoxes */
 export interface BoxInternal<T> extends WBox<T> {
 	value: T | typeof NoValue
-	name?: string
 	haveSubscribers(): boolean
 	subscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber): void
 	unsubscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber): void

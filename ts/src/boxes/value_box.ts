@@ -12,6 +12,6 @@ export class ValueBox<T> extends BaseBox<T> {
 	}
 
 	toString(): string {
-		return `${this.name ?? "ValueBox"}(${anythingToString(this.value)})`
+		return `ValueBox(${anythingToString(this.value)})`
 	}
 }

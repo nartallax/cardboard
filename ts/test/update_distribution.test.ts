@@ -150,7 +150,6 @@ describe("Update distribution", () => {
 
 	test("non-delivery of updates to downstream boxes that supplied the update won't lead to delivery of outdated update", () => {
 		const base = box(5) as BoxInternal<number>
-		base.name = "base"
 
 		const b1 = base.map(x => {
 			a.set(x & (~1))
@@ -159,10 +158,8 @@ describe("Update distribution", () => {
 			a.set(x & (~1))
 			return x
 		}) as BoxInternal<number>
-		b1.name = "b1"
 
 		const a = base.map(x => x, x => x) as BoxInternal<number>
-		a.name = "a"
 
 		const b2 = base.map(x => {
 			a.set(x & (~1))
@@ -171,7 +168,6 @@ describe("Update distribution", () => {
 			a.set(x & (~1))
 			return x
 		}) as BoxInternal<number>
-		b2.name = "b2"
 
 		b1.subscribe(makeCallCounter("b1"))
 		a.subscribe(makeCallCounter("a"))
@@ -223,11 +219,8 @@ describe("Update distribution", () => {
 
 	test("mapbox updated by upstream won't cycle back value to upstream", () => {
 		const a = box({a: 5})
-		;(a as any).name = "a"
 		const b = a.map(a => ({a: a.a + 1}), b => ({a: b.a - 1}))
-		;(b as any).name = "b"
 		const c = b.map(b => ({a: b.a + 1}), c => ({a: c.a - 1}))
-		;(c as any).name = "c"
 
 		c.subscribe(makeCallCounter())
 

@@ -10,7 +10,7 @@ export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> i
 	}
 
 	toString(): string {
-		return `${this.name ?? "ArrayItemBox"}(${anythingToString(this.value)})`
+		return `ArrayItemBox(${anythingToString(this.value)})`
 	}
 
 	dispose(): void {

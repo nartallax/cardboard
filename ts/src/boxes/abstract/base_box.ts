@@ -7,8 +7,6 @@ export const NoValue = Symbol("AbsentBoxValue")
 export abstract class BaseBox<T> implements BoxInternal<T> {
 	value: T | typeof NoValue = NoValue
 	private readonly subscriberList = new SubscriberList<T, this>(this)
-	// TODO: remove, it's still created in runtime, inacceptable
-	name?: string // just for debugging purposes; we won't even create this property most of the time
 
 	haveSubscribers(): boolean {
 		return this.subscriberList.haveSubscribers()

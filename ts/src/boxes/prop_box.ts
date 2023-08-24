@@ -10,7 +10,7 @@ export abstract class PropBox<U, K extends keyof U> extends SingleDownstreamBox<
 	}
 
 	toString(): string {
-		return `${this.name ?? "PropBox"}(${anythingToString(this.value)})`
+		return `PropBox(${anythingToString(this.value)})`
 	}
 
 	protected override makeDownstreamValue(upstreamValue: U): U[K] {

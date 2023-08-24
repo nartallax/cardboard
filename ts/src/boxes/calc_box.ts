@@ -27,7 +27,7 @@ export class CalcBox<T> extends DownstreamBox<T> {
 	}
 
 	toString(): string {
-		return `${this.name ?? "CalcBox"}(${anythingToString(this.value)})`
+		return `CalcBox(${anythingToString(this.value)})`
 	}
 
 	override calculate(): T {
