@@ -120,7 +120,7 @@ In this example we create a `calcBox`; it's an `RBox` that depends on other box 
 
 ## calcBox: reverse mapping
 
-In the example above, `calcBox` is a readonly box; it is like that because if we were to set value on this box, the box doesn't know how to distribute value to dependencies.  
+In the example above, `calcBox` is a readonly box; it is like that because if we were to set value on this box, the box wouldn't know how to distribute value to dependencies.  
 We can fix that by passing third argument into `calcBox` creation function:  
 
 ```typescript
