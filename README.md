@@ -118,6 +118,35 @@ console.log(sumOfAB.get()) // 14
 
 In this example we create a `calcBox`; it's an `RBox` that depends on other box values. Each time any box it depends on updates - the value of `calcBox` is also updated (and subscribers are called, of course).  
 
+## calcBox: reverse mapping
+
+In the example above, `calcBox` is a readonly box; it is like that because if we were to set value on this box, the box doesn't know how to distribute value to dependencies.  
+We can fix that by passing third argument into `calcBox` creation function:  
+
+```typescript
+const obj = box({a: 5, b: 10})
+const key = box<"a" | "b">("a")
+
+// for example, let's create a calc box that picks a field from an object
+// and a field is defined by some other box
+const objByKey = calcBox(
+	[obj, key],
+	(obj, key) => obj[key],
+	(value, obj, key) => [{...obj, [key]: value}, key]
+)
+
+// get value of field "a"
+expect(objByKey.get()).to.be(5)
+
+// toggle field to "b" - can get value of field "b", that's expected
+key.set("b")
+expect(objByKey.get()).to.be(10)
+
+// and now! we can set the value of field "b" by setting value of calcBox
+objByKey.set(15)
+expect(obj.get()).to.eql({a: 5, b: 15})
+```
+
 ## .map() method
 
 Now you should be ready to understand how `.map()` method of the boxes works.  
