@@ -1,3 +1,5 @@
+import {RBox} from "src/types"
+
 /** Update meta is description of change made to value of a box.
  * Sometimes this library has more precise data on what's changed, rathen than "something changed";
  * it's called update meta.
@@ -27,4 +29,5 @@ export type BoxUpdateMeta = {
 	readonly type: "array_items_delete_all"
 } | {
 	readonly type: "recalc_on_get"
+	readonly owner: RBox<unknown>
 }

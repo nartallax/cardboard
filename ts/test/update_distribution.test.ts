@@ -241,4 +241,12 @@ describe("Update distribution", () => {
 		expect(c.get()).to.eql([{id: 4}, {id: 3}, {id: 5}])
 	})
 
+	// test("array mapping meta should be passed down", () => {
+	// 	const a = box([1, 2, 3])
+	// 	const b = a.mapArray(x => x, x => x.get())
+	// 	// const c = b.mapArray(x => x, x => x.get())
+	// 	b.subscribe((_, __, meta) => console.log(meta))
+	// 	a.appendElement(4)
+	// })
+
 })

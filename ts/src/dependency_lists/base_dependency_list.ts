@@ -8,7 +8,7 @@ export abstract class BaseDependencyList {
 		const startingRevision = owner.revision
 		const value = owner.calculate(changeSourceBox, meta)
 		if(owner.revision === startingRevision){
-			if(meta?.type === "recalc_on_get"){
+			if(meta?.type === "recalc_on_get" && meta.owner === owner){
 				// meta "recalc_on_get" is related to owner box, and can be propagated
 				owner.set(value, changeSourceBox, meta)
 			} else {

@@ -87,7 +87,7 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 	}
 
 	override get(): T {
-		this.recalculateIfShould(undefined, {type: "recalc_on_get"})
+		this.recalculateIfShould(undefined, {type: "recalc_on_get", owner: this})
 		return super.get()
 	}
 
