@@ -229,4 +229,16 @@ describe("Update distribution", () => {
 		expect(c.get().a).to.be(8)
 	})
 
+	test("array insertion meta does not leak into other arrays", () => {
+		const a = box([{id: 1}, {id: 2}])
+		const b = calcBox([a], a => [...a].reverse().map(x => ({...x, id: x.id + 1})))
+		const c = b.mapArray(x => x.id, x => {
+			x.subscribe(makeCallCounter())
+			return ({...x.get(), id: x.get().id + 1})
+		})
+		c.subscribe(makeCallCounter())
+		a.prependElement({id: 3})
+		expect(c.get()).to.eql([{id: 4}, {id: 3}, {id: 5}])
+	})
+
 })
