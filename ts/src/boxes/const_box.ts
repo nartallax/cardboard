@@ -69,6 +69,10 @@ export class ConstBoxImpl<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 		}))
 	}
 
+	mapWithMeta<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => {result: R, meta: BoxUpdateMeta | undefined}): RBox<R> {
+		return this.map((a, b) => mapper(a, b).result)
+	}
+
 	set(): void {
 		throwOnChange()
 	}

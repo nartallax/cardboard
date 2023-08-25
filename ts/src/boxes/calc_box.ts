@@ -36,9 +36,9 @@ export class CalcBox<T> extends DownstreamBox<T> {
 		return `CalcBox(${anythingToString(this.value)})`
 	}
 
-	override calculate(): T {
+	override calculate(): {result: T, meta: BoxUpdateMeta | undefined} {
 		const values = this.dependencyList.getDependencyValues()
-		return this.calculateFn(...values)
+		return {result: this.calculateFn(...values), meta: undefined}
 	}
 
 	protected override notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: BoxUpdateMeta | undefined): void {

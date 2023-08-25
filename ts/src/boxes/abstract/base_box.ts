@@ -58,10 +58,14 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R, reverseMapper: (value: R, meta: BoxUpdateMeta | undefined) => T): WBox<R>
 	map<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => R, reverseMapper?: (value: R, meta: BoxUpdateMeta | undefined) => T): RBox<R> {
 		if(!reverseMapper){
-			return new MapRBox(this, mapper, throwOnReverseMapping)
+			return new MapRBox(this, (a, b) => ({result: mapper(a, b), meta: undefined}), throwOnReverseMapping)
 		} else {
-			return new MapWBox(this, mapper, reverseMapper)
+			return new MapWBox(this, (a, b) => ({result: mapper(a, b), meta: undefined}), reverseMapper)
 		}
+	}
+
+	mapWithMeta<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => {result: R, meta: BoxUpdateMeta | undefined}): RBox<R> {
+		return new MapRBox(this, mapper, throwOnReverseMapping)
 	}
 
 	prop<K extends keyof T>(this: RBox<T>, propName: K): RBox<T[K]>

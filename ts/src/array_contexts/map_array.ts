@@ -1,10 +1,12 @@
-import {BoxInternal, RBox, WBox} from "src/internal"
+import {BoxInternal, BoxUpdateMeta, RBox, WBox} from "src/internal"
 
 export function mapArray<E, K, R>(upstream: BoxInternal<readonly E[]>, getKey: (item: E, index: number) => K, mapper: (box: WBox<E>, index: number) => R): RBox<readonly R[]> {
 	const context = upstream.getArrayContext(getKey)
 	const keyToResultMap = new Map<K, R>()
 
-	return upstream.map((srcElements, meta) => {
+	// TODO: this whole function is kinda cringe. may it be better? I don't need second context, right?
+	return upstream.mapWithMeta((srcElements, meta) => {
+		const newMeta: BoxUpdateMeta | undefined = undefined
 		switch(meta?.type){
 			case "array_item_update": {
 				const key = getKey(srcElements[meta.index] as E, meta.index)
@@ -41,7 +43,7 @@ export function mapArray<E, K, R>(upstream: BoxInternal<readonly E[]>, getKey: (
 
 			case "array_items_delete_all": {
 				keyToResultMap.clear()
-				return []
+				return {result: [], meta: {type: "array_items_delete_all"}}
 			}
 
 			default: {
@@ -71,6 +73,6 @@ export function mapArray<E, K, R>(upstream: BoxInternal<readonly E[]>, getKey: (
 		for(let i = 0; i < srcElements.length; i++){
 			newChildArray[i] = keyToResultMap.get(getKey(srcElements[i]!, i))!
 		}
-		return newChildArray
+		return {result: newChildArray, meta: newMeta}
 	})
 }

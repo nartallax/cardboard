@@ -3,14 +3,14 @@ import {DownstreamBox, BoxInternal, SingleDependencyList, UpstreamSubscriber, Bo
 /** A downstream box that has only one upstream */
 export abstract class SingleDownstreamBox<T, U> extends DownstreamBox<T> {
 
-	protected abstract makeDownstreamValue(upstreamValue: U, meta: BoxUpdateMeta | undefined): T
+	protected abstract makeDownstreamValue(upstreamValue: U, meta: BoxUpdateMeta | undefined): {result: T, meta: BoxUpdateMeta | undefined}
 	protected abstract updateUpstreamWith(downstreamValue: T, meta: BoxUpdateMeta | undefined): void
 
 	constructor(protected readonly upstream: BoxInternal<U>) {
 		super(new SingleDependencyList(upstream))
 	}
 
-	override calculate(_: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): T {
+	override calculate(_: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): {result: T, meta: BoxUpdateMeta | undefined} {
 		return this.makeDownstreamValue(this.upstream.get(), meta)
 	}
 

@@ -155,6 +155,7 @@ export interface BoxInternal<T> extends WBox<T> {
 	subscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber): void
 	unsubscribe(handler: BoxChangeHandler<T> | UpstreamSubscriber): void
 	set(value: T, box?: BoxInternal<unknown> | UpstreamSubscriber, updateMeta?: BoxUpdateMeta): void
+	mapWithMeta<R>(mapper: (value: T, meta: BoxUpdateMeta | undefined) => {result: R, meta: BoxUpdateMeta | undefined}): RBox<R>
 }
 
 /** A box or other entity that could internally subscribe to upstream box */
@@ -177,7 +178,7 @@ export interface DependencyList {
 }
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
-	calculate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): T
+	calculate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): {result: T, meta: BoxUpdateMeta | undefined}
 	readonly revision: number
 	readonly dependencyList: DependencyList
 }

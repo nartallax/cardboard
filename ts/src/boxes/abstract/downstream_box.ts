@@ -7,7 +7,7 @@ import {DependencyList, FirstSubscriberHandlingBox, BoxInternal, NoValue, Calcul
 export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> implements CalculatableBox<T> {
 
 	/** Calculate value of this box based on its internal calculation logic */
-	abstract calculate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): T
+	abstract calculate(changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): {result: T, meta: BoxUpdateMeta | undefined}
 
 	/** A revision is a counter that is incremented each time the value of the box is changed.
 	 *
