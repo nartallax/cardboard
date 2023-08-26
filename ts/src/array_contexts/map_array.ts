@@ -1,6 +1,8 @@
 import {BoxInternal, RBox, WBox} from "src/internal"
 
 export function mapArray<E, K, R>(upstream: BoxInternal<readonly E[]>, getKey: (item: E, index: number) => K, mapper: (box: WBox<E>, index: number) => R): RBox<readonly R[]> {
+	// TODO: this is cringe.
+	// array context already has a map, why create another one, replicating all the stuff?
 	const context = upstream.getArrayContext(getKey)
 	const keyToResultMap = new Map<K, R>()
 

@@ -1,17 +1,22 @@
 import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, BoxUpdateMeta} from "src/internal"
 
+interface BoxWithValue<E, K, V> {
+	readonly box: ArrayItemBox<E, K>
+	readonly value: V
+}
+
 /** This class controls a set of boxes that contain items of some array box
  * Links upstream array box with downstream item boxes
  *
  * In theory, we could live without this class,
  * but this means item boxes will need to perform a lot of checking every update
  * which is undesirable, because it's a performance hit */
-export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<E, K, ArrayItemBox<E, K>> {
-	private readonly boxes = new Map<K, ArrayItemBox<E, K>>()
+export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayContext<E, K, ArrayItemBox<E, K>> {
+	private readonly pairs = new Map<K, BoxWithValue<E, K, V>>()
 	private childSubCount = 0
 	private lastKnownUpstreamValue: E[] | null = null
 
-	constructor(readonly upstream: BoxInternal<E[]>, private readonly getKey: (element: E, index: number) => K) {
+	constructor(readonly upstream: BoxInternal<E[]>, private readonly getKey: (element: E, index: number) => K, private readonly getValue: (element: ArrayItemBox<E, K>, index: number) => V) {
 	}
 
 	tryUpdate(): void {
@@ -26,10 +31,12 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		}
 	}
 
-	private makeChildBox(item: E, index: number, key: K): ArrayItemBox<E, K> {
-		return !isWBox(this.upstream)
+	private makeChildBox(item: E, index: number, key: K): BoxWithValue<E, K, V> {
+		const box = !isWBox(this.upstream)
 			? new ArrayItemRBoxImpl<E, K>(this, item, index, key)
 			: new ArrayItemWBoxImpl<E, K>(this, item, index, key)
+		const value = this.getValue(box, index)
+		return {box, value}
 	}
 
 	onUpstreamChange(_: BoxInternal<unknown>, updateMeta: BoxUpdateMeta | undefined, upstreamArray?: E[]): void {
@@ -42,14 +49,15 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 				case "array_item_update": {
 					const item = upstreamArray[updateMeta.index]!
 					const key = this.getKey(item, updateMeta.index)
-					let box = this.boxes.get(key)
-					if(!box){
+					let pair = this.pairs.get(key)
+					if(!pair){
+						// TODO: test of key update?
 						const oldKey = this.getKey(updateMeta.oldValue as E, updateMeta.index)
-						this.boxes.delete(oldKey)
-						box = this.makeChildBox(item, updateMeta.index, key)
-						this.boxes.set(key, box)
+						this.pairs.delete(oldKey)
+						pair = this.makeChildBox(item, updateMeta.index, key)
+						this.pairs.set(key, pair)
 					} else {
-						box.set(item, this)
+						pair.box.set(item, this)
 					}
 					return
 				}
@@ -59,11 +67,11 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 						const index = updateMeta.index + offset
 						const item = upstreamArray[index]!
 						const key = this.getKey(item, index)
-						if(this.boxes.get(key)){
+						if(this.pairs.get(key)){
 							throw new Error("Duplicate key: " + key)
 						}
 						const box = this.makeChildBox(item, index, key)
-						this.boxes.set(key, box)
+						this.pairs.set(key, box)
 					}
 					return
 				}
@@ -71,50 +79,50 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 				case "array_items_delete": {
 					for(const {index, value} of updateMeta.indexValuePairs){
 						const key = this.getKey(value as E, index)
-						const box = this.boxes.get(key)
-						if(!box){
+						const pair = this.pairs.get(key)
+						if(!pair){
 							throw new Error("Tried to delete item at key " + key + ", but there's no item for that key.")
 						}
-						box.dispose()
-						this.boxes.delete(key)
+						pair.box.dispose()
+						this.pairs.delete(key)
 					}
 					return
 				}
 
 				case "array_items_delete_all": {
-					for(const box of this.boxes.values()){
-						box.dispose()
+					for(const pair of this.pairs.values()){
+						pair.box.dispose()
 					}
-					this.boxes.clear()
+					this.pairs.clear()
 					return
 				}
 
 			}
 		}
 
-		const outdatedKeys = new Set(this.boxes.keys())
+		const outdatedKeys = new Set(this.pairs.keys())
 		for(let index = 0; index < upstreamArray.length; index++){
 			const item = upstreamArray[index]!
 			const key = this.getKey(item, index)
-			let box = this.boxes.get(key)
-			if(box){
+			let pair = this.pairs.get(key)
+			if(pair){
 				if(!outdatedKeys.has(key)){
 					throw new Error("Constraint violated, key is not unique: " + key)
 				}
-				box.set(item, this)
-				box.index = index
+				pair.box.set(item, this)
+				pair.box.index = index
 			} else {
-				box = this.makeChildBox(item, index, key)
-				this.boxes.set(key, box)
+				pair = this.makeChildBox(item, index, key)
+				this.pairs.set(key, pair)
 			}
 
 			outdatedKeys.delete(key)
 		}
 
 		for(const key of outdatedKeys){
-			const box = this.boxes.get(key)!
-			box.dispose()
-			this.boxes.delete(key)
+			const pair = this.pairs.get(key)!
+			pair.box.dispose()
+			this.pairs.delete(key)
 		}
 	}
 
@@ -163,33 +171,33 @@ export class ArrayContextImpl<E, K> implements UpstreamSubscriber, ArrayContext<
 		for(let i = 0; i < upstreamValue.length; i++){
 			const oldValue = upstreamValue[i]!
 			const key = this.getKey(oldValue, i)
-			const box = this.boxes.get(key)
-			if(!box){
+			const pair = this.pairs.get(key)
+			if(!pair){
 				// should realistically never happen
 				throw new Error("Cannot get array item box list: no downstream box for key " + key)
 			}
-			result[i] = box
+			result[i] = pair.box
 		}
 		return result
 	}
 
 	getBoxForKey(key: K): ArrayItemBox<E, K> {
 		this.tryUpdate()
-		const box = this.boxes.get(key)
-		if(!box){
+		const pair = this.pairs.get(key)
+		if(!pair){
 			throw new Error("No box for key " + key)
 		}
-		return box
+		return pair.box
 	}
 
 	isItemBoxAttached(itemBox: ArrayItemBox<E, K>): boolean {
-		return this.boxes.get(itemBox.key) === itemBox
+		return this.pairs.get(itemBox.key)?.box === itemBox
 	}
 
 	dispose(): void {
 		this.lastKnownUpstreamValue = null // to trigger update next time
-		for(const child of this.boxes.values()){
-			child.dispose()
+		for(const pair of this.pairs.values()){
+			pair.box.dispose()
 		}
 	}
 

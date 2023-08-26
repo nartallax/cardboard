@@ -70,8 +70,8 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return isWBox(this) ? new PropWBox(this, propName) : new PropRBox(this, propName)
 	}
 
-	getArrayContext<E, K>(this: BaseBox<E[]>, getKey: (item: E, index: number) => K): ArrayContextImpl<E, K> {
-		return new ArrayContextImpl(this, getKey)
+	getArrayContext<E, K>(this: BaseBox<E[]>, getKey: (item: E, index: number) => K): ArrayContextImpl<E, K, null> {
+		return new ArrayContextImpl(this, getKey, getNull)
 	}
 
 	mapArrayElements<E, R>(this: BaseBox<readonly E[]>, mapper: (item: E, index: number) => R): RBox<R[]>
@@ -227,3 +227,5 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 const throwOnReverseMapping = () => {
 	throw new Error("This box does not support reverse-mapping")
 }
+
+const getNull = () => null
