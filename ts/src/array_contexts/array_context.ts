@@ -1,4 +1,4 @@
-import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, BoxUpdateMeta} from "src/internal"
+import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, BoxUpdateMeta, MappedArrayBox} from "src/internal"
 
 interface BoxWithValue<E, K, V> {
 	readonly box: ArrayItemBox<E, K>
@@ -14,9 +14,10 @@ interface BoxWithValue<E, K, V> {
 export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayContext<E, K, ArrayItemBox<E, K>> {
 	private readonly pairs = new Map<K, BoxWithValue<E, K, V>>()
 	private childSubCount = 0
-	private lastKnownUpstreamValue: E[] | null = null
+	private lastKnownUpstreamValue: readonly E[] | null = null
+	private mappedValueBox: MappedArrayBox<readonly V[]> | null = null
 
-	constructor(readonly upstream: BoxInternal<E[]>, private readonly getKey: (element: E, index: number) => K, private readonly getValue: (element: ArrayItemBox<E, K>, index: number) => V) {
+	constructor(readonly upstream: BoxInternal<readonly E[]>, private readonly getKey: (element: E, index: number) => K, private readonly getValue: (element: ArrayItemBox<E, K>, index: number) => V) {
 	}
 
 	tryUpdate(): void {
@@ -35,94 +36,114 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 		const box = !isWBox(this.upstream)
 			? new ArrayItemRBoxImpl<E, K>(this, item, index, key)
 			: new ArrayItemWBoxImpl<E, K>(this, item, index, key)
-		const value = this.getValue(box, index)
-		return {box, value}
+		const pair = {box, value: null as unknown as V}
+		this.pairs.set(key, pair)
+		pair.value = this.getValue(box, index)
+		return pair
 	}
 
-	onUpstreamChange(_: BoxInternal<unknown>, updateMeta: BoxUpdateMeta | undefined, upstreamArray?: E[]): void {
+	onUpstreamChange(_: BoxInternal<unknown>, meta: BoxUpdateMeta | undefined, upstreamArray?: readonly E[]): void {
 		upstreamArray ??= this.upstream.get()
 		this.lastKnownUpstreamValue = upstreamArray
+		let newMeta: BoxUpdateMeta | undefined = undefined
+		let shouldUpdateValues = true
 
-		if(updateMeta){
-			switch(updateMeta.type){
+		switch(meta?.type){
 
-				case "array_item_update": {
-					const item = upstreamArray[updateMeta.index]!
-					const key = this.getKey(item, updateMeta.index)
-					let pair = this.pairs.get(key)
+			case "array_item_update": {
+				const item = upstreamArray[meta.index]!
+				const key = this.getKey(item, meta.index)
+				const pair = this.pairs.get(key)
+				if(!pair){
+					// TODO: test of key update?
+					const oldKey = this.getKey(meta.oldValue as E, meta.index)
+					const oldPair = this.pairs.get(oldKey)
+					if(!oldPair){
+						throw new Error("Array element is not found by key " + oldKey)
+					}
+					this.pairs.delete(oldKey)
+					this.makeChildBox(item, meta.index, key)
+					newMeta = {type: "array_item_update", index: meta.index, oldValue: oldPair.value}
+				} else {
+					pair.box.set(item, this)
+					shouldUpdateValues = false
+				}
+				break
+			}
+
+			case "array_items_insert": {
+				const newValuesArray: V[] = new Array(meta.count)
+				for(let offset = 0; offset < meta.count; offset++){
+					const index = meta.index + offset
+					const item = upstreamArray[index]!
+					const key = this.getKey(item, index)
+					if(this.pairs.get(key)){
+						throw new Error("Duplicate key: " + key)
+					}
+					const pair = this.makeChildBox(item, index, key)
+					newValuesArray[offset] = pair.value
+				}
+				newMeta = {type: "array_items_insert", count: meta.count, index: meta.index}
+				break
+			}
+
+			case "array_items_delete": {
+				const newIndexValuePairs: {index: number, value: unknown}[] = new Array(meta.indexValuePairs.length)
+				for(let i = 0; i < meta.indexValuePairs.length; i++){
+					const {index, value} = meta.indexValuePairs[i]!
+					const key = this.getKey(value as E, index)
+					const pair = this.pairs.get(key)
 					if(!pair){
-						// TODO: test of key update?
-						const oldKey = this.getKey(updateMeta.oldValue as E, updateMeta.index)
-						this.pairs.delete(oldKey)
-						pair = this.makeChildBox(item, updateMeta.index, key)
-						this.pairs.set(key, pair)
-					} else {
+						throw new Error("Tried to delete item at key " + key + ", but there's no item for that key.")
+					}
+					pair.box.dispose()
+					this.pairs.delete(key)
+					newIndexValuePairs[i] = {index, value: pair.value}
+				}
+				newMeta = {type: "array_items_delete", indexValuePairs: newIndexValuePairs}
+				break
+			}
+
+			case "array_items_delete_all": {
+				for(const pair of this.pairs.values()){
+					pair.box.dispose()
+				}
+				this.pairs.clear()
+				newMeta = {type: "array_items_delete_all"}
+				break
+			}
+
+			default: {
+				const outdatedKeys = new Set(this.pairs.keys())
+				for(let index = 0; index < upstreamArray.length; index++){
+					const item = upstreamArray[index]!
+					const key = this.getKey(item, index)
+					const pair = this.pairs.get(key)
+					if(pair){
+						if(!outdatedKeys.has(key)){
+							throw new Error("Constraint violated, key is not unique: " + key)
+						}
 						pair.box.set(item, this)
+						pair.box.index = index
+					} else {
+						this.makeChildBox(item, index, key)
 					}
-					return
+
+					outdatedKeys.delete(key)
 				}
 
-				case "array_items_insert": {
-					for(let offset = 0; offset < updateMeta.count; offset++){
-						const index = updateMeta.index + offset
-						const item = upstreamArray[index]!
-						const key = this.getKey(item, index)
-						if(this.pairs.get(key)){
-							throw new Error("Duplicate key: " + key)
-						}
-						const box = this.makeChildBox(item, index, key)
-						this.pairs.set(key, box)
-					}
-					return
+				for(const key of outdatedKeys){
+					const pair = this.pairs.get(key)!
+					pair.box.dispose()
+					this.pairs.delete(key)
 				}
 
-				case "array_items_delete": {
-					for(const {index, value} of updateMeta.indexValuePairs){
-						const key = this.getKey(value as E, index)
-						const pair = this.pairs.get(key)
-						if(!pair){
-							throw new Error("Tried to delete item at key " + key + ", but there's no item for that key.")
-						}
-						pair.box.dispose()
-						this.pairs.delete(key)
-					}
-					return
-				}
-
-				case "array_items_delete_all": {
-					for(const pair of this.pairs.values()){
-						pair.box.dispose()
-					}
-					this.pairs.clear()
-					return
-				}
-
+				break
 			}
 		}
 
-		const outdatedKeys = new Set(this.pairs.keys())
-		for(let index = 0; index < upstreamArray.length; index++){
-			const item = upstreamArray[index]!
-			const key = this.getKey(item, index)
-			let pair = this.pairs.get(key)
-			if(pair){
-				if(!outdatedKeys.has(key)){
-					throw new Error("Constraint violated, key is not unique: " + key)
-				}
-				pair.box.set(item, this)
-				pair.box.index = index
-			} else {
-				pair = this.makeChildBox(item, index, key)
-				this.pairs.set(key, pair)
-			}
-
-			outdatedKeys.delete(key)
-		}
-
-		for(const key of outdatedKeys){
-			const pair = this.pairs.get(key)!
-			pair.box.dispose()
-			this.pairs.delete(key)
+		if(this.mappedValueBox !== null && shouldUpdateValues){
+			this.mappedValueBox.set(this.makeValuesArray(), this, newMeta)
 		}
 	}
 
@@ -203,6 +224,27 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 
 	toString(): string {
 		return `ArrayContext(${this.getKey})`
+	}
+
+	getValueArrayBox(): MappedArrayBox<readonly V[]> {
+		if(!this.mappedValueBox){
+			this.mappedValueBox = new MappedArrayBox(this.makeValuesArray())
+		}
+		return this.mappedValueBox
+	}
+
+	private makeValuesArray(): readonly V[] {
+		this.tryUpdate()
+		if(!this.lastKnownUpstreamValue){
+			// should not happen
+			throw new Error("Array context update failed: no known upstream value (wtf?)")
+		}
+		const values: V[] = new Array(this.pairs.size)
+		for(let i = 0; i < this.lastKnownUpstreamValue.length; i++){
+			// oof. wonder if there's a better way
+			values[i] = this.pairs.get(this.getKey(this.lastKnownUpstreamValue[i]!, i))!.value
+		}
+		return values
 	}
 
 }

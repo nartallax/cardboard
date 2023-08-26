@@ -1,4 +1,3 @@
-import {mapArray} from "src/array_contexts/map_array"
 import type {BoxChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, BoxUpdateMeta} from "src/internal"
 import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArrayElements, SubscriberList} from "src/internal"
 
@@ -70,7 +69,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return isWBox(this) ? new PropWBox(this, propName) : new PropRBox(this, propName)
 	}
 
-	getArrayContext<E, K>(this: BaseBox<E[]>, getKey: (item: E, index: number) => K): ArrayContextImpl<E, K, null> {
+	getArrayContext<E, K>(this: BaseBox<readonly E[]>, getKey: (item: E, index: number) => K): ArrayContextImpl<E, K, null> {
 		return new ArrayContextImpl(this, getKey, getNull)
 	}
 
@@ -81,7 +80,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 	}
 
 	mapArray<E, K, R>(this: BaseBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<readonly R[]> {
-		return mapArray(this, getKey, mapBox)
+		return new ArrayContextImpl(this, getKey, mapBox).getValueArrayBox()
 	}
 
 	setProp<K extends keyof T>(propName: K, propValue: T[K]): void {
