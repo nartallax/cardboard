@@ -13,11 +13,11 @@ export * from "src/boxes/abstract/single_downstream_box"
 
 export * from "src/boxes/map_box"
 export * from "src/boxes/prop_box"
+export * from "src/boxes/array_context_controlled_box"
 export * from "src/boxes/array_item_box"
 export * from "src/boxes/calc_box"
 export * from "src/boxes/value_box"
 export * from "src/boxes/const_box"
-export * from "src/boxes/mapped_array_box"
 
 export * from "src/common"
 export * from "src/subscriber_list"

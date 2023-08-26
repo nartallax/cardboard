@@ -1,4 +1,4 @@
-import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, BoxUpdateMeta, MappedArrayBox} from "src/internal"
+import {isWBox, ArrayItemBox, UpstreamSubscriber, BoxInternal, ArrayItemRBoxImpl, ArrayItemWBoxImpl, ArrayContext, BoxUpdateMeta, ArrayContextControlledBox, RBox} from "src/internal"
 
 interface BoxWithValue<E, K, V> {
 	readonly box: ArrayItemBox<E, K>
@@ -15,7 +15,7 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 	private readonly pairs = new Map<K, BoxWithValue<E, K, V>>()
 	private childSubCount = 0
 	private lastKnownUpstreamValue: readonly E[] | null = null
-	private mappedValueBox: MappedArrayBox<readonly V[]> | null = null
+	private mappedValueBox: ArrayContextControlledBox<readonly V[]> | null = null
 
 	constructor(readonly upstream: BoxInternal<readonly E[]>, private readonly getKey: (element: E, index: number) => K, private readonly getValue: (element: ArrayItemBox<E, K>, index: number) => V) {
 	}
@@ -211,8 +211,10 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 		return pair.box
 	}
 
-	isItemBoxAttached(itemBox: ArrayItemBox<E, K>): boolean {
-		return this.pairs.get(itemBox.key)?.box === itemBox
+	isItemBoxAttached(itemBox: RBox<unknown>): boolean {
+		return itemBox instanceof ArrayItemBox
+			? this.pairs.get(itemBox.key)?.box === itemBox
+			: this.mappedValueBox === itemBox
 	}
 
 	dispose(): void {
@@ -226,9 +228,9 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 		return `ArrayContext(${this.getKey})`
 	}
 
-	getValueArrayBox(): MappedArrayBox<readonly V[]> {
+	getValueArrayBox(): ArrayContextControlledBox<readonly V[]> {
 		if(!this.mappedValueBox){
-			this.mappedValueBox = new MappedArrayBox(this.makeValuesArray())
+			this.mappedValueBox = new ArrayContextControlledBox<readonly V[]>(this, this.makeValuesArray())
 		}
 		return this.mappedValueBox
 	}

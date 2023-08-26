@@ -38,8 +38,8 @@ describe("ArrayItemBox", () => {
 	})
 
 	test("toString", () => {
-		expect(box([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
-		expect(calcBox([], () => [1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1)")
+		expect(box([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1, 1)")
+		expect(calcBox([], () => [1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ArrayItemBox(1, 1)")
 		expect(constBox([1]).getArrayContext(e => e).getBoxes()[0] + "").to.be("ConstBox(1)")
 	})
 
@@ -66,8 +66,8 @@ describe("ArrayItemBox", () => {
 
 		parent.set([parent.get()[0]!, parent.get()[2]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
-		expect(() => box1.set({id: 5, name: "5"})).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
+		expect(() => box1.set({id: 5, name: "5"})).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 		expect(parent.get().length).to.be.equal(2)
 	})
 
@@ -118,8 +118,8 @@ describe("ArrayItemBox", () => {
 		expect(box2.get().name).to.be.equal("222")
 		expect(box2.get()).to.be.equal(counter.lastCallValue)
 		expect(counter.callCount).to.be.equal(2)
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
-		expect(() => box1.set({id: 5, name: "5"})).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
+		expect(() => box1.set({id: 5, name: "5"})).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 		expect(parent.get().length).to.be.equal(2)
 
 		box2.unsubscribe(counter)
@@ -160,7 +160,7 @@ describe("ArrayItemBox", () => {
 		expect(() => box1.get()).to.throwError(/key is not unique: 1/i)
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![0]!, {id: 12345, name: "nya"}]])
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("chain array items with subscribers", () => {
@@ -290,7 +290,7 @@ describe("ArrayItemBox", () => {
 
 		parent.set([parent.get()[0]!, [parent.get()[1]![0]!, {id: 12345, name: "nya"}]])
 		expect(counter.callCount).to.be.equal(2)
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("chain array wraps with subscribers throw 3", () => {
@@ -309,7 +309,7 @@ describe("ArrayItemBox", () => {
 
 		expect(parentInternal.haveSubscribers()).to.be.equal(true)
 		parent.set([])
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 2\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(2, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("prop and arraywrap chain with subscribers", () => {
@@ -335,7 +335,7 @@ describe("ArrayItemBox", () => {
 		expect(counter.callCount).to.be.equal(1)
 
 		parent.set({a: [{id: 7, name: "owo"}, {id: 5, name: "uwu"}]})
-		expect(() => box6.get()).to.throwError(/This array item box \(key = 6\) is no longer attached/i)
+		expect(() => box6.get()).to.throwError(/This array-linked box ArrayItemBox\(6, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 		expect(counter.callCount).to.be.equal(1)
 
 		box6.unsubscribe(counter)
@@ -438,7 +438,7 @@ describe("ArrayItemBox", () => {
 
 		parent.set([parent.get()[0]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(() => calc1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => calc1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("arraywrap and calcbox chain with sub", () => {
@@ -509,7 +509,7 @@ describe("ArrayItemBox", () => {
 
 		parent.set([parent.get()[0]!])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(() => calc1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => calc1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 		expect(counter.callCount).to.be.equal(1)
 	})
 
@@ -536,7 +536,7 @@ describe("ArrayItemBox", () => {
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 
 		prop.set([{id: 2, name: "2"}])
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("calcbox and arraywrap chain with sub", () => {
@@ -601,7 +601,7 @@ describe("ArrayItemBox", () => {
 
 		parent.set([{a: [{id: 7, name: "4"}], id: 6}])
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 5\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(5, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("arraywrap of calcbox of arraywrap with sub", () => {
@@ -638,7 +638,7 @@ describe("ArrayItemBox", () => {
 		expect(parentInternal.haveSubscribers()).to.be.equal(false)
 		expect(counter.callCount).to.be.equal(2)
 		expect(counter.lastCallValue.name).to.be.equal("3")
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 5\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(5, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("arraywrap of calcbox of arraywrap with sub no throw", () => {
@@ -683,7 +683,7 @@ describe("ArrayItemBox", () => {
 
 		parent.set([[{id: 1, name: "11"}]])
 		parent.set([[{id: 2, name: "111"}]])
-		expect(() => box1.get()).to.throwError(/This array item box \(key = 1\) is no longer attached/i)
+		expect(() => box1.get()).to.throwError(/This array-linked box ArrayItemBox\(1, Symbol\(AbsentBoxValue\)\) is no longer attached/i)
 	})
 
 	test("calc and arraywrap item", () => {

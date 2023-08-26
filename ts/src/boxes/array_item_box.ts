@@ -1,54 +1,20 @@
-import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox, BoxInternal, UpstreamSubscriber, BoxUpdateMeta, ArrayItemWBox} from "src/internal"
+import {anythingToString, ArrayContextImpl, BoxInternal, UpstreamSubscriber, BoxUpdateMeta, ArrayItemWBox, ArrayContextControlledBox} from "src/internal"
 
 /** A box that contains an array item
  * This box is managed by array context */
-export abstract class ArrayItemBox<T, K> extends FirstSubscriberHandlingBox<T> implements ArrayItemWBox<T> {
+export abstract class ArrayItemBox<T, K> extends ArrayContextControlledBox<T> implements ArrayItemWBox<T> {
 
-	constructor(private readonly arrayContext: ArrayContextImpl<T, any, any>, value: T, public index: number, public key: K) {
-		super()
-		this.value = value
+	constructor(arrayContext: ArrayContextImpl<T, any, any>, value: T, public index: number, public key: K) {
+		super(arrayContext, value)
 	}
 
-	toString(): string {
-		return `ArrayItemBox(${anythingToString(this.value)})`
-	}
-
-	dispose(): void {
-		if(this.haveSubscribers()){
-			this.arrayContext.onDownstreamUnsubscription()
-		}
-		super.dispose()
-	}
-
-	protected onFirstSubscriber(): void {
-		if(this.value !== NoValue){
-			this.arrayContext.onDownstreamSubscription()
-		}
-	}
-
-	protected onLastUnsubscriber(): void {
-		if(this.value !== NoValue){
-			this.arrayContext.onDownstreamUnsubscription()
-		}
-	}
-
-	private checkIfStillAttached(): void {
-		if(!this.arrayContext.isItemBoxAttached(this)){
-			throw new Error("This array item box (key = " + this.key + ") is no longer attached to its upstream. Element it was attached to was removed from upstream, or was absent in some time in the past.")
-		}
+	override toString(): string {
+		return `ArrayItemBox(${anythingToString(this.key)}, ${anythingToString(this.value)})`
 	}
 
 	override set(newValue: T, changeSourceBox?: BoxInternal<unknown> | UpstreamSubscriber): void {
 		this.checkIfStillAttached()
 		super.set(newValue, changeSourceBox)
-	}
-
-	override get(): T {
-		if(this.arrayContext.isItemBoxAttached(this)){
-			this.arrayContext.tryUpdate()
-		}
-		this.checkIfStillAttached()
-		return super.get()
 	}
 
 	protected override notifyOnValueChange(value: T, changeSource: BoxInternal<unknown> | UpstreamSubscriber | undefined, updateMeta: BoxUpdateMeta | undefined): void {

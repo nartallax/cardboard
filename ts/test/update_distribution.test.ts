@@ -241,12 +241,25 @@ describe("Update distribution", () => {
 		expect(c.get()).to.eql([{id: 4}, {id: 3}, {id: 5}])
 	})
 
-	// test("array mapping meta should be passed down", () => {
-	// 	const a = box([1, 2, 3])
-	// 	const b = a.mapArray(x => x, x => x.get())
-	// 	// const c = b.mapArray(x => x, x => x.get())
-	// 	b.subscribe((_, __, meta) => console.log(meta))
-	// 	a.appendElement(4)
-	// })
+	test("array mapping meta should be passed down", () => {
+		const a = box([1, 2, 3])
+		const b = a.mapArray(x => x, x => x.get() + 1)
+		const c = b.mapArray(x => x, x => x.get() + 1)
+
+		let lastKnownMeta = null as any
+		c.subscribe((_, __, meta) => lastKnownMeta = meta)
+
+		a.appendElement(4)
+		expect(a.get()).to.eql([1, 2, 3, 4])
+		expect(b.get()).to.eql([2, 3, 4, 5])
+		expect(c.get()).to.eql([3, 4, 5, 6])
+		expect(lastKnownMeta).to.eql({type: "array_items_insert", count: 1, index: 3})
+
+		a.deleteElementAtIndex(2)
+		expect(a.get()).to.eql([1, 2, 4])
+		expect(b.get()).to.eql([2, 3, 5])
+		expect(c.get()).to.eql([3, 4, 6])
+		expect(lastKnownMeta).to.eql({type: "array_items_delete", indexValuePairs: [{index: 2, value: 5}]})
+	})
 
 })
