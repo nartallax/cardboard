@@ -55,7 +55,6 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 				const key = this.getKey(item, meta.index)
 				const pair = this.pairs.get(key)
 				if(!pair){
-					// TODO: test of key update?
 					const oldKey = this.getKey(meta.oldValue as E, meta.index)
 					const oldPair = this.pairs.get(oldKey)
 					if(!oldPair){
@@ -154,6 +153,13 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 			sure, we can handle it... within this context;
 			but there could be more than one context for an array box,
 			and that other context won't be updated, which will increase confusion.
+
+			that is, the only way for other contexts to handle the change is to disconnect the box (and create another)
+			that means, for the sake of consistency, that we should also disconnect this box
+			which is just confusing, because setting value of a box disconnects it...? what?
+
+			change of key through direct .setElementAtIndex or whatever it's called is still allowed
+			because this won't lead to such confusion
 
 			also changing a key like that is generally confusing idea, not sure why anyone would do that */
 			throw new Error("Array item box changed key, which is not allowed; was: " + downstreamBox.key + ", now " + newKey)

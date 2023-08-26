@@ -1,9 +1,20 @@
 import {describe, test} from "@nartallax/clamsensor"
-import {box, calcBox} from "src/internal"
+import {box, calcBox, isConstBox, isRBox, isWBox} from "src/internal"
 import expect from "expect.js"
 import {expectExecutionTimeLessThan, makeCallCounter} from "test/test_utils"
 
 describe("Array container", () => {
+
+	test("mapped array is not wbox", () => {
+		expect(isRBox(box([1]).mapArray(e => e, e => e.get()))).to.be(true)
+		expect(isWBox(box([1]).mapArray(e => e, e => e.get()))).to.be(false)
+		expect(isConstBox(box([1]).mapArray(e => e, e => e.get()))).to.be(false)
+	})
+
+	test("mapped array toString", () => {
+		expect(box([1]).mapArray(e => e, e => e.get()) + "").to.be("ArrayContextControlledBox([1])")
+	})
+
 	test("map array", () => {
 		const arrBox = box([
 			{id: 1, name: "1"},
@@ -390,4 +401,34 @@ describe("Array container", () => {
 		expect(downstream.get()).to.eql([{b: 5}, {b: 1}, {b: 2}])
 		expect(callCount).to.be(4)
 	})
+
+	test("mapped array box of array element box", () => {
+		const parent = box([[1, 2, 3]])
+		const context = parent.getArrayContext(x => x.length)
+		const itemBox = context.getBoxForKey(3)
+		const mappedBox = itemBox.mapArray((_, i) => i, x => {
+			const res = {a: x.get()}
+			x.subscribe(value => res.a = value)
+			return res
+		})
+
+		expect(mappedBox.get()).to.eql([{a: 1}, {a: 2}, {a: 3}])
+
+		parent.set([[4, 5, 6]])
+		expect(mappedBox.get()).to.eql([{a: 4}, {a: 5}, {a: 6}])
+
+		parent.set([[1, 2]])
+		expect(() => mappedBox.get()).to.throwError(/This array-linked box ArrayItemBox\(3, Symbol\(AbsentBoxValue\)\) is no longer attached to its upstream/i)
+	})
+
+	test("key update in partial update", () => {
+		const parent = box([{id: 1, name: "1"}])
+		const context = parent.getArrayContext(x => x.id)
+		const child = context.getBoxForKey(1)
+
+		parent.setElementAtIndex(0, {id: 3, name: "3"})
+		expect(parent.get()).to.eql([{id: 3, name: "3"}])
+		expect(() => child.get()).to.throwError(/no longer attached/)
+	})
+
 })

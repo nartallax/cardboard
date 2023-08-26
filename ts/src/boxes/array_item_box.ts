@@ -1,7 +1,6 @@
 import {anythingToString, ArrayContextImpl, BoxInternal, UpstreamSubscriber, BoxUpdateMeta, ArrayItemWBox, ArrayContextControlledBox} from "src/internal"
 
-/** A box that contains an array item
- * This box is managed by array context */
+/** A box that contains an array item */
 export abstract class ArrayItemBox<T, K> extends ArrayContextControlledBox<T> implements ArrayItemWBox<T> {
 
 	constructor(arrayContext: ArrayContextImpl<T, any, any>, value: T, public index: number, public key: K) {

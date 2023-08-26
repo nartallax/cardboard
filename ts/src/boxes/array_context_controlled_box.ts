@@ -1,9 +1,6 @@
 import {anythingToString, ArrayContextImpl, NoValue, FirstSubscriberHandlingBox} from "src/internal"
 
-// TODO: test about array mapped box of array element box; what will happen at dispose of array element box?
-
-/** A box that contains an array item
- * This box is managed by array context */
+/** Some box that is managed by array context */
 export class ArrayContextControlledBox<T> extends FirstSubscriberHandlingBox<T> {
 
 	constructor(protected readonly arrayContext: ArrayContextImpl<any, any, any>, value: T) {
@@ -12,7 +9,6 @@ export class ArrayContextControlledBox<T> extends FirstSubscriberHandlingBox<T> 
 	}
 
 	toString(): string {
-		// TODO: test
 		return `ArrayContextControlledBox(${anythingToString(this.value)})`
 	}
 
