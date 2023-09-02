@@ -262,4 +262,17 @@ describe("Update distribution", () => {
 		expect(lastKnownMeta).to.eql({type: "array_items_delete", indexValuePairs: [{index: 2, value: 5}]})
 	})
 
+	test("multiple prop boxes, some of them without subscription", () => {
+		const parent = box({a: true})
+		const a1 = parent.prop("a")
+		const a2 = parent.prop("a")
+
+		void a2.get() // that's important for this test
+
+		a1.subscribe(makeCallCounter())
+		a1.set(false)
+		a2.set(true)
+		expect(parent.get()).to.eql({a: true})
+	})
+
 })

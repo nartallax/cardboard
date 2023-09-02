@@ -86,6 +86,19 @@ export abstract class DownstreamBox<T> extends FirstSubscriberHandlingBox<T> imp
 		}
 	}
 
+	override set(newValue: T, changeSource?: UpstreamSubscriber | BoxInternal<unknown> | undefined, updateMeta?: BoxUpdateMeta | undefined): void {
+		if(!this.haveSubscribers() && this.shouldRecalculate()){
+			// if the box doesn't have any subscribers - it could have outdated value
+			// and then on .set() new value may coinside with outdated value
+			// which will lead to non-delivery of some updates, if they should be delivered
+			// so it's safer to assume that something is changed
+			// (we could recalculate, but that's also not great, because it will be called each .set())
+			this.value = NoValue
+		}
+
+		return super.set(newValue, changeSource, updateMeta)
+	}
+
 	override get(): T {
 		this.recalculateIfShould(undefined, {type: "recalc_on_get", owner: this})
 		return super.get()

@@ -12,7 +12,7 @@ export class MultipleDependencyList extends BaseDependencyList implements Depend
 		}
 	}
 
-	protected updateKnownDependencies(): void {
+	updateKnownDependencyValues(): void {
 		for(const box of this.boxMap.keys()){
 			this.boxMap.set(box, box.get())
 		}

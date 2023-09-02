@@ -127,7 +127,7 @@ describe("MapBox", () => {
 		b.set(30)
 		expect(a.get()).to.be(15)
 		expect({directCalls}).to.eql({directCalls: 1})
-		expect({reverseCalls}).to.eql({reverseCalls: 1})
+		expect({reverseCalls}).to.eql({reverseCalls: 2})
 	})
 
 	test("will recalculate value after unsub and resub", () => {

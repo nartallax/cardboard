@@ -10,7 +10,7 @@ export class SingleDependencyList<T> extends BaseDependencyList implements Depen
 		this.lastKnownDependencyValue = unbox(dependency)
 	}
 
-	protected updateKnownDependencies(): void {
+	updateKnownDependencyValues(): void {
 		this.lastKnownDependencyValue = unbox(this.dependency)
 	}
 

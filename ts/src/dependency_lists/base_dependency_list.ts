@@ -2,7 +2,7 @@ import type {BoxInternal, BoxUpdateMeta, CalculatableBox} from "src/internal"
 
 export abstract class BaseDependencyList {
 
-	protected abstract updateKnownDependencies(): void
+	abstract updateKnownDependencyValues(): void
 
 	calculate<T>(owner: CalculatableBox<T>, changeSourceBox: BoxInternal<unknown> | undefined, meta: BoxUpdateMeta | undefined): void {
 		const startingRevision = owner.revision
@@ -18,6 +18,6 @@ export abstract class BaseDependencyList {
 			}
 		}
 
-		this.updateKnownDependencies()
+		this.updateKnownDependencyValues()
 	}
 }

@@ -174,6 +174,7 @@ export interface DependencyList {
 	getDependencyValues(): unknown[]
 	setDependencyValues(values: unknown[]): void
 	isDependency(box: unknown): boolean
+	updateKnownDependencyValues(): void
 }
 
 export interface CalculatableBox<T> extends BoxInternal<T>, UpstreamSubscriber {
