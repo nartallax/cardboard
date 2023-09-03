@@ -72,6 +72,13 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 
 			case "array_items_insert": {
 				const newValuesArray: V[] = new Array(meta.count)
+
+				for(const {box} of this.pairs.values()){
+					if(box.index >= meta.index){
+						box.index += meta.count
+					}
+				}
+
 				for(let offset = 0; offset < meta.count; offset++){
 					const index = meta.index + offset
 					const item = upstreamArray[index]!
@@ -99,11 +106,17 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 					this.pairs.delete(key)
 					newIndexValuePairs[i] = {index, value: pair.value}
 				}
+
+				// "smart" update of only boxes that has indexes shifted would be hard here
+				// so let's just update all the indexes
+				this.updateAllIndex(upstreamArray)
+
 				newMeta = {type: "array_items_delete", indexValuePairs: newIndexValuePairs}
 				break
 			}
 
 			case "array_items_delete_all": {
+
 				for(const pair of this.pairs.values()){
 					pair.box.dispose()
 				}
@@ -146,6 +159,18 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 		}
 	}
 
+	private updateAllIndex(upstreamArray: readonly E[]): void {
+		for(let i = 0; i < upstreamArray.length; i++){
+			const item = upstreamArray[i]!
+			const key = this.getKey(item, i)
+			const pair = this.pairs.get(key)
+			if(!pair){
+				throw new Error("No box for key " + key)
+			}
+			pair.box.index = i
+		}
+	}
+
 	onDownstreamChange(downstreamBox: ArrayItemBox<E, K>, value: E): void {
 		const newKey = this.getKey(value, downstreamBox.index)
 		if(newKey !== downstreamBox.key){
@@ -166,6 +191,13 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 		}
 
 		const oldUpstreamValue = this.upstream.get()
+		if(this.childSubCount < 1){
+			// if we wasn't subscribed - there's a chance that upstream box changed unpredictably
+			// that includes index changes
+			// so, if we are gonna rely on index - we should update it
+			this.updateAllIndex(oldUpstreamValue)
+		}
+
 		const newUpstreamValue: E[] = [...oldUpstreamValue]
 		const oldElementValue = newUpstreamValue[downstreamBox.index]
 		newUpstreamValue[downstreamBox.index] = value

@@ -783,4 +783,48 @@ describe("ArrayItemBox", () => {
 		expect(() => box1.get()).to.throwError(/no longer attached/)
 	})
 
+	test("index is updated on partial insert update", () => {
+		const loras = box([{id: "a", value: 5}, {id: "b", value: 6}])
+		const mapped = loras.mapArray(x => x.id, x => {
+			const result = {
+				value: x.get().id + "_" + x.get().value,
+				box: x
+			}
+			x.subscribe(x => result.value = x.id + "_" + x.value)
+			return result
+		})
+		mapped.subscribe(makeCallCounter()) // TODO: test without sub
+
+		loras.prependElement({id: "c", value: 7})
+
+		mapped.get()[0]!.box.prop("value").set(8)
+		mapped.get()[1]!.box.prop("value").set(9)
+		expect(loras.get()).to.eql([{id: "c", value: 8}, {id: "a", value: 9}, {id: "b", value: 6}])
+	})
+
+	test("index is updated on partial remove update", () => {
+		const loras = box([{id: "a", value: 5}, {id: "b", value: 6}, {id: "c", value: 8}])
+		const context = loras.getArrayContext(x => x.id)
+		const a = context.getBoxForKey("a")
+		const b = context.getBoxForKey("b")
+		b.subscribe(makeCallCounter()) // TODO: test without sub
+
+		a.deleteArrayElement()
+		b.set({id: "b", value: 7})
+
+		expect(loras.get()).to.eql([{id: "b", value: 7}, {id: "c", value: 8}])
+	})
+
+	test("index is updated on partial remove update, without subscription", () => {
+		const loras = box([{id: "a", value: 5}, {id: "b", value: 6}, {id: "c", value: 8}])
+		const context = loras.getArrayContext(x => x.id)
+		const a = context.getBoxForKey("a")
+		const b = context.getBoxForKey("b")
+
+		a.deleteArrayElement()
+		b.set({id: "b", value: 7})
+
+		expect(loras.get()).to.eql([{id: "b", value: 7}, {id: "c", value: 8}])
+	})
+
 })
