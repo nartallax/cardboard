@@ -793,7 +793,7 @@ describe("ArrayItemBox", () => {
 			x.subscribe(x => result.value = x.id + "_" + x.value)
 			return result
 		})
-		mapped.subscribe(makeCallCounter()) // TODO: test without sub
+		mapped.subscribe(makeCallCounter())
 
 		loras.prependElement({id: "c", value: 7})
 
@@ -807,7 +807,7 @@ describe("ArrayItemBox", () => {
 		const context = loras.getArrayContext(x => x.id)
 		const a = context.getBoxForKey("a")
 		const b = context.getBoxForKey("b")
-		b.subscribe(makeCallCounter()) // TODO: test without sub
+		b.subscribe(makeCallCounter())
 
 		a.deleteArrayElement()
 		b.set({id: "b", value: 7})
@@ -825,6 +825,64 @@ describe("ArrayItemBox", () => {
 		b.set({id: "b", value: 7})
 
 		expect(loras.get()).to.eql([{id: "b", value: 7}, {id: "c", value: 8}])
+	})
+
+	test("index is updated after changes were made when box wasn't subscribed to", () => {
+		const parent = box([{id: "a", value: 5}, {id: "b", value: 6}, {id: "c", value: 8}])
+		const context = parent.getArrayContext(x => x.id)
+		const a = context.getBoxForKey("a")
+		const b = context.getBoxForKey("b")
+
+		a.deleteArrayElement()
+		b.subscribe(makeCallCounter())
+		b.set({id: "b", value: 7})
+
+		expect(parent.get()).to.eql([{id: "b", value: 7}, {id: "c", value: 8}])
+	})
+
+
+	test("box is properly disconnected after changes were made when box wasn't subscribed to - get", () => {
+		const parent = box([{id: "a", value: 5}, {id: "b", value: 6}, {id: "c", value: 8}])
+		const context = parent.getArrayContext(x => x.id)
+		const a = context.getBoxForKey("a")
+		const b = context.getBoxForKey("b")
+
+		parent.deleteElementAtIndex(0)
+		b.subscribe(makeCallCounter())
+		b.set({id: "b", value: 7})
+
+		expect(parent.get()).to.eql([{id: "b", value: 7}, {id: "c", value: 8}])
+		expect(() => a.get()).to.throwError(/no longer attached/)
+	})
+
+	test("box is properly disconnected after changes were made when box wasn't subscribed to - set", () => {
+		const parent = box([{id: "a", value: 5}, {id: "b", value: 6}, {id: "c", value: 8}])
+		const context = parent.getArrayContext(x => x.id)
+		const a = context.getBoxForKey("a")
+		const b = context.getBoxForKey("b")
+
+		parent.deleteElementAtIndex(0)
+		b.subscribe(makeCallCounter())
+		b.set({id: "b", value: 7})
+
+		expect(parent.get()).to.eql([{id: "b", value: 7}, {id: "c", value: 8}])
+		expect(() => a.set({id: "a", value: 0})).to.throwError(/no longer attached/)
+	})
+
+	test("box is disposed immediately after element is deleted from parent array when not subscribed - get", () => {
+		const parent = box([{id: "a", value: 5}])
+		const context = parent.getArrayContext(x => x.id)
+		const a = context.getBoxForKey("a")
+		parent.set([])
+		expect(() => a.get()).to.throwError(/no longer attached/)
+	})
+
+	test("box is disposed immediately after element is deleted from parent array when not subscribed - set", () => {
+		const parent = box([{id: "a", value: 5}])
+		const context = parent.getArrayContext(x => x.id)
+		const a = context.getBoxForKey("a")
+		parent.set([])
+		expect(() => a.set({id: "a", value: 6})).to.throwError(/no longer attached/)
 	})
 
 })

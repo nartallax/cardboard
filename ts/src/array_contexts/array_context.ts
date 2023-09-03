@@ -20,16 +20,19 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 	constructor(readonly upstream: BoxInternal<readonly E[]>, private readonly getKey: (element: E, index: number) => K, private readonly getValue: (element: ArrayItemBox<E, K>, index: number) => V) {
 	}
 
-	tryUpdate(): void {
-		if(this.childSubCount > 0){
+	tryUpdate(skipSubCountCheck?: boolean): void {
+		if(!skipSubCountCheck && this.childSubCount > 0){
 			// the same logic as in calcbox - if we are being subscribed to, then we are subscribed to upstream
 			// that means our value is up-to-date
 			return
 		}
+
 		const upstreamArray = this.upstream.get()
-		if(upstreamArray !== this.lastKnownUpstreamValue){
-			this.onUpstreamChange(this.upstream, undefined, upstreamArray)
+		if(upstreamArray === this.lastKnownUpstreamValue){
+			return
 		}
+
+		this.onUpstreamChange(this.upstream, undefined, upstreamArray)
 	}
 
 	private makeChildBox(item: E, index: number, key: K): BoxWithValue<E, K, V> {
@@ -165,7 +168,7 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 			const key = this.getKey(item, i)
 			const pair = this.pairs.get(key)
 			if(!pair){
-				throw new Error("No box for key " + key)
+				continue // whatever, we'll create them on next update call
 			}
 			pair.box.index = i
 		}
@@ -195,7 +198,8 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 			// if we wasn't subscribed - there's a chance that upstream box changed unpredictably
 			// that includes index changes
 			// so, if we are gonna rely on index - we should update it
-			this.updateAllIndex(oldUpstreamValue)
+			this.tryUpdate()
+			downstreamBox.checkIfStillAttached()
 		}
 
 		const newUpstreamValue: E[] = [...oldUpstreamValue]
@@ -208,6 +212,7 @@ export class ArrayContextImpl<E, K, V> implements UpstreamSubscriber, ArrayConte
 	onDownstreamSubscription(): void {
 		this.childSubCount++
 		if(this.childSubCount === 1){
+			this.tryUpdate(true)
 			this.upstream.subscribe(this)
 		}
 	}

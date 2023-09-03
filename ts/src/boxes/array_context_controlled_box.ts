@@ -31,7 +31,7 @@ export class ArrayContextControlledBox<T> extends FirstSubscriberHandlingBox<T> 
 		}
 	}
 
-	protected checkIfStillAttached(): void {
+	checkIfStillAttached(): void {
 		if(!this.arrayContext.isItemBoxAttached(this)){
 			throw new Error("This array-linked box " + this + " is no longer attached to its upstream. Element it was attached to was removed from upstream, or was absent in some time in the past.")
 		}
