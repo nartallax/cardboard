@@ -1,4 +1,4 @@
-import type {BoxChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, BoxUpdateMeta} from "src/internal"
+import type {BoxChangeHandler, RBox, BoxInternal, UpstreamSubscriber, WBox, BoxUpdateMeta, ArrayItemWBox} from "src/internal"
 import {ArrayContextImpl, MapRBox, MapWBox, PropRBox, PropWBox, isWBox, mapArrayElements, SubscriberList} from "src/internal"
 
 export const NoValue = Symbol("AbsentBoxValue")
@@ -79,7 +79,7 @@ export abstract class BaseBox<T> implements BoxInternal<T> {
 		return mapArrayElements(this, mapper, reverseMapper)
 	}
 
-	mapArray<E, K, R>(this: BaseBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<readonly R[]> {
+	mapArray<E, K, R>(this: BaseBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: ArrayItemWBox<E>, index: number) => R): RBox<readonly R[]> {
 		return new ArrayContextImpl(this, getKey, mapBox).getValueArrayBox()
 	}
 

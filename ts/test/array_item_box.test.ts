@@ -885,4 +885,14 @@ describe("ArrayItemBox", () => {
 		expect(() => a.set({id: "a", value: 6})).to.throwError(/no longer attached/)
 	})
 
+	test("mapArray gives array element boxes", () => {
+		const parent = box([{id: "a", value: 5}])
+		const mapped = parent.mapArray(x => x.id, x => {
+			expect(isArrayItemWBox(x)).to.be(true)
+			return x.get().value
+		})
+
+		expect(mapped.get()).to.eql([5])
+	})
+
 })

@@ -79,7 +79,7 @@ export interface WBox<T> extends RBox<T> {
 	mapArrayElements<E, R>(this: WBox<readonly E[]>, mapper: (item: E, index: number) => R, reverseMapper: (item: R, index: number) => E): WBox<R[]>
 	/** Wrap each individual value in the array in its own box; apply the mapper to each of them
 	 * Will only apply mapper to new elements */
-	mapArray<E, K, R>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<readonly R[]>
+	mapArray<E, K, R>(this: WBox<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: ArrayItemWBox<E>, index: number) => R): RBox<readonly R[]>
 
 	/** This will set value of a property if there's an object inside the box
 	 * It's more optimal to do it that way instead of `.set({...value, [propName]: propValue})`,

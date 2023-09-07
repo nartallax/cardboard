@@ -55,7 +55,7 @@ export class ConstBoxImpl<T> implements BoxInternal<T>, ArrayItemWBox<T> {
 		return new ConstBoxImpl((this.value as E[]).map((item, index) => mapper(item, index)))
 	}
 
-	mapArray<E, K, R>(this: ConstBoxImpl<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: WBox<E>, index: number) => R): RBox<readonly R[]> {
+	mapArray<E, K, R>(this: ConstBoxImpl<readonly E[]>, getKey: (item: E, index: number) => K, mapBox: (box: ArrayItemWBox<E>, index: number) => R): RBox<readonly R[]> {
 		const valueMap = new Map<K, R>()
 		return new ConstBoxImpl((this.value as E[]).map((sourceValue, i) => {
 			const key = getKey(sourceValue, i)
