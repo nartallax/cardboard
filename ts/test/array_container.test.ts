@@ -431,4 +431,16 @@ describe("Array container", () => {
 		expect(() => child.get()).to.throwError(/no longer attached/)
 	})
 
+	test("having index as key, delete item", () => {
+		const arr = box([1, 2, 3, 4, 5])
+		const context = arr.getArrayContext((_, i) => i)
+		const threeBox = context.getBoxForKey(2)
+		const fourBox = context.getBoxForKey(3)
+		const fiveBox = context.getBoxForKey(4)
+		threeBox.deleteArrayElement()
+		expect(arr.get()).to.eql([1, 2, 4, 5])
+		expect(fourBox.get()).to.eql(5)
+		expect(() => fiveBox.get()).to.throwError(/no longer attached/)
+	})
+
 })
